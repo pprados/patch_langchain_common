@@ -27,6 +27,8 @@ pymupdf = { version = "^1.24", optional = false }
 pdfplumber = { version = "^0.11.4", optional = false }
 pdfminer-six = { version= "^20231228", optional = false }
 html_to_markdown = { version = "^1", optional = false }
+pymupdf4llm = { version = "^0.0.17", optional = false }
+markdownify = { version = "^0.13.1", optional = false }
 
 [tool.poetry.group.dev]
 optional = true

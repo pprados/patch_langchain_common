@@ -6,29 +6,46 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import IO, Any, Callable, Iterator, Optional, cast, Literal, Union, Dict, \
-    BinaryIO, Tuple
+from typing import (
+    IO,
+    Any,
+    BinaryIO,
+    Callable,
+    Dict,
+    Iterator,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+    cast,
+)
 
 import numpy as np
 import pandas as pd
+from bs4 import BeautifulSoup
+from langchain_community.document_loaders.blob_loaders import Blob
+from langchain_core.document_loaders.base import BaseBlobParser, BaseLoader
+from langchain_core.documents import Document
 from PIL import Image
-from typing_extensions import TypeAlias, List
+from typing_extensions import List, TypeAlias
 from unstructured_client import UnstructuredClient  # type: ignore
 from unstructured_client.models import operations, shared  # type: ignore
 
-from langchain_community.document_loaders.blob_loaders import Blob
-from patch_langchain_community.document_loaders.parsers.pdf import CONVERT_IMAGE_TO_TEXT, \
-    ImagesPdfParser, PDFMinerParser, purge_metadata, _format_image_str
+from patch_langchain_community.document_loaders.parsers.pdf import (
+    CONVERT_IMAGE_TO_TEXT,
+    ImagesPdfParser,
+    PDFMinerParser,
+    _format_image_str,
+    purge_metadata,
+)
 from patch_langchain_community.document_loaders.pdf import BasePDFLoader
-from langchain_core.document_loaders.base import BaseLoader, BaseBlobParser
-from langchain_core.documents import Document
-from bs4 import BeautifulSoup
 
 Element: TypeAlias = Any
 
 logger = logging.getLogger(__file__)
 
 _DEFAULT_URL = "https://api.unstructuredapp.io/general/v0/general"
+
 
 def _transform_cell_content(value: str, conversion_ind: bool = False) -> str:
     if value and conversion_ind is True:
@@ -104,6 +121,7 @@ def convert_table(
         "|".join([""] + row + ["\n"]) for row in table_body
     )
     return md_table
+
 
 class UnstructuredPDFParser(ImagesPdfParser):
     """Unstructured document loader interface.
@@ -181,23 +199,24 @@ class UnstructuredPDFParser(ImagesPdfParser):
     """
 
     def __init__(
-            self,
-            *,
-            password: Optional[str] = None,  # FIXME PPR https://github.com/Unstructured-IO/unstructured/pull/3721
-            mode: Literal["single", "paged", "elements"] = "single",
-            pages_delimitor: str = "\n\n",
-            extract_images: bool = False,
-            extract_tables: Optional[Literal["csv", "markdown", "html"]] = None,
-            partition_via_api: bool = False,
-            post_processors: Optional[list[Callable[[str], str]]] = None,
-            # SDK parameters
-            api_key: Optional[str] = None,
-            client: Optional[UnstructuredClient] = None,
-            url: Optional[str] = None,
-            web_url: Optional[str] = None,
-            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-            **unstructured_kwargs: Any,
-
+        self,
+        *,
+        password: Optional[
+            str
+        ] = None,  # FIXME PPR https://github.com/Unstructured-IO/unstructured/pull/3721
+        mode: Literal["single", "paged", "elements"] = "single",
+        pages_delimitor: str = "\n\n",
+        extract_images: bool = False,
+        extract_tables: Optional[Literal["csv", "markdown", "html"]] = None,
+        partition_via_api: bool = False,
+        post_processors: Optional[list[Callable[[str], str]]] = None,
+        # SDK parameters
+        api_key: Optional[str] = None,
+        client: Optional[UnstructuredClient] = None,
+        url: Optional[str] = None,
+        web_url: Optional[str] = None,
+        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+        **unstructured_kwargs: Any,
     ) -> None:
         """Initialize the parser.
 
@@ -205,7 +224,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
         """
         if unstructured_kwargs.get("strategy") == "ocr_only" and extract_images:
             logger.warning("extract_images is not supported with strategy='ocr_only")
-            extract_images= False
+            extract_images = False
         if unstructured_kwargs.get("strategy") != "hi_res" and extract_tables:
             logger.warning("extract_tables is not supported with strategy!='hi_res'")
             extract_tables = False
@@ -262,13 +281,14 @@ class UnstructuredPDFParser(ImagesPdfParser):
         """Lazily parse the blob."""
         unstructured_kwargs = self.unstructured_kwargs.copy()
         if not self.partition_via_api:
-            unstructured_kwargs["metadata_filename"] = (
-                    blob.path or blob.metadata.get("source"))
+            unstructured_kwargs["metadata_filename"] = blob.path or blob.metadata.get(
+                "source"
+            )
         if self.mode != "elements":
             unstructured_kwargs["include_page_breaks"] = True
-        page_number=0
-        with (blob.as_bytes_io() as pdf_file_obj):
-            _single_doc_loader=_SingleDocumentLoader(
+        page_number = 0
+        with blob.as_bytes_io() as pdf_file_obj:
+            _single_doc_loader = _SingleDocumentLoader(
                 file=pdf_file_obj,
                 password=self.password,
                 partition_via_api=self.partition_via_api,
@@ -278,47 +298,54 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 **unstructured_kwargs,
             )
             path = Path(blob.source or blob.path)
-            doc_metadata=purge_metadata(
-                _single_doc_loader._get_metadata() | {
+            doc_metadata = purge_metadata(
+                _single_doc_loader._get_metadata()
+                | {
                     "source": blob.source,
                     "file_directory": str(path.parent),
                     "filename": path.name,
                     "filetype": blob.mimetype,
-                    })
+                }
+            )
             if self.mode == "elements":
-                 yield from _single_doc_loader.lazy_load()
-            elif self.mode in ("paged","single"):
-
-                page_content=[]
+                yield from _single_doc_loader.lazy_load()
+            elif self.mode in ("paged", "single"):
+                page_content = []
                 page_break = False
                 for doc in _single_doc_loader.lazy_load():
                     if page_break:
                         page_content.append(self.pages_delimitor)
                         page_break = False
 
-                    if (doc.metadata.get("category") == "Image"
-                        and "image_path" in doc.metadata):
-                        image=np.array(Image.open(doc.metadata["image_path"]))
-                        image_text=next(self.convert_image_to_text([image]))
+                    if (
+                        doc.metadata.get("category") == "Image"
+                        and "image_path" in doc.metadata
+                    ):
+                        image = np.array(Image.open(doc.metadata["image_path"]))
+                        image_text = next(self.convert_image_to_text([image]))
                         if image_text:
-                            page_content.append(_format_image_str.format(image_text=image_text))
+                            page_content.append(
+                                _format_image_str.format(image_text=image_text)
+                            )
 
                     elif doc.metadata.get("category") == "Table":
                         page_content.append(
                             self._convert_table(
                                 doc.metadata.get("text_as_html"),
-                            ),)
+                            ),
+                        )
                     elif doc.metadata.get("category") == "Title":
-                        page_content.append("# "+doc.page_content)
+                        page_content.append("# " + doc.page_content)
                     elif doc.metadata.get("category") == "Header":
                         pass
                     elif doc.metadata.get("category") == "Footer":
                         pass
                     elif doc.metadata.get("category") == "PageBreak":
                         if self.mode == "paged":
-                            yield Document(page_content="\n".join(page_content),
-                                           metadata=(doc_metadata|
-                                                     {"page": page_number}))
+                            yield Document(
+                                page_content="\n".join(page_content),
+                                metadata=(doc_metadata | {"page": page_number}),
+                            )
                             page_content.clear()
                             page_number += 1
                         else:
@@ -326,18 +353,32 @@ class UnstructuredPDFParser(ImagesPdfParser):
                     else:
                         # NarrativeText, UncategorizedText, Formula, FigureCaption,
                         # ListItem, Address, EmailAddress
-                        if doc.metadata.get("category") not in ["NarrativeText", "UncategorizedText","Formula","FigureCaption","ListItem","Address","EmailAddress"]:
-                            logger.warning(f"Unknown category {doc.metadata.get('category')}")
+                        if doc.metadata.get("category") not in [
+                            "NarrativeText",
+                            "UncategorizedText",
+                            "Formula",
+                            "FigureCaption",
+                            "ListItem",
+                            "Address",
+                            "EmailAddress",
+                        ]:
+                            logger.warning(
+                                f"Unknown category {doc.metadata.get('category')}"
+                            )
                         page_content.append(doc.page_content)
                 if self.mode == "single":
-                    yield Document(page_content=self.pages_delimitor.join(page_content),
-                                   metadata=doc_metadata)
+                    yield Document(
+                        page_content=self.pages_delimitor.join(page_content),
+                        metadata=doc_metadata,
+                    )
                 else:
                     if page_content:
-                        yield Document(page_content="\n".join(page_content),
-                                       metadata=doc_metadata|
-                                                         {"page": page_number})
-    def _convert_table(self,html_table:Optional[str]) -> str:
+                        yield Document(
+                            page_content="\n".join(page_content),
+                            metadata=doc_metadata | {"page": page_number},
+                        )
+
+    def _convert_table(self, html_table: Optional[str]) -> str:
         if not self.extract_tables:
             return ""
         if not html_table:
@@ -347,6 +388,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
         elif self.extract_tables == "markdown":
             try:
                 from markdownify import markdownify as md
+
                 return md(html_table)
             except ImportError:
                 raise ImportError(
@@ -361,21 +403,22 @@ class UnstructuredPDFParser(ImagesPdfParser):
 
 
 class UnstructuredPDFLoader(BasePDFLoader):
-    def __init__(self,
-                 file_path: Union[str, List[str], Path, List[Path]],
-                 *,
-                 headers: Optional[Dict] = None,
-                 mode: Literal["single", "paged"] = "single",
-                 pages_delimitor: str = "\n\n",
-                 extract_images: bool = False,
-                 partition_via_api: bool = False,
-                 post_processors: Optional[list[Callable[[str], str]]] = None,
-                 # SDK parameters
-                 api_key: Optional[str] = None,
-                 client: Optional[UnstructuredClient] = None,
-                 password:Optional[str] = None,
-                 **unstructured_kwargs: Any,
-                 ) -> None:
+    def __init__(
+        self,
+        file_path: Union[str, List[str], Path, List[Path]],
+        *,
+        headers: Optional[Dict] = None,
+        mode: Literal["single", "paged"] = "single",
+        pages_delimitor: str = "\n\n",
+        extract_images: bool = False,
+        partition_via_api: bool = False,
+        post_processors: Optional[list[Callable[[str], str]]] = None,
+        # SDK parameters
+        api_key: Optional[str] = None,
+        client: Optional[UnstructuredClient] = None,
+        password: Optional[str] = None,
+        **unstructured_kwargs: Any,
+    ) -> None:
         super().__init__(file_path, headers=headers)
 
         self.parser = UnstructuredPDFParser(
@@ -391,12 +434,13 @@ class UnstructuredPDFLoader(BasePDFLoader):
         )
 
     def lazy_load(
-            self,
+        self,
     ) -> Iterator[Document]:
         """Lazy load given path as pages."""
         if self.web_path:
-            blob = Blob.from_data(open(self.file_path, "rb").read(),
-                                  path=self.web_path)  # type: ignore[attr-defined]
+            blob = Blob.from_data(
+                open(self.file_path, "rb").read(), path=self.web_path
+            )  # type: ignore[attr-defined]
         else:
             blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
         yield from self.parser.lazy_parse(blob)
@@ -485,18 +529,18 @@ class UnstructuredLoader(BaseLoader):
     """  # noqa: E501
 
     def __init__(
-            self,
-            file_path: Optional[str | Path | list[str] | list[Path]] = None,
-            *,
-            file: Optional[IO[bytes] | list[IO[bytes]]] = None,
-            partition_via_api: bool = False,
-            post_processors: Optional[list[Callable[[str], str]]] = None,
-            # SDK parameters
-            api_key: Optional[str] = None,
-            client: Optional[UnstructuredClient] = None,
-            url: Optional[str] = None,
-            web_url: Optional[str] = None,
-            **kwargs: Any,
+        self,
+        file_path: Optional[str | Path | list[str] | list[Path]] = None,
+        *,
+        file: Optional[IO[bytes] | list[IO[bytes]]] = None,
+        partition_via_api: bool = False,
+        post_processors: Optional[list[Callable[[str], str]]] = None,
+        # SDK parameters
+        api_key: Optional[str] = None,
+        client: Optional[UnstructuredClient] = None,
+        url: Optional[str] = None,
+        web_url: Optional[str] = None,
+        **kwargs: Any,
     ):
         """Initialize loader."""
         if file_path is not None and file is not None:
@@ -532,7 +576,7 @@ class UnstructuredLoader(BaseLoader):
         """Load file(s) to the _UnstructuredBaseLoader."""
 
         def load_file(
-                f: Optional[IO[bytes]] = None, f_path: Optional[str | Path] = None
+            f: Optional[IO[bytes]] = None, f_path: Optional[str | Path] = None
         ) -> Iterator[Document]:
             """Load an individual file to the _UnstructuredBaseLoader."""
             return _SingleDocumentLoader(
@@ -567,15 +611,15 @@ class _SingleDocumentLoader(BaseLoader):
     """
 
     def __init__(
-            self,
-            file_path: Optional[str | Path] = None,
-            *,
-            client: UnstructuredClient,
-            file: Optional[IO[bytes]] = None,
-            partition_via_api: bool = False,
-            post_processors: Optional[list[Callable[[str], str]]] = None,
-            password: Optional[str] = None,
-            **kwargs: Any,
+        self,
+        file_path: Optional[str | Path] = None,
+        *,
+        client: UnstructuredClient,
+        file: Optional[IO[bytes]] = None,
+        partition_via_api: bool = False,
+        post_processors: Optional[list[Callable[[str], str]]] = None,
+        password: Optional[str] = None,
+        **kwargs: Any,
     ):
         """Initialize loader."""
         self.file_path = str(file_path) if isinstance(file_path, Path) else file_path
@@ -631,8 +675,10 @@ class _SingleDocumentLoader(BaseLoader):
             )
 
         return partition(
-            file=self.file, filename=self.file_path, password=self.password,
-            **self.unstructured_kwargs
+            file=self.file,
+            filename=self.file_path,
+            password=self.password,
+            **self.unstructured_kwargs,
         )  # type: ignore
 
     @property
@@ -669,7 +715,7 @@ class _SingleDocumentLoader(BaseLoader):
         )
 
     def _convert_elements_to_dicts(
-            self, elements: list[Element]
+        self, elements: list[Element]
     ) -> list[dict[str, Any]]:
         return [element.to_dict() for element in elements]
 
@@ -678,7 +724,8 @@ class _SingleDocumentLoader(BaseLoader):
     #     return {"source": self.file_path} if self.file_path else {}
     #
     def _get_metadata(self) -> Dict[str, Any]:
-        from pdfminer.pdfpage import PDFPage, PDFParser, PDFDocument
+        from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
+
         # Create a PDF parser object associated with the file object.
         parser = PDFParser(self.file)
         # Create a PDF document object that stores the document structure.
@@ -702,9 +749,8 @@ class _SingleDocumentLoader(BaseLoader):
         metadata["total_pages"] = len(list(PDFPage.create_pages(doc)))
         return metadata
 
-
     def _post_process_elements_json(
-            self, elements_json: list[dict[str, Any]]
+        self, elements_json: list[dict[str, Any]]
     ) -> list[dict[str, Any]]:
         """Apply post processing functions to extracted unstructured elements.
 

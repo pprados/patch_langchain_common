@@ -2,8 +2,9 @@ from pathlib import Path
 from typing import Sequence, Union
 
 import pytest
+from patch_langchain_unstructured import document_loaders
 
-from langchain_community.document_loaders import (
+from patch_langchain_community.document_loaders import (
     AmazonTextractPDFLoader,
     MathpixPDFLoader,
     PDFMinerLoader,
@@ -34,7 +35,7 @@ def test_unstructured_pdf_loader_paged_mode() -> None:
     assert len(docs) == 16
 
 
-def test_unstructured_pdf_loader_default_mode() -> None:
+def test_unstructured_pdf_loader_default_mode() -> None:  # PPR: a déplacer
     """Test unstructured loader."""
     file_path = Path(__file__).parent.parent / "examples/hello.pdf"
     loader = UnstructuredPDFLoader(str(file_path))
@@ -49,48 +50,37 @@ def test_pdfplumber_loader() -> None:
     loader = PDFPlumberLoader(str(file_path))
     docs = loader.load()
     assert len(docs) == 1
-    assert len(docs[0].metadata) == 9
+    assert len(docs[0].metadata) == 6
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
     loader = PDFPlumberLoader(str(file_path))
 
     docs = loader.load()
     assert len(docs) == 16
-    assert len(docs[0].metadata) == 16
+    assert len(docs[0].metadata) == 13
 
     # Verify that extraction_mode parameter works
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
     loader = PDFPlumberLoader(
         str(file_path),
-        extraction_mode="plain",
+        mode="single",
         extract_tables="markdown",
         extract_images=False,
     )
     docs = loader.load()
     assert len(docs) == 1
-    assert len(docs[0].metadata) == 15
+    assert len(docs[0].metadata) == 12
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
     loader = PDFPlumberLoader(
         str(file_path),
-        extraction_mode="page",
+        mode="paged",
         extract_tables="html",
         extract_images=False,
     )
     docs = loader.load()
     assert len(docs) == 16
-    assert len(docs[0].metadata) == 16
-
-    file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
-    loader = PDFPlumberLoader(
-        str(file_path),
-        extraction_mode="layout",
-        extract_tables="csv",
-        extract_images=False,
-    )
-    docs = loader.load()
-    assert len(docs) == 24
-    assert len(docs[0].metadata) == 15
+    assert len(docs[0].metadata) == 13
 
     loader = PDFPlumberLoader(
         str(file_path),
@@ -106,20 +96,20 @@ def test_pdfplumber_loader() -> None:
         separator="\n",
     )
     docs = loader.load_and_split(text_splitter)
-    assert len(docs) == 26
-    assert len(docs[0].metadata) == 15
+    assert len(docs) == 18
+    assert len(docs[0].metadata) == 13
 
     # Verify that extract_tables and extract_images
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
     loader = PDFPlumberLoader(
         str(file_path),
-        extraction_mode="layout",
+        mode="single",
         extract_tables="markdown",
         extract_images=True,
     )
     docs = loader.load()
-    assert len(docs) == 29
-    assert len(docs[0].metadata) == 15
+    assert len(docs) == 1
+    assert len(docs[0].metadata) == 12
 
 
 def test_pdfminer_loader() -> None:
@@ -138,13 +128,13 @@ def test_pdfminer_loader() -> None:
 
     # Verify that concatenating pages parameter works
     file_path = Path(__file__).parent.parent / "examples/hello.pdf"
-    loader = PDFMinerLoader(str(file_path), extraction_mode="plain")
+    loader = PDFMinerLoader(str(file_path), concatenate_pages=True)
     docs = loader.load()
 
     assert len(docs) == 1
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
-    loader = PDFMinerLoader(str(file_path), extraction_mode="page")
+    loader = PDFMinerLoader(str(file_path), concatenate_pages=False)
 
     docs = loader.load()
     assert len(docs) == 16

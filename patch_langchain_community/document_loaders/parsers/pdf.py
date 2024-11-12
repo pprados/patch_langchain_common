@@ -29,6 +29,8 @@ import pdfplumber
 import pymupdf
 import pypdf  # PPR
 import pypdfium2
+from langchain_community.document_loaders.base import BaseBlobParser
+from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core._api.deprecation import (
     deprecated,
 )
@@ -37,9 +39,6 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import BasePromptTemplate, PromptTemplate
 from PIL import Image
-
-from langchain_community.document_loaders.base import BaseBlobParser
-from langchain_community.document_loaders.blob_loaders import Blob
 
 if TYPE_CHECKING:
     import pdfplumber.page
@@ -550,11 +549,9 @@ class PDFMinerParser(ImagesPdfParser):
         if concatenate_pages is not None:
             warnings.warn(
                 "`concatenate_pages` parameter is deprecated. "
-                "Use `mode='single'` instead."
+                "Use `mode='single' or 'paged'` instead."
             )
-            mode = "single" if concatenate_pages else "paged"
-            if mode != self.mode:
-                warnings.warn(f"Overriding `concatenate_pages` to " f"`mode='{mode}'`")
+            self.mode = "single" if concatenate_pages else "paged"
 
     @staticmethod
     def decode_text(s: Union[bytes, str]) -> str:
@@ -1109,9 +1106,9 @@ class PDFPlumberParser(ImagesPdfParser):
                 )
             )
             for page in doc.pages:
-                tables_bbox: List[Tuple[float, float, float, float]] = (
-                    self._extract_tables_bbox_from_page(page)
-                )
+                tables_bbox: List[
+                    Tuple[float, float, float, float]
+                ] = self._extract_tables_bbox_from_page(page)
                 tables_content = self._extract_tables_from_page(page)
                 images_bbox = [geometry.obj_to_bbox(image) for image in page.images]
                 image_from_page = self._extract_images_from_page(page)
@@ -1129,7 +1126,7 @@ class PDFPlumberParser(ImagesPdfParser):
                         page_text.append(_join_tables + self._convert_table(content))
                     else:  # Image
                         page_text.append(
-                            _join_images + next(self.convert_image_to_text([images]))
+                            _join_images + next(self.convert_image_to_text([content]))
                         )
 
                 all_text = "".join(page_text)
@@ -1176,7 +1173,11 @@ class PDFPlumberParser(ImagesPdfParser):
         **kwargs: Any,
     ) -> List[Union[str, List[List[str]], np.ndarray]]:
         """Process the page content based on dedupe."""
-        from pdfplumber.utils import geometry, text  # import WordExctractor, TextMap
+        from pdfplumber.utils import (
+            dedupe_chars,
+            geometry,
+            text,
+        )
 
         # Iterate over words. If a word is in a table,
         # yield the accumulated text, and the table
@@ -1191,8 +1192,8 @@ class PDFPlumberParser(ImagesPdfParser):
                 or geometry.objects_to_bbox(page.chars),
             }
         )
+        chars = page.dedupe_chars().objects["char"] if self.dedupe else page.chars
 
-        chars = page.dedup_chars() if self.dedupe else page.chars
         extractor = text.WordExtractor(
             **{k: kwargs[k] for k in text.WORD_EXTRACTOR_KWARGS if k in kwargs}
         )
