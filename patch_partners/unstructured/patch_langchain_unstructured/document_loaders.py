@@ -15,7 +15,6 @@ from typing import (
     Iterator,
     Literal,
     Optional,
-    Tuple,
     Union,
     cast,
 )
@@ -24,11 +23,11 @@ import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 from langchain_community.document_loaders.blob_loaders import Blob
-from langchain_core.document_loaders.base import BaseBlobParser, BaseLoader
+from langchain_core.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 from PIL import Image
 from typing_extensions import List, TypeAlias
-from unstructured_client import UnstructuredClient  # type: ignore
+from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared  # type: ignore
 
 from patch_langchain_community.document_loaders.parsers.pdf import (
@@ -129,7 +128,8 @@ class UnstructuredPDFParser(ImagesPdfParser):
     """Unstructured document loader interface.
 
     Setup:
-        Install ``langchain-unstructured`` and set environment variable ``UNSTRUCTURED_API_KEY``.
+        Install ``langchain-unstructured`` and set environment
+        variable ``UNSTRUCTURED_API_KEY``.
 
         .. code-block:: bash
             pip install -U langchain-unstructured
@@ -164,7 +164,24 @@ class UnstructuredPDFParser(ImagesPdfParser):
         .. code-block:: python
 
             1 2 0 2
-            {'source': './example_data/layout-parser-paper.pdf', 'coordinates': {'points': ((16.34, 213.36), (16.34, 253.36), (36.34, 253.36), (36.34, 213.36)), 'system': 'PixelSpace', 'layout_width': 612, 'layout_height': 792}, 'file_directory': './example_data', 'filename': 'layout-parser-paper.pdf', 'languages': ['eng'], 'last_modified': '2024-07-25T21:28:58', 'page_number': 1, 'filetype': 'application/pdf', 'category': 'UncategorizedText', 'element_id': 'd3ce55f220dfb75891b4394a18bcb973'}
+            {'source': './example_data/layout-parser-paper.pdf',
+            'coordinates':
+            {'points': (
+                (16.34, 213.36),
+                (16.34, 253.36),
+                (36.34, 253.36),
+                (36.34, 213.36)),
+            'system': 'PixelSpace',
+            'layout_width': 612,
+            'layout_height': 792},
+            'file_directory': './example_data',
+            'filename': 'layout-parser-paper.pdf',
+            'languages': ['eng'],
+            'last_modified': '2024-07-25T21:28:58',
+            'page_number': 1,
+            'filetype': 'application/pdf',
+            'category': 'UncategorizedText',
+            'element_id': 'd3ce55f220dfb75891b4394a18bcb973'}
 
 
     Async load:
@@ -177,7 +194,24 @@ class UnstructuredPDFParser(ImagesPdfParser):
         .. code-block:: python
 
             1 2 0 2
-            {'source': './example_data/layout-parser-paper.pdf', 'coordinates': {'points': ((16.34, 213.36), (16.34, 253.36), (36.34, 253.36), (36.34, 213.36)), 'system': 'PixelSpace', 'layout_width': 612, 'layout_height': 792}, 'file_directory': './example_data', 'filename': 'layout-parser-paper.pdf', 'languages': ['eng'], 'last_modified': '2024-07-25T21:28:58', 'page_number': 1, 'filetype': 'application/pdf', 'category': 'UncategorizedText', 'element_id': 'd3ce55f220dfb75891b4394a18bcb973'}
+            {'source': './example_data/layout-parser-paper.pdf',
+            'coordinates': {
+            'points': (
+            (16.34, 213.36),
+            (16.34, 253.36),
+            (36.34, 253.36),
+            (36.34, 213.36)),
+            'system': 'PixelSpace',
+            'layout_width': 612,
+            'layout_height': 792},
+            'file_directory': './example_data',
+            'filename': 'layout-parser-paper.pdf',
+            'languages': ['eng'],
+            'last_modified': '2024-07-25T21:28:58',
+            'page_number': 1,
+            'filetype': 'application/pdf',
+            'category': 'UncategorizedText',
+            'element_id': 'd3ce55f220dfb75891b4394a18bcb973'}
 
 
     Load URL:
@@ -188,7 +222,14 @@ class UnstructuredPDFParser(ImagesPdfParser):
 
         .. code-block:: none
 
-            page_content='Example Domain' metadata={'category_depth': 0, 'languages': ['eng'], 'filetype': 'text/html', 'url': 'https://www.example.com/', 'category': 'Title', 'element_id': 'fdaa78d856f9d143aeeed85bf23f58f8'}
+            page_content='Example Domain'
+                metadata={
+                    'category_depth': 0,
+                    'languages': ['eng'],
+                    'filetype': 'text/html',
+                    'url': 'https://www.example.com/',
+                    'category': 'Title',
+                    'element_id': 'fdaa78d856f9d143aeeed85bf23f58f8'}
 
         .. code-block:: python
 
@@ -196,7 +237,16 @@ class UnstructuredPDFParser(ImagesPdfParser):
 
         .. code-block:: none
 
-            page_content='This domain is for use in illustrative examples in documents. You may use this domain in literature without prior coordination or asking for permission.' metadata={'languages': ['eng'], 'parent_id': 'fdaa78d856f9d143aeeed85bf23f58f8', 'filetype': 'text/html', 'url': 'https://www.example.com/', 'category': 'NarrativeText', 'element_id': '3652b8458b0688639f973fe36253c992'}
+            page_content='This domain is for use in illustrative examples in documents.
+            You may use this domain in literature without prior coordination or asking
+            for permission.'
+            metadata={
+                'languages': ['eng'],
+                'parent_id': 'fdaa78d856f9d143aeeed85bf23f58f8',
+                'filetype': 'text/html',
+                'url': 'https://www.example.com/',
+                'category': 'NarrativeText',
+                'element_id': '3652b8458b0688639f973fe36253c992'}
 
     """
 
@@ -741,8 +791,9 @@ class _SingleDocumentLoader(BaseLoader):
                 try:
                     metadata[k] = PDFMinerParser.resolve_and_decode(v)
                 except Exception as e:  # pragma: nocover
-                    # This metadata value could not be parsed. Instead of failing the PDF
-                    # read, treat it as a warning only if `strict_metadata=False`.
+                    # This metadata value could not be parsed. Instead of failing
+                    # the PDF read, treat it as a warning only if
+                    # `strict_metadata=False`.
                     logger.warning(
                         f'[WARNING] Metadata key "{k}" could not be parsed due to '
                         f"exception: {str(e)}"

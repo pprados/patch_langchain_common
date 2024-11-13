@@ -3,8 +3,9 @@
 import os
 import re
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, List
 
+import numpy as np
 import pytest
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
@@ -158,12 +159,12 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
 @pytest.mark.parametrize(
     "parser_factory,params",
     [
-        ("PyPDFParser", {"extraction_mode": "plain"}),
+        # ("PyPDFParser", {"extraction_mode": "plain"}),
         # ("PyPDFParser", {"extraction_mode": "layout"}),
         # ("PyPDFium2Parser", {}),
         # ("PDFMinerParser", {}),
         # ("PyMuPDFParser", {}),
-        # ("PDFPlumberParser", {}),
+        ("PDFPlumberParser", {}),
     ],
 )
 def test_standard_parameters(
@@ -189,7 +190,11 @@ def test_standard_parameters(
         if extract_images:
             images = []
             for doc in docs:
-                _HTML_image = r'<img\s+[^>]*src="([^"]+)"(?:\s+alt="([^"]*)")?(?:\s+title="([^"]*)")?[^>]*>'
+                _HTML_image = (
+                    r"<img\s+[^>]*"
+                    r'src="([^"]+)"(?:\s+alt="([^"]*)")?(?:\s+'
+                    r'title="([^"]*)")?[^>]*>'
+                )
                 _markdown_image = r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"([^\"]+)\")?\)"
                 match = re.findall(_markdown_image, doc.page_content)
                 if match:
@@ -206,7 +211,10 @@ def test_standard_parameters(
 
     os.environ["SCARF_NO_ANALYTICS"] = "false"
     os.environ["DO_NOT_TRACK"] = "true"
-    images_to_text = lambda images: iter(["![image](.)"] * len(images))
+
+    def images_to_text(images: List[np.ndarray]) -> Iterator[str]:
+        return iter(["![image](.)"] * len(images))
+
     parser_class = getattr(pdf_parsers, parser_factory)
     parser = parser_class(
         mode=mode,
@@ -250,7 +258,6 @@ def test_parser_with_table(
         docs = list(doc_generator)
         tables = []
         for doc in docs:
-            print(doc.page_content)  # FIXME
             if extract_tables == "markdown":
                 pattern = (
                     r"(?s)("
@@ -283,7 +290,10 @@ def test_parser_with_table(
 
     os.environ["SCARF_NO_ANALYTICS"] = "false"
     os.environ["DO_NOT_TRACK"] = "true"
-    images_to_text = lambda images: iter(["<IMAGE />"] * len(images))
+
+    def images_to_text(images: List[np.ndarray]) -> Iterator[str]:
+        return iter(["<IMAGE />"] * len(images))
+
     parser_class = getattr(pdf_parsers, parser_factory)
     parser = parser_class(
         mode=mode,

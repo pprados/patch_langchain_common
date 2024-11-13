@@ -19,7 +19,6 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
-    Tuple,
     Union,
     cast,
 )
@@ -537,8 +536,9 @@ class PyMuPDFLoader(BasePDFLoader):
             warn_deprecated(
                 since="0.2.17",
                 removal="0.3",
-                message=f"Received runtime arguments {kwargs}. Passing runtime args to `load`"
-                f" is deprecated. Please pass arguments during initialization instead.",
+                message=f"Received runtime arguments {kwargs}. Passing runtime args "
+                f"to `load` is deprecated. Please pass arguments during "
+                f"initialization instead.",
             )
             parser = copy.deepcopy(self.parser)
             parser.text_kwargs.update(kwargs)
@@ -814,9 +814,9 @@ class MathpixPDFLoader(BasePDFLoader):
                 # This indicates an error with the PDF processing
                 raise ValueError("Unable to retrieve PDF from Mathpix")
             else:
-                print(
+                print(  # noqa: T201
                     f"Status: {status}, waiting for processing to complete"
-                )  # noqa: T201
+                )
                 time.sleep(5)
         raise TimeoutError
 

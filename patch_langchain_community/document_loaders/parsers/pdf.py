@@ -2,6 +2,7 @@
 
 import base64
 import html
+import io
 import logging
 import threading
 import warnings
@@ -11,6 +12,7 @@ from tempfile import TemporaryDirectory
 from typing import (
     TYPE_CHECKING,
     Any,
+    BinaryIO,
     Callable,
     Dict,
     Iterable,
@@ -20,7 +22,9 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Tuple,
     Union,
+    cast,
 )
 from urllib.parse import urlparse
 
@@ -45,7 +49,19 @@ if TYPE_CHECKING:
     import pymupdf.pymupdf
     import pypdf._page
     import pypdfium2._helpers.page
-    from pdfplumber.utils import geometry, text  # import WordExctractor, TextMap
+    from pdfminer.converter import PDFLayoutAnalyzer
+    from pdfminer.layout import (
+        LAParams,
+        LTContainer,
+        LTImage,
+        LTItem,
+        LTPage,
+        LTText,
+        LTTextContainer,
+        LTTextLine,
+    )
+    from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
+    from pdfminer.pdfpage import PDFPage
     from pypdf import PageObject
     from textractor.data.text_linearization_config import TextLinearizationConfig
 
@@ -203,7 +219,7 @@ def convert_images_to_text_with_rapidocr(
                     result = f"![{result}](.)"
                 elif format == "html":
                     result = f'<img alt="{html.escape(result, quote=True)}" />'
-            logger.debug(f"RapidOCR text: " + result.replace("\n", "\\n"))
+            logger.debug("RapidOCR text: " + result.replace("\n", "\\n"))
             yield result
 
     return _convert_images_to_text
@@ -252,7 +268,7 @@ def convert_images_to_text_with_tesseract(
                     result = f"![{result}](.)"
                 elif format == "html":
                     result = f'<img alt="{html.escape(result, quote=True)}" />'
-            logger.debug(f"Tesseract text: " + result.replace("\n", "\\n"))
+            logger.debug("Tesseract text: " + result.replace("\n", "\\n"))
             yield result
 
     return _convert_images_to_text
@@ -329,7 +345,7 @@ def convert_images_to_description(
                     result = f'<img alt="{str(html.escape(result, quote=True))}" />'
                 else:
                     raise ValueError(f"Unknown format: {format}")
-            logger.debug(f"LLM description: " + result.replace("\n", "\\n"))
+            logger.debug("LLM description: " + result.replace("\n", "\\n"))
             yield result
 
     return _convert_images_to_description
@@ -376,8 +392,8 @@ class PyPDFParser(ImagesPdfParser):
         Args:
             password: Password to open the PDF.
             mode: Extraction mode to use. Either "single" or "paged".
-            pages_delimitor: Delimitor to use between pages.
-            May be <!--PAGE BREAK -->
+            pages_delimitor: Delimiter to use between pages.
+                             May be r'\f', '<!--PAGE BREAK -->', ...
             extract_images: Whether to extract images from PDF.
             images_to_text: Function to extract text from images.
 
@@ -508,12 +524,6 @@ class PyPDFParser(ImagesPdfParser):
         )
 
 
-from pdfminer.converter import *
-from pdfminer.layout import *
-from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
-from pdfminer.pdfpage import PDFPage
-
-
 class PDFMinerParser(ImagesPdfParser):
     """Parse `PDF` using `PDFMiner`."""
 
@@ -534,15 +544,17 @@ class PDFMinerParser(ImagesPdfParser):
             extract_images: Whether to extract images from PDF.
             images_to_text: Function to extract text from images.
             mode: Extraction mode to use. Either "single" or "paged".
-            pages_delimitor: Delimitor to use between pages.
-            concatenatef_pages: Deprecated. If True, concatenate all PDF pages into one a single
-                               document. Otherwise, return one document per page.
+            pages_delimitor: Delimiter to use between pages.
+                             May be r'\f', '<!--PAGE BREAK -->', ...
+            concatenate_pages: Deprecated. If True, concatenate all PDF pages
+                into one a single document. Otherwise, return one document per page.
         """
         try:
             import pdfminer  # noqa:F401
         except ImportError:
             raise ImportError(
-                "pdfminer package not found, please install it with `pip install pdfminer`"
+                "pdfminer package not found, please install it "
+                "with `pip install pdfminer`"
             )
         super().__init__(extract_images, images_to_text)
         if mode not in ["single", "paged"]:
@@ -766,7 +778,8 @@ class PyMuPDFParser(ImagesPdfParser):
         Args:
             password: Password to open the PDF.
             mode: Extraction mode to use. Either "single" or "paged".
-            pages_delimitor: Delimitor to use between pages.
+            pages_delimitor: Delimiter to use between pages.
+                             May be r'\f', '<!--PAGE BREAK -->', ...
             extract_images: Whether to extract images from PDF.
             images_to_text: Function to extract text from images.
             extract_tables_settings: Whether to extract tables from PDF.
@@ -776,7 +789,8 @@ class PyMuPDFParser(ImagesPdfParser):
             import pymupdf  # noqa:F401
         except ImportError:
             raise ImportError(
-                "pymupdf package not found, please install it with `pip install pymupdf`"
+                "pymupdf package not found, please install it "
+                "with `pip install pymupdf`"
             )
 
         super().__init__(extract_images, images_to_text)
@@ -956,7 +970,8 @@ class PyPDFium2Parser(ImagesPdfParser):
         Args:
             password: Password to open the PDF.
             mode: Extraction mode to use. Either "single" or "paged".
-            pages_delimitor: Delimitor to use between pages.
+            pages_delimitor: Delimiter to use between pages.
+                             May be r'\f', '<!--PAGE BREAK -->', ...
             extract_images: Whether to extract images from PDF.
             images_to_text: Function to extract text from images.
         """
@@ -1074,7 +1089,8 @@ class PDFPlumberParser(ImagesPdfParser):
             import pdfplumber  # noqa:F401
         except ImportError:
             raise ImportError(
-                "pdfplumber package not found, please install it with `pip install pdfplumber`"
+                "pdfplumber package not found, please install it "
+                "with `pip install pdfplumber`"
             )
 
         super().__init__(extract_images, images_to_text)
