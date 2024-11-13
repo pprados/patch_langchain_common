@@ -5,22 +5,24 @@ if TYPE_CHECKING:
     from patch_langchain_community.document_loaders.parsers.pdf import (
         PDFMinerParser,
         PDFPlumberParser,
-        PDFRouterParser,
-        PyMuPDF4LLMParser,
         PyMuPDFParser,
         PyPDFium2Parser,
         PyPDFParser,
     )
-
+from patch_langchain_community.document_loaders.parsers.new_pdf import (
+    PDFRouterParser,
+    PyMuPDF4LLMParser,
+)
 
 _module_lookup = {
     "PDFMinerParser": "langchain_community.document_loaders.parsers.pdf",
     "PDFPlumberParser": "langchain_community.document_loaders.parsers.pdf",
     "PyMuPDFParser": "langchain_community.document_loaders.parsers.pdf",
-    "PyMuPDF4LLMParser": "langchain_community.document_loaders.parsers.pdf",
     "PyPDFParser": "langchain_community.document_loaders.parsers.pdf",
     "PyPDFium2Parser": "langchain_community.document_loaders.parsers.pdf",
-    "PDFRouterParser": "langchain_community.document_loaders.parsers.pdf",
+
+    "PyMuPDF4LLMParser": "langchain_community.document_loaders.parsers.new_pdf",
+    "PDFRouterParser": "langchain_community.document_loaders.parsers.new_pdf",
 }
 
 

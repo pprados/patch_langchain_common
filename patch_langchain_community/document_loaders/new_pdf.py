@@ -1,5 +1,6 @@
 import logging
 import re
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -15,12 +16,10 @@ from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.document_loaders import BaseBlobParser
 from langchain_core.documents import Document
 
-from document_loaders.pdf import BasePDFLoader
-from patch_langchain_community.document_loaders.parsers.pdf import (
-    PDFRouterParser,
-    PyMuPDF4LLMParser,
-    _default_page_delimitor,
-)
+from patch_langchain_community.document_loaders.pdf import BasePDFLoader
+
+from .parsers.pdf import _default_page_delimitor
+from .parsers.new_pdf import PyMuPDF4LLMParser, PDFRouterParser
 
 if TYPE_CHECKING:
     pass
@@ -33,10 +32,10 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "paged"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         extract_images: bool = False,  # FIXME
         extract_tables: Optional[Literal["markdown"]] = None,  # FIXME
@@ -95,7 +94,7 @@ class PDFRouterLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         *,
         routes: List[
             Tuple[

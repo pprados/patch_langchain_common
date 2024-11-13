@@ -29,6 +29,7 @@ pdfminer-six = { version= "^20231228", optional = false }
 html_to_markdown = { version = "^1", optional = false }
 pymupdf4llm = { version = "^0.0.17", optional = false }
 markdownify = { version = "^0.13.1", optional = false }
+amazon-textract-caller = { version = "^0.2.4", optional = false }
 
 [tool.poetry.group.dev]
 optional = true

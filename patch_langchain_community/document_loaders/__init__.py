@@ -34,6 +34,9 @@ if TYPE_CHECKING:
         PyPDFLoader,
         UnstructuredPDFLoader,
     )
+    from .new_pdf import (
+        PyMuPDF4LLMLoader,
+    )
 
 
 _module_lookup = {
@@ -47,11 +50,12 @@ _module_lookup = {
     "PDFRouterLoader": "patch_langchain_community.document_loaders.pdf",
     "PagedPDFSplitter": "patch_langchain_community.document_loaders.pdf",
     "PyMuPDFLoader": "patch_langchain_community.document_loaders.pdf",
-    "PyMuPDF4LLMLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFDirectoryLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFium2Loader": "patch_langchain_community.document_loaders.pdf",
     "UnstructuredPDFLoader": "patch_langchain_community.document_loaders.pdf",
+
+    "PyMuPDF4LLMLoader": "patch_langchain_community.document_loaders.new_pdf",
 }
 
 
@@ -76,4 +80,6 @@ __all__ = [
     "PyPDFLoader",
     "PyPDFium2Loader",
     "UnstructuredPDFLoader",
+
+    "PyMuPDF4LLMLoader",
 ]

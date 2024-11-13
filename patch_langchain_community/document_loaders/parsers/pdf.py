@@ -33,6 +33,7 @@ import pdfplumber
 import pymupdf
 import pypdf  # PPR
 import pypdfium2
+from PIL import Image
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core._api.deprecation import (
@@ -42,7 +43,6 @@ from langchain_core.documents import Document
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import BasePromptTemplate, PromptTemplate
-from PIL import Image
 
 if TYPE_CHECKING:
     import pdfplumber.page
@@ -141,7 +141,7 @@ def _merge_text_and_extras(extras: List[str], text_from_page: str) -> str:
 
 @deprecated(since="3.0.0", alternative="Use Parser.images_to_text()")
 def extract_from_images_with_rapidocr(
-    images: Sequence[Union[Iterable[np.ndarray], bytes]],
+        images: Sequence[Union[Iterable[np.ndarray], bytes]],
 ) -> str:
     """Extract text from images with RapidOCR.
 
@@ -176,9 +176,9 @@ CONVERT_IMAGE_TO_TEXT = Optional[Callable[[Iterable[np.ndarray]], Iterator[str]]
 
 
 def convert_images_to_text_with_rapidocr(
-    # Default to text format to be compatible with previous versions.
-    *,
-    format: Literal["text", "markdown", "html"] = "text",
+        # Default to text format to be compatible with previous versions.
+        *,
+        format: Literal["text", "markdown", "html"] = "text",
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using RapidOCR.
@@ -226,10 +226,10 @@ def convert_images_to_text_with_rapidocr(
 
 
 def convert_images_to_text_with_tesseract(
-    # Default to text format to be compatible with previous versions.
-    *,
-    format: Literal["text", "markdown", "html"] = "text",
-    langs: List[str] = ["eng"],
+        # Default to text format to be compatible with previous versions.
+        *,
+        format: Literal["text", "markdown", "html"] = "text",
+        langs: List[str] = ["eng"],
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using RapidOCR.
@@ -283,10 +283,10 @@ _prompt_images_to_description = PromptTemplate.from_template(
 
 
 def convert_images_to_description(
-    model: BaseChatModel,
-    *,
-    prompt: BasePromptTemplate = _prompt_images_to_description,
-    format: Literal["text", "markdown", "html"] = "markdown",
+        model: BaseChatModel,
+        *,
+        prompt: BasePromptTemplate = _prompt_images_to_description,
+        format: Literal["text", "markdown", "html"] = "markdown",
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using a multimodal model.
@@ -300,7 +300,7 @@ def convert_images_to_description(
     """
 
     def _convert_images_to_description(
-        images: Iterable[np.ndarray],
+            images: Iterable[np.ndarray],
     ) -> Iterator[str]:
         """Describe an image and extract text.
         Use a multimodal model to describe the images.
@@ -355,9 +355,9 @@ class ImagesPdfParser(BaseBlobParser):
     """Abstract interface for blob parsers with OCR."""
 
     def __init__(
-        self,
-        extract_images: bool,
-        images_to_text: CONVERT_IMAGE_TO_TEXT,
+            self,
+            extract_images: bool,
+            images_to_text: CONVERT_IMAGE_TO_TEXT,
     ):
         """Extract text from images.
 
@@ -377,15 +377,15 @@ class PyPDFParser(ImagesPdfParser):
     """Load `PDF` using `pypdf`"""
 
     def __init__(
-        self,
-        password: Optional[Union[str, bytes]] = None,
-        extract_images: bool = False,
-        *,  # Move on top ?
-        mode: Literal["single", "paged"] = "paged",
-        pages_delimitor: str = _default_page_delimitor,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-        extraction_mode: Literal["plain", "layout"] = "plain",
-        extraction_kwargs: Optional[Dict[str, Any]] = None,
+            self,
+            password: Optional[Union[str, bytes]] = None,
+            extract_images: bool = False,
+            *,  # Move on top ?
+            mode: Literal["single", "paged"] = "paged",
+            pages_delimitor: str = _default_page_delimitor,
+            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+            extraction_mode: Literal["plain", "layout"] = "plain",
+            extraction_kwargs: Optional[Dict[str, Any]] = None,
     ):
         """Initialize a parser based on PyPDF.
 
@@ -427,27 +427,27 @@ class PyPDFParser(ImagesPdfParser):
             """
 
             def before(
-                operator: Any,
-                operand_arguments: Any,
-                current_transformation_matrix: Any,
-                text_matrix: Any,
+                    operator: Any,
+                    operand_arguments: Any,
+                    current_transformation_matrix: Any,
+                    text_matrix: Any,
             ) -> None:
                 pass
 
             def after(
-                operator: Any,
-                operand_arguments: Any,
-                current_transformation_matrix: Any,
-                text_matrix: Any,
+                    operator: Any,
+                    operand_arguments: Any,
+                    current_transformation_matrix: Any,
+                    text_matrix: Any,
             ) -> None:
                 pass
 
             def text(
-                text: Any,
-                current_transformation_matrix: Any,
-                text_matrix: Any,
-                font_dictionary: Any,
-                font_size: Any,
+                    text: Any,
+                    current_transformation_matrix: Any,
+                    text_matrix: Any,
+                    font_dictionary: Any,
+                    font_size: Any,
             ) -> Any:
                 pass
 
@@ -493,8 +493,8 @@ class PyPDFParser(ImagesPdfParser):
     def extract_images_from_page(self, page: pypdf._page.PageObject) -> str:
         """Extract images from page and get the text with RapidOCR."""
         if (
-            not self.extract_images
-            or "/XObject" not in cast(dict, page["/Resources"]).keys()
+                not self.extract_images
+                or "/XObject" not in cast(dict, page["/Resources"]).keys()
         ):
             return ""
 
@@ -528,14 +528,14 @@ class PDFMinerParser(ImagesPdfParser):
     """Parse `PDF` using `PDFMiner`."""
 
     def __init__(
-        self,
-        extract_images: bool = False,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
-        pages_delimitor: str = _default_page_delimitor,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-        concatenate_pages: Optional[bool] = None,
+            self,
+            extract_images: bool = False,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "single",
+            pages_delimitor: str = _default_page_delimitor,
+            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+            concatenate_pages: Optional[bool] = None,
     ):
         """Initialize a parser based on PDFMiner.
 
@@ -616,10 +616,10 @@ class PDFMinerParser(ImagesPdfParser):
         return obj
 
     def _get_metadata(
-        self,
-        fp: BinaryIO,
-        password: str = "",
-        caching: bool = True,
+            self,
+            fp: BinaryIO,
+            password: str = "",
+            caching: bool = True,
     ) -> Dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
@@ -650,6 +650,11 @@ class PDFMinerParser(ImagesPdfParser):
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
         import io
+        from pdfminer.pdfpage import PDFPage
+        from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
+        from pdfminer.converter import PDFLayoutAnalyzer
+        from pdfminer.layout import (LAParams, LTContainer, LTImage, LTItem, LTPage,
+                                     LTText, LTTextContainer, LTTextLine)
 
         with blob.as_bytes_io() as pdf_file_obj, TemporaryDirectory() as tempdir:
             pages = PDFPage.get_pages(pdf_file_obj, password=self.password or "")
@@ -661,10 +666,10 @@ class PDFMinerParser(ImagesPdfParser):
 
             class Visitor(PDFLayoutAnalyzer):
                 def __init__(
-                    self,
-                    rsrcmgr: PDFResourceManager,
-                    pageno: int = 1,
-                    laparams: Optional[LAParams] = None,
+                        self,
+                        rsrcmgr: PDFResourceManager,
+                        pageno: int = 1,
+                        laparams: Optional[LAParams] = None,
                 ) -> None:
                     super().__init__(rsrcmgr, pageno=pageno, laparams=laparams)
 
@@ -760,18 +765,18 @@ class PyMuPDFParser(ImagesPdfParser):
     }
 
     def __init__(
-        self,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
-        pages_delimitor: str = _default_page_delimitor,
-        extract_images: bool = False,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-        extract_tables: Union[
-            Literal["csv"], Literal["markdown"], Literal["html"], None
-        ] = None,
-        extract_tables_settings: Optional[Dict[str, Any]] = None,
-        text_kwargs: Optional[Mapping[str, Any]] = None,
+            self,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "paged",
+            pages_delimitor: str = _default_page_delimitor,
+            extract_images: bool = False,
+            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+            extract_tables: Union[
+                Literal["csv"], Literal["markdown"], Literal["html"], None
+            ] = None,
+            extract_tables_settings: Optional[Dict[str, Any]] = None,
+            text_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> None:
         """Initialize the parser.
 
@@ -806,7 +811,7 @@ class PyMuPDFParser(ImagesPdfParser):
         self.extract_images = extract_images
         self.extract_tables = extract_tables
         self.extract_tables_settings = (
-            extract_tables_settings or PyMuPDFParser._default_extract_tables_settings
+                extract_tables_settings or PyMuPDFParser._default_extract_tables_settings
         )
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
@@ -841,7 +846,7 @@ class PyMuPDFParser(ImagesPdfParser):
                     )
 
     def _get_page_content(
-        self, doc: pymupdf.pymupdf.Document, page: pymupdf.pymupdf.Page, blob: Blob
+            self, doc: pymupdf.pymupdf.Document, page: pymupdf.pymupdf.Page, blob: Blob
     ) -> str:
         """
         Get the text of the page using PyMuPDF and RapidOCR and issue a warning
@@ -880,7 +885,7 @@ class PyMuPDFParser(ImagesPdfParser):
         )
 
     def _extract_images_from_page(
-        self, doc: pymupdf.pymupdf.Document, page: pymupdf.pymupdf.Page
+            self, doc: pymupdf.pymupdf.Document, page: pymupdf.pymupdf.Page
     ) -> str:
         """Extract images from page and get the text with RapidOCR."""
         if not self.extract_images:
@@ -957,13 +962,13 @@ class PyPDFium2Parser(ImagesPdfParser):
     _lock = threading.Lock()
 
     def __init__(
-        self,
-        extract_images: bool = False,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
-        pages_delimitor: str = _default_page_delimitor,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+            self,
+            extract_images: bool = False,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "paged",
+            pages_delimitor: str = _default_page_delimitor,
+            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
     ) -> None:
         """Initialize a parser based on PyPDFium2.
 
@@ -1061,17 +1066,17 @@ class PDFPlumberParser(ImagesPdfParser):
     """Parse `PDF` with `PDFPlumber`."""
 
     def __init__(
-        self,
-        text_kwargs: Optional[Mapping[str, Any]] = None,
-        dedupe: bool = False,
-        extract_images: bool = False,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
-        pages_delimitor: str = _default_page_delimitor,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-        extract_tables: Optional[Literal["csv", "markdown", "html"]] = None,
-        extract_tables_settings: Optional[Dict[str, Any]] = None,
+            self,
+            text_kwargs: Optional[Mapping[str, Any]] = None,
+            dedupe: bool = False,
+            extract_images: bool = False,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "paged",
+            pages_delimitor: str = _default_page_delimitor,
+            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+            extract_tables: Optional[Literal["csv", "markdown", "html"]] = None,
+            extract_tables_settings: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Initialize the parser.
 
@@ -1123,14 +1128,14 @@ class PDFPlumberParser(ImagesPdfParser):
             contents = []
             doc_metadata = purge_metadata(
                 (
-                    doc.metadata
-                    | {
-                        "source": blob.source,
-                        # type: ignore[attr-defined]
-                        "file_path": blob.source,
-                        # type: ignore[attr-defined]
-                        "total_pages": len(doc.pages),
-                    }
+                        doc.metadata
+                        | {
+                            "source": blob.source,
+                            # type: ignore[attr-defined]
+                            "file_path": blob.source,
+                            # type: ignore[attr-defined]
+                            "total_pages": len(doc.pages),
+                        }
                 )
             )
             for page in doc.pages:
@@ -1142,11 +1147,11 @@ class PDFPlumberParser(ImagesPdfParser):
                 image_from_page = self._extract_images_from_page(page)
                 page_text = []
                 for content in self._split_page_content(
-                    page,
-                    tables_bbox,
-                    tables_content,
-                    images_bbox,
-                    image_from_page,
+                        page,
+                        tables_bbox,
+                        tables_content,
+                        images_bbox,
+                        image_from_page,
                 ):
                     if isinstance(content, str):  # Text
                         page_text.append(content)
@@ -1163,10 +1168,10 @@ class PDFPlumberParser(ImagesPdfParser):
                     yield Document(
                         page_content=all_text,
                         metadata=(
-                            doc_metadata
-                            | {
-                                "page": page.page_number - 1,
-                            }
+                                doc_metadata
+                                | {
+                                    "page": page.page_number - 1,
+                                }
                         ),
                     )
                 else:
@@ -1192,13 +1197,13 @@ class PDFPlumberParser(ImagesPdfParser):
         return page.extract_text(**self.text_kwargs)
 
     def _split_page_content(
-        self,
-        page: pdfplumber.page.Page,
-        tables_bbox: List[Tuple[float, float, float, float]],
-        tables_content: List[List[List[Any]]],
-        images_bbox: List[Tuple[float, float, float, float]],
-        images_content: List[np.ndarray],
-        **kwargs: Any,
+            self,
+            page: pdfplumber.page.Page,
+            tables_bbox: List[Tuple[float, float, float, float]],
+            tables_content: List[List[List[Any]]],
+            images_bbox: List[Tuple[float, float, float, float]],
+            images_content: List[np.ndarray],
+            **kwargs: Any,
     ) -> Iterator[Union[str, List[List[str]], np.ndarray]]:
         """Process the page content based on dedupe."""
         from pdfplumber.utils import (
@@ -1216,7 +1221,7 @@ class PDFPlumberParser(ImagesPdfParser):
                 # "use_text_flow": True,
                 # "presorted": True,
                 "layout_bbox": kwargs.get("layout_bbox")
-                or geometry.objects_to_bbox(page.chars),
+                               or geometry.objects_to_bbox(page.chars),
             }
         )
         chars = page.dedupe_chars().objects["char"] if self.dedupe else page.chars
@@ -1296,8 +1301,8 @@ class PDFPlumberParser(ImagesPdfParser):
         return images
 
     def _extract_tables_bbox_from_page(
-        self,
-        page: pdfplumber.page.Page,
+            self,
+            page: pdfplumber.page.Page,
     ) -> List[Tuple]:
         if not self.extract_tables:
             return []
@@ -1308,8 +1313,8 @@ class PDFPlumberParser(ImagesPdfParser):
         return [table.bbox for table in page.find_tables(tset)]
 
     def _extract_tables_from_page(
-        self,
-        page: pdfplumber.page.Page,
+            self,
+            page: pdfplumber.page.Page,
     ) -> List[List[List[Any]]]:
         if not self.extract_tables:
             return []
@@ -1448,11 +1453,11 @@ class AmazonTextractPDFParser(BaseBlobParser):
     """
 
     def __init__(
-        self,
-        textract_features: Optional[Sequence[int]] = None,
-        client: Optional[Any] = None,
-        *,
-        linearization_config: Optional["TextLinearizationConfig"] = None,
+            self,
+            textract_features: Optional[Sequence[int]] = None,
+            client: Optional[Any] = None,
+            *,
+            linearization_config: Optional["TextLinearizationConfig"] = None,
     ) -> None:
         """Initializes the parser.
 
@@ -1517,12 +1522,13 @@ class AmazonTextractPDFParser(BaseBlobParser):
         the blob.data is taken
         """
 
-        url_parse_result = urlparse(str(blob.path)) if blob.path else None  # type: ignore[attr-defined]
+        url_parse_result = urlparse(
+            str(blob.path)) if blob.path else None  # type: ignore[attr-defined]
         # Either call with S3 path (multi-page) or with bytes (single-page)
         if (
-            url_parse_result
-            and url_parse_result.scheme == "s3"
-            and url_parse_result.netloc
+                url_parse_result
+                and url_parse_result.scheme == "s3"
+                and url_parse_result.netloc
         ):
             textract_response_json = self.tc.call_textract(
                 input_document=str(blob.path),  # type: ignore[attr-defined]
@@ -1563,7 +1569,8 @@ class DocumentIntelligenceParser(BaseBlobParser):
         self.client = client
         self.model = model
 
-    def _generate_docs(self, blob: Blob, result: Any) -> Iterator[Document]:  # type: ignore[valid-type]
+    def _generate_docs(self, blob: Blob, result: Any) -> Iterator[
+        Document]:  # type: ignore[valid-type]
         for p in result.pages:
             content = " ".join([line.content for line in p.lines])
 

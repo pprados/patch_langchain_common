@@ -242,7 +242,7 @@ class PyPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         password: Optional[Union[str, bytes]] = None,
         headers: Optional[Dict] = None,
         extract_images: bool = False,
@@ -287,7 +287,7 @@ class PyPDFium2Loader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         *,
         mode: Literal["single", "paged"] = "paged",
         pages_delimitor: str = _default_page_delimitor,
@@ -396,7 +396,7 @@ class PDFMinerLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         *,
         password: Optional[str] = None,
         mode: Literal["single", "paged"] = "single",
@@ -450,7 +450,7 @@ class PDFMinerPDFasHTMLLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         *,
         password: Optional[str] = None,
         headers: Optional[Dict] = None,
@@ -494,7 +494,7 @@ class PyMuPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         *,
         password: Optional[str] = None,
         mode: Literal["single", "paged"] = "paged",
@@ -555,7 +555,7 @@ class PDFPlumberLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         *,
         text_kwargs: Optional[Mapping[str, Any]] = {
             "use_text_flow": False,
@@ -713,7 +713,7 @@ class MathpixPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         processed_file_format: str = "md",
         max_wait_time_seconds: int = 500,
         should_clean_pdf: bool = False,
@@ -767,7 +767,7 @@ class MathpixPDFLoader(BasePDFLoader):
         return {"options_json": json.dumps(options)}
 
     def send_pdf(self) -> str:
-        with open(self.file_path, "rb") as f:
+        with open(str(self.file_path), "rb") as f:
             files = {"file": f}
             response = requests.post(
                 self.url, headers=self._mathpix_headers, files=files, data=self.data
@@ -882,7 +882,7 @@ class AmazonTextractPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: str,
+        file_path: Union[str, Path],
         textract_features: Optional[Sequence[str]] = None,
         client: Optional[Any] = None,
         credentials_profile_name: Optional[str] = None,
