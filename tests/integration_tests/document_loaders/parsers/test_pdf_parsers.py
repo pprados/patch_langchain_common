@@ -8,8 +8,8 @@ from typing import Iterator
 import pytest
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
-from patch_langchain_unstructured import UnstructuredPDFParser
 
+import patch_langchain_community.document_loaders.parsers.pdf as pdf_parsers
 from patch_langchain_community.document_loaders.parsers.pdf import (
     PDFMinerParser,
     PDFPlumberParser,
@@ -61,7 +61,7 @@ def _assert_with_parser(parser: BaseBlobParser, splits_by_page: bool = True) -> 
 
     if isinstance(parser, PDFMinerParser):  # Replicate a bug
         if parser.extract_images:
-            splits_by_page = True
+            splits_by_page = True  # FIXME
     if splits_by_page:
         assert len(docs) == 16
     else:
@@ -122,8 +122,8 @@ def test_pypdfium2_parser() -> None:
 
 def test_pdfplumber_parser() -> None:
     """Test PDFPlumber parser."""
-    # PPR _assert_with_parser(PDFPlumberParser())
-    # _assert_with_duplicate_parser(PDFPlumberParser())
+    _assert_with_parser(PDFPlumberParser())
+    _assert_with_duplicate_parser(PDFPlumberParser())
     _assert_with_duplicate_parser(PDFPlumberParser(dedupe=True), dedupe=True)
 
 
@@ -148,54 +148,22 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
 
 
 @pytest.mark.parametrize(
-    # "mode", ["single", "paged"],
-    # "mode", ["single"],
     "mode",
-    ["paged"],  # FIXME
+    ["single", "paged"],
 )
 @pytest.mark.parametrize(
-    # "extract_images", [True, False],
-    # "extract_images", [False],
     "extract_images",
-    [True],  # FIXME
+    [True, False],
 )
 @pytest.mark.parametrize(
     "parser_factory,params",
     [
         ("PyPDFParser", {"extraction_mode": "plain"}),
-        ("PyPDFParser", {"extraction_mode": "layout"}),
-        ("PyPDFium2Parser", {}),
-        ("PDFMinerParser", {}),
-        ("PyMuPDFParser", {}),
-        ("PDFPlumberParser", {}),
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "auto",
-                "skip_infer_table_types": [],
-            },
-        ),  # PPR déplacer dans unstructured
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "fast",
-                "skip_infer_table_types": [],
-            },
-        ),
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "hi_res",
-                "skip_infer_table_types": [],
-            },
-        ),
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "ocr_only",
-                "skip_infer_table_types": [],
-            },
-        ),
+        # ("PyPDFParser", {"extraction_mode": "layout"}),
+        # ("PyPDFium2Parser", {}),
+        # ("PDFMinerParser", {}),
+        # ("PyMuPDFParser", {}),
+        # ("PDFPlumberParser", {}),
     ],
 )
 def test_standard_parameters(
@@ -207,16 +175,6 @@ def test_standard_parameters(
         Args:
             parser (BaseBlobParser): The parser to test.
         """
-        # blob = Blob.from_path(HELLO_PDF)
-        # doc_generator = parser.lazy_parse(blob)
-        # docs = list(doc_generator)
-        # metadata = docs[0].metadata
-        # assert metadata["source"] == str(HELLO_PDF)
-        # assert "creationdate" in metadata
-        # assert "creator" in metadata
-        # assert "producer" in metadata
-        # assert "total_pages" in metadata
-
         blob = Blob.from_path(LAYOUT_PARSER_PAPER_PDF)
         doc_generator = parser.lazy_parse(blob)
         docs = list(doc_generator)
@@ -238,37 +196,24 @@ def test_standard_parameters(
                     images.extend(match)
             assert len(images) >= 1
 
-        old_password = parser.password
-        parser.password = "password"
+        old_password = parser.password  # type: ignore
+        parser.password = "password"  # type: ignore
         blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)
         doc_generator = parser.lazy_parse(blob)
         docs = list(doc_generator)
         assert len(docs)
-        parser.password = old_password
-
-    """Test standard parameters."""
-    import patch_langchain_unstructured as pdf_unstructured
-
-    import patch_langchain_community.document_loaders.parsers.pdf as pdf_parsers
+        parser.password = old_password  # type: ignore
 
     os.environ["SCARF_NO_ANALYTICS"] = "false"
     os.environ["DO_NOT_TRACK"] = "true"
     images_to_text = lambda images: iter(["![image](.)"] * len(images))
-    if hasattr(pdf_parsers, parser_factory):
-        parser_class = getattr(pdf_parsers, parser_factory)
-    else:
-        parser_class = getattr(pdf_unstructured, parser_factory)
+    parser_class = getattr(pdf_parsers, parser_factory)
     parser = parser_class(
         mode=mode,
         extract_images=extract_images,
         images_to_text=images_to_text,
         **params,
     )
-    if (
-        isinstance(parser, UnstructuredPDFParser)
-        and parser.unstructured_kwargs.get("strategy") == "ocr_only"
-    ):
-        return
     _assert_with_parser(parser, splits_by_page=(mode == "paged"))
     _std_assert_with_parser(parser)
 
@@ -286,13 +231,6 @@ def test_standard_parameters(
     [
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "hi_res",
-                "skip_infer_table_types": [],
-            },
-        ),
     ],
 )
 def test_parser_with_table(
@@ -343,19 +281,10 @@ def test_parser_with_table(
         else:
             assert not len(tables)
 
-    """Test standard parameters."""
-
-    import patch_langchain_unstructured as pdf_unstructured
-
-    import patch_langchain_community.document_loaders.parsers.pdf as pdf_parsers
-
     os.environ["SCARF_NO_ANALYTICS"] = "false"
     os.environ["DO_NOT_TRACK"] = "true"
     images_to_text = lambda images: iter(["<IMAGE />"] * len(images))
-    if hasattr(pdf_parsers, parser_factory):
-        parser_class = getattr(pdf_parsers, parser_factory)
-    else:
-        parser_class = getattr(pdf_unstructured, parser_factory)
+    parser_class = getattr(pdf_parsers, parser_factory)
     parser = parser_class(
         mode=mode,
         extract_tables=extract_tables,

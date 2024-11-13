@@ -49,7 +49,9 @@ _DEFAULT_URL = "https://api.unstructuredapp.io/general/v0/general"
 
 def _transform_cell_content(value: str, conversion_ind: bool = False) -> str:
     if value and conversion_ind is True:
-        value = html2markdown.convert(value)
+        from markdownify import markdownify as md
+
+        value = md(value)
     chars = {"|": "&#124;", "\n": "<br>"}
     for char, replacement in chars.items():
         value = value.replace(char, replacement)
@@ -227,7 +229,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
             extract_images = False
         if unstructured_kwargs.get("strategy") != "hi_res" and extract_tables:
             logger.warning("extract_tables is not supported with strategy!='hi_res'")
-            extract_tables = False
+            extract_tables = None
         super().__init__(extract_images, images_to_text)
 
         if client is not None:
@@ -266,7 +268,6 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 unstructured_kwargs["extract_images_in_pdf"] = True
         self.images_to_text = images_to_text
         self.extract_tables = extract_tables
-        self.client = client
         self.partition_via_api = partition_via_api
         self.post_processors = post_processors
         self.unstructured_kwargs = unstructured_kwargs
@@ -297,7 +298,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 client=self.client,
                 **unstructured_kwargs,
             )
-            path = Path(blob.source or blob.path)
+            path = Path(str(blob.source or blob.path))
             doc_metadata = purge_metadata(
                 _single_doc_loader._get_metadata()
                 | {
@@ -408,7 +409,7 @@ class UnstructuredPDFLoader(BasePDFLoader):
         file_path: Union[str, List[str], Path, List[Path]],
         *,
         headers: Optional[Dict] = None,
-        mode: Literal["single", "paged"] = "single",
+        mode: Literal["single", "paged", "elements"] = "single",
         pages_delimitor: str = "\n\n",
         extract_images: bool = False,
         partition_via_api: bool = False,
@@ -727,27 +728,30 @@ class _SingleDocumentLoader(BaseLoader):
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
         # Create a PDF parser object associated with the file object.
-        parser = PDFParser(self.file)
-        # Create a PDF document object that stores the document structure.
-        doc = PDFDocument(parser, password=self.password)
-        metadata = {}
+        with self.file or open(str(self.file_path), "rb") as file:
+            parser = PDFParser(cast(BinaryIO, file))
 
-        for info in doc.info:
-            metadata.update(info)
-        for k, v in metadata.items():
-            try:
-                metadata[k] = PDFMinerParser.resolve_and_decode(v)
-            except Exception as e:  # pragma: nocover
-                # This metadata value could not be parsed. Instead of failing the PDF
-                # read, treat it as a warning only if `strict_metadata=False`.
-                logger.warning(
-                    f'[WARNING] Metadata key "{k}" could not be parsed due to '
-                    f"exception: {str(e)}"
-                )
+            # Create a PDF document object that stores the document structure.
+            doc = PDFDocument(parser, password=self.password)  # type: ignore
+            metadata = {}
 
-        # Count number of pages.
-        metadata["total_pages"] = len(list(PDFPage.create_pages(doc)))
-        return metadata
+            for info in doc.info:
+                metadata.update(info)
+            for k, v in metadata.items():
+                try:
+                    metadata[k] = PDFMinerParser.resolve_and_decode(v)
+                except Exception as e:  # pragma: nocover
+                    # This metadata value could not be parsed. Instead of failing the PDF
+                    # read, treat it as a warning only if `strict_metadata=False`.
+                    logger.warning(
+                        f'[WARNING] Metadata key "{k}" could not be parsed due to '
+                        f"exception: {str(e)}"
+                    )
+
+            # Count number of pages.
+            metadata["total_pages"] = len(list(PDFPage.create_pages(doc)))
+            file.seek(0)
+            return metadata
 
     def _post_process_elements_json(
         self, elements_json: list[dict[str, Any]]

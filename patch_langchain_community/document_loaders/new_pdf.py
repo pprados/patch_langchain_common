@@ -1,55 +1,29 @@
-import copy
-import json
 import logging
-import os
 import re
-import tempfile
-import time
-from abc import ABC
-from io import StringIO
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Iterator,
     List,
     Literal,
-    Mapping,
     Optional,
-    Sequence,
     Tuple,
     Union,
 )
-from urllib.parse import urlparse
 
-import requests
-from langchain_community.document_loaders.base import BaseLoader
 from langchain_community.document_loaders.blob_loaders import Blob
-from langchain_community.document_loaders.dedoc import DedocBaseLoader
-from langchain_community.document_loaders.unstructured import UnstructuredFileLoader
-from langchain_core._api.deprecation import deprecated, warn_deprecated
 from langchain_core.document_loaders import BaseBlobParser
 from langchain_core.documents import Document
-from langchain_core.utils import get_from_dict_or_env
 
 from document_loaders.pdf import BasePDFLoader
 from patch_langchain_community.document_loaders.parsers.pdf import (
-    CONVERT_IMAGE_TO_TEXT,
-    AmazonTextractPDFParser,
-    DocumentIntelligenceParser,
-    PDFMinerParser,
-    PDFPlumberParser,
     PDFRouterParser,
     PyMuPDF4LLMParser,
-    PyMuPDFParser,
-    PyPDFium2Parser,
-    PyPDFParser,
     _default_page_delimitor,
 )
 
 if TYPE_CHECKING:
-    from textractor.data.text_linearization_config import TextLinearizationConfig
+    pass
 
 logger = logging.getLogger(__file__)
 
@@ -125,9 +99,9 @@ class PDFRouterLoader(BasePDFLoader):
         *,
         routes: List[
             Tuple[
-                Optional[Union[re, str]],
-                Optional[Union[re, str]],
-                Optional[Union[re, str]],
+                Optional[Union[re.Pattern, str]],
+                Optional[Union[re.Pattern, str]],
+                Optional[Union[re.Pattern, str]],
                 BaseBlobParser,
             ]
         ],

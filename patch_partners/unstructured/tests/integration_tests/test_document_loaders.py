@@ -4,13 +4,37 @@ from typing import Callable, List
 
 import pytest
 from langchain_core.documents import Document
-from patch_langchain_unstructured import UnstructuredLoader
+from patch_langchain_unstructured import UnstructuredLoader, UnstructuredPDFLoader
 
-EXAMPLE_DOCS_DIRECTORY = str(
-    Path(__file__).parent.parent.parent.parent.parent
-    / "community/tests/integration_tests/examples/"
-)
+EXAMPLE_DOCS_DIRECTORY = Path(__file__).parent / "examples/"
 UNSTRUCTURED_API_KEY = os.getenv("UNSTRUCTURED_API_KEY")
+
+
+def test_unstructured_pdf_loader_elements_mode() -> None:
+    """Test unstructured loader with various modes."""
+    file_path = EXAMPLE_DOCS_DIRECTORY / "hello.pdf"
+    loader = UnstructuredPDFLoader(str(file_path), mode="elements")
+    docs = loader.load()
+
+    assert len(docs) == 2
+
+
+def test_unstructured_pdf_loader_paged_mode() -> None:
+    """Test unstructured loader with various modes."""
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
+    loader = UnstructuredPDFLoader(str(file_path), mode="paged")
+    docs = loader.load()
+
+    assert len(docs) == 16
+
+
+def test_unstructured_pdf_loader_default_mode() -> None:  # PPR: a déplacer
+    """Test unstructured loader."""
+    file_path = EXAMPLE_DOCS_DIRECTORY / "hello.pdf"
+    loader = UnstructuredPDFLoader(str(file_path))
+    docs = loader.load()
+
+    assert len(docs) == 1
 
 
 def _check_docs_content(docs: List[Document]) -> None:
@@ -63,10 +87,10 @@ def _check_docs_content(docs: List[Document]) -> None:
 
 @pytest.mark.local
 def test_loader_partitions_locally() -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
 
     docs = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         # Unstructured kwargs
         strategy="fast",
         include_page_breaks=True,
@@ -77,10 +101,10 @@ def test_loader_partitions_locally() -> None:
 
 @pytest.mark.local
 async def test_loader_partitions_locally_async_lazy() -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
 
     loader = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         # Unstructured kwargs
         strategy="fast",
         include_page_breaks=True,
@@ -94,10 +118,10 @@ async def test_loader_partitions_locally_async_lazy() -> None:
 
 @pytest.mark.local
 def test_loader_partition_ignores_invalid_arg() -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
 
     docs = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         # Unstructured kwargs
         strategy="fast",
         # mode is no longer a valid argument and is ignored when partitioning locally
@@ -114,9 +138,9 @@ def test_loader_partition_ignores_invalid_arg() -> None:
 def test_loader_partitions_locally_and_applies_post_processors(
     get_post_processor: Callable[[str], str],
 ) -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         post_processors=[get_post_processor],
         strategy="fast",
     )
@@ -142,9 +166,9 @@ def test_url_loader() -> None:
 
 
 def test_loader_partitions_via_api() -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         partition_via_api=True,
         # Unstructured kwargs
         strategy="fast",
@@ -158,9 +182,9 @@ def test_loader_partitions_via_api() -> None:
 
 
 async def test_loader_partitions_via_api_async_lazy() -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         partition_via_api=True,
         # Unstructured kwargs
         strategy="fast",
@@ -177,8 +201,8 @@ async def test_loader_partitions_via_api_async_lazy() -> None:
 
 def test_loader_partitions_multiple_via_api() -> None:
     file_paths = [
-        os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf"),
-        os.path.join(EXAMPLE_DOCS_DIRECTORY, "fake-email-attachment.eml"),
+        str(EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"),
+        str(EXAMPLE_DOCS_DIRECTORY / "fake-email-attachment.eml"),
     ]
     loader = UnstructuredLoader(
         file_path=file_paths,
@@ -196,9 +220,9 @@ def test_loader_partitions_multiple_via_api() -> None:
 
 
 def test_loader_partition_via_api_raises_TypeError_with_invalid_arg() -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         api_key=UNSTRUCTURED_API_KEY,
         partition_via_api=True,
         mode="elements",
@@ -209,9 +233,9 @@ def test_loader_partition_via_api_raises_TypeError_with_invalid_arg() -> None:
 
 
 def test_loader_partitions_via_api_hi_res() -> None:
-    file_path = os.path.join(EXAMPLE_DOCS_DIRECTORY, "layout-parser-paper.pdf")
+    file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
-        file_path=file_path,
+        file_path=str(file_path),
         partition_via_api=True,
         # Unstructured kwargs
         strategy="hi_res",

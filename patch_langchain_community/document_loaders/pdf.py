@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
+    BinaryIO,
     Dict,
     Iterator,
     List,
@@ -20,6 +21,7 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
 )
 from urllib.parse import urlparse
 
@@ -82,7 +84,7 @@ class UnstructuredPDFLoader(UnstructuredFileLoader):
     def _get_elements(self) -> List:
         from unstructured.partition.pdf import partition_pdf
 
-        return partition_pdf(filename=self.file_path, **self.unstructured_kwargs)
+        return partition_pdf(filename=str(self.file_path), **self.unstructured_kwargs)
 
 
 class BasePDFLoader(BaseLoader, ABC):
@@ -330,17 +332,17 @@ class PyPDFDirectoryLoader(BaseLoader):
     def __init__(
         self,
         path: Union[str, Path],
-        *,
         glob: str = "**/[!.]*.pdf",
         silent_errors: bool = False,
         load_hidden: bool = False,
         recursive: bool = False,
-        password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
         extract_images: bool = False,
+        *,
+        password: Optional[str] = None,
+        mode: Literal["single", "paged"],
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         headers: Optional[Dict] = None,
-        extraction_mode: Literal["plain", "page"] = "plain",
+        extraction_mode: Literal["plain", "layout"] = "plain",
         extraction_kwargs: Optional[Dict] = None,
     ):
         self.password = password
@@ -475,9 +477,9 @@ class PDFMinerPDFasHTMLLoader(BasePDFLoader):
         output_string = StringIO()
         with open_filename(self.file_path, "rb") as fp:
             extract_text_to_fp(
-                fp,
+                cast(BinaryIO, fp),
                 output_string,
-                password=self.password,
+                password=self.password or "",
                 codec="",
                 laparams=LAParams(),
                 output_type="html",

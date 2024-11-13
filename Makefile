@@ -205,13 +205,6 @@ poetry.lock: pyproject.toml
 ## Refresh lock
 lock: poetry.lock
 
-## Start jupyter
-jupyter:
-	poetry run jupyter lab
-
-demo.py: docs/integrations/vectorstores/rag_vectorstore.ipynb
-	jupyter nbconvert --to python $< --output $(PWD)/$@
-
 ## Validate the code
 validate: poetry.lock format lint spell_check test
 
