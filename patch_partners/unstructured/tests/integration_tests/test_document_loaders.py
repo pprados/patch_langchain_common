@@ -90,7 +90,7 @@ def test_loader_partitions_locally() -> None:
     file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
 
     docs = UnstructuredLoader(
-        file_path=str(file_path),
+        file_path=file_path,
         # Unstructured kwargs
         strategy="fast",
         include_page_breaks=True,
@@ -165,6 +165,9 @@ def test_url_loader() -> None:
 # -- API partition --
 
 
+@pytest.mark.skipif(
+    not os.environ.get("UNSTRUCTURED_API_KEY"), reason="Unstructured API key not found"
+)
 def test_loader_partitions_via_api() -> None:
     file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
@@ -181,6 +184,9 @@ def test_loader_partitions_via_api() -> None:
     _check_docs_content(docs)
 
 
+@pytest.mark.skipif(
+    not os.environ.get("UNSTRUCTURED_API_KEY"), reason="Unstructured API key not found"
+)
 async def test_loader_partitions_via_api_async_lazy() -> None:
     file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
@@ -199,6 +205,9 @@ async def test_loader_partitions_via_api_async_lazy() -> None:
     _check_docs_content(docs)
 
 
+@pytest.mark.skipif(
+    not os.environ.get("UNSTRUCTURED_API_KEY"), reason="Unstructured API key not found"
+)
 def test_loader_partitions_multiple_via_api() -> None:
     file_paths = [
         str(EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"),
@@ -219,6 +228,9 @@ def test_loader_partitions_multiple_via_api() -> None:
     assert docs[-1].metadata.get("filename") == "fake-email-attachment.eml"
 
 
+@pytest.mark.skipif(
+    not os.environ.get("UNSTRUCTURED_API_KEY"), reason="Unstructured API key not found"
+)
 def test_loader_partition_via_api_raises_TypeError_with_invalid_arg() -> None:
     file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(
@@ -232,6 +244,9 @@ def test_loader_partition_via_api_raises_TypeError_with_invalid_arg() -> None:
         loader.load()
 
 
+@pytest.mark.skipif(
+    not os.environ.get("UNSTRUCTURED_API_KEY"), reason="Unstructured API key not found"
+)
 def test_loader_partitions_via_api_hi_res() -> None:
     file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
     loader = UnstructuredLoader(

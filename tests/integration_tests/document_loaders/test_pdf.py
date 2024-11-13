@@ -165,9 +165,9 @@ def test_pymupdf_loader() -> None:
     assert len(docs) == 1
 
 
-
-@pytest.mark.skipif(not os.environ.get('MATHPIX_API_KEY'),
-                    reason="Mathpix API key not found")
+@pytest.mark.skipif(
+    not os.environ.get("MATHPIX_API_KEY"), reason="Mathpix API key not found"
+)
 def test_mathpix_loader() -> None:
     file_path = Path(__file__).parent.parent / "examples/hello.pdf"
     loader = MathpixPDFLoader(file_path)

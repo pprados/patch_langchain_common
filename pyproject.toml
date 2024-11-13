@@ -9,7 +9,7 @@ repository = "https://www.github.com/pprados/langchain-rag"
 homepage = "https://www.github.com/pprados/langchain-rag"
 packages = [
   { include = "patch_langchain_community" },
-  { include = "patch_partners" },
+  { include = "patch_langchain_unstructured", from = "patch_partners/unstructured" },
 ]
 
 
@@ -20,16 +20,28 @@ langchain-community = ">=0.3.0"
 langchain = ">=0.3.0"
 jupyter = "^1.0.0"
 # For PDF
-unstructured = { version = "^0.15.0", extras = ["pdf","docx","pptx","xlsx"], optional = false }
-rapidocr-onnxruntime = { version = "^1.3", optional = false }
-opencv-python = { version = "^4.5", optional = false }
-pymupdf = { version = "^1.24", optional = false }
-pdfplumber = { version = "^0.11.4", optional = false }
-pdfminer-six = { version= "^20231228", optional = false }
-html_to_markdown = { version = "^1", optional = false }
-pymupdf4llm = { version = "^0.0.17", optional = false }
-markdownify = { version = "^0.13.1", optional = false }
-amazon-textract-caller = { version = "^0.2.4", optional = false }
+amazon-textract-caller = { version = "^0.2.4", optional = true }
+markdownify = { version = "^0.13.1", optional = true }
+opencv-python = { version = "^4.5", optional = true }
+pdfminer-six = { version= "^20231228", optional = true }
+pdfplumber = { version = "^0.11.4", optional = true }
+pymupdf = { version = "^1.24", optional = true }
+pymupdf4llm = { version = "^0.0.17", optional = true }
+rapidocr-onnxruntime = { version = "^1.3", optional = true }
+unstructured = { version = "^0.15.0", extras = ["pdf"], optional = true }
+
+[tool.poetry.extras]
+pdf = [
+    "amazon-textract-caller",
+    "markdownify",
+    "opencv-python",
+    "pdfminer-six",
+    "pdfplumber",
+    "pymupdf",
+    "pymupdf4llm",
+    "rapidocr-onnxruntime",
+    "unstructured",
+]
 
 [tool.poetry.group.dev]
 optional = true

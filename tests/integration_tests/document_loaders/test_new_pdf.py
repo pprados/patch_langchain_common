@@ -1,9 +1,6 @@
 from pathlib import Path
 
-from patch_langchain_community.document_loaders import (
-    PyMuPDF4LLMLoader,
-    PyMuPDFLoader
-)
+from patch_langchain_community.document_loaders import PyMuPDF4LLMLoader, PyMuPDFLoader
 
 
 def test_pymupdf4llm_loader() -> None:
@@ -14,13 +11,14 @@ def test_pymupdf4llm_loader() -> None:
     assert len(docs) == 1
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
-    loader = PyMuPDF4LLMLoader(file_path,mode="paged")
+    loader = PyMuPDF4LLMLoader(file_path, mode="paged")
     docs = loader.load()
     assert len(docs) == 16
     assert loader.web_path is None
 
-    file_path = Path(
-        __file__).parent.parent / "examples/layout-parser-paper-password.pdf"
+    file_path = (
+        Path(__file__).parent.parent / "examples/layout-parser-paper-password.pdf"
+    )
     loader = PyMuPDF4LLMLoader(file_path, password="password")
     docs = loader.load()
     assert len(docs) == 1

@@ -19,6 +19,9 @@ import importlib
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from .new_pdf import (
+        PyMuPDF4LLMLoader,
+    )
     from .pdf import (
         AmazonTextractPDFLoader,
         DedocPDFLoader,
@@ -33,9 +36,6 @@ if TYPE_CHECKING:
         PyPDFium2Loader,
         PyPDFLoader,
         UnstructuredPDFLoader,
-    )
-    from .new_pdf import (
-        PyMuPDF4LLMLoader,
     )
 
 
@@ -54,7 +54,6 @@ _module_lookup = {
     "PyPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFium2Loader": "patch_langchain_community.document_loaders.pdf",
     "UnstructuredPDFLoader": "patch_langchain_community.document_loaders.pdf",
-
     "PyMuPDF4LLMLoader": "patch_langchain_community.document_loaders.new_pdf",
 }
 
@@ -80,6 +79,5 @@ __all__ = [
     "PyPDFLoader",
     "PyPDFium2Loader",
     "UnstructuredPDFLoader",
-
     "PyMuPDF4LLMLoader",
 ]

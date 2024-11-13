@@ -10,7 +10,8 @@ all: help
 TEST_FILE ?= tests/unit_tests/
 
 integration_tests:
-	poetry run pytest tests/integration_tests
+	PYTHONPATH=patch_partners/unstructured \
+	poetry run pytest tests/integration_tests patch_partners/unstructured/tests/integration_tests
 
 test tests:
 	poetry run pytest -v $(TEST_FILE)
@@ -19,9 +20,9 @@ test_watch:
 	poetry run ptw --now . -- tests/unit_tests
 
 
-######################
+#########################
 # LINTING AND FORMATTING
-######################
+#########################
 
 # Define a variable for Python and notebook files.
 PYTHON_FILES=.
@@ -48,30 +49,9 @@ spell_fix:
 # DOCUMENTATION
 ######################
 
-clean: docs_clean api_docs_clean
+clean:
 	@find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} \; || true
 	@rm -Rf dist/ .make-* .mypy_cache .pytest_cache .ruff_cache
-
-docs_build:
-	docs/.local_build.sh
-
-docs_clean:
-	rm -rf docs/_dist
-
-docs_linkcheck:
-	poetry run linkchecker docs/_dist/docs_skeleton/ --ignore-url node_modules
-
-api_docs_build:
-#	poetry run python docs/api_reference/create_api_rst.py
-#	cd docs/api_reference && poetry run make html
-
-api_docs_clean:
-#	rm -f docs/api_reference/api_reference.rst
-#	cd docs/api_reference && poetry run make clean
-
-
-api_docs_linkcheck:
-	poetry run linkchecker docs/api_reference/_build/html/index.html
 
 ######################
 # HELP
@@ -86,12 +66,6 @@ help:
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'
 	@echo 'test_watch                   - run unit tests in watch mode'
 	@echo 'clean                        - run docs_clean and api_docs_clean'
-	@echo 'docs_build                   - build the documentation'
-	@echo 'docs_clean                   - clean the documentation build artifacts'
-	@echo 'docs_linkcheck               - run linkchecker on the documentation'
-	@echo 'api_docs_build               - build the API Reference documentation'
-	@echo 'api_docs_clean               - clean the API Reference documentation build artifacts'
-	@echo 'api_docs_linkcheck           - run linkchecker on the API Reference documentation'
 	@echo 'spell_check               	- run codespell on the project'
 	@echo 'spell_fix               		- run codespell on the project and fix the errors'
 
@@ -206,7 +180,7 @@ poetry.lock: pyproject.toml
 lock: poetry.lock
 
 ## Validate the code
-validate: poetry.lock format lint spell_check test
+validate: poetry.lock format lint spell_check test integration_tests
 
 
 init: poetry.lock

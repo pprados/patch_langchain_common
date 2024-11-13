@@ -157,14 +157,14 @@ def test_unstructured_standard_parameters(
                 if match:
                     images.extend(match)
             assert len(images) >= 1
-        # PPR: chercher les type: ignore sur password
-        old_password = parser.password  # type: ignore
-        parser.password = "password"  # type: ignore
-        blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)
-        doc_generator = parser.lazy_parse(blob)
-        docs = list(doc_generator)
-        assert len(docs)
-        parser.password = old_password  # type: ignore
+        # PPR: reactiver le test avec password lorsque le PR sera merge
+        # old_password = parser.password
+        # parser.password = "password"
+        # blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)
+        # doc_generator = parser.lazy_parse(blob)
+        # docs = list(doc_generator)
+        # assert len(docs)
+        # parser.password = old_password
 
     os.environ["SCARF_NO_ANALYTICS"] = "false"
     os.environ["DO_NOT_TRACK"] = "true"
@@ -189,16 +189,10 @@ def test_unstructured_standard_parameters(
 
 
 @pytest.mark.parametrize(
-    # "mode", ["single", "paged"],
-    "mode",
-    [
-        "single",
-    ],
+    "mode", ["single", "paged"],
 )
 @pytest.mark.parametrize(
-    # "extract_tables", ["markdown", "html", "csv", None],
-    "extract_tables",
-    [None],
+    "extract_tables", ["markdown", "html", "csv", None],
 )
 @pytest.mark.parametrize(
     "parser_factory,params",

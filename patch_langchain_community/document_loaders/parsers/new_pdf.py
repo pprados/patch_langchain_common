@@ -1,23 +1,21 @@
 """Module contains common parsers for PDFs."""
 
 import re
-
 from typing import (
     Any,
     Iterator,
-    List,
     Literal,
     Mapping,
     Optional,
-    Tuple,
     Union,
+    cast,
 )
 
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.documents import Document
-from .pdf import ImagesPdfParser, \
-    _default_page_delimitor, purge_metadata
+
+from .pdf import ImagesPdfParser, _default_page_delimitor, purge_metadata
 
 
 class PyMuPDF4LLMParser(ImagesPdfParser):
@@ -36,7 +34,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         Args:
             password: Password to open the PDF.
             mode: Extraction mode to use. Either "single" or "paged".
-            pages_delimitor: Delimitor to use between pages.
+            pages_delimitor: Delimiter to use between pages.
+                             May be r'\f', '<!--PAGE BREAK -->', ...
 
             to_markdown_kwargs: Keyword arguments to pass to the PyMuPDF4LLM
              extraction method.
@@ -47,16 +46,16 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         self.mode = mode
         self.pages_delimitor = pages_delimitor
         self.password = password or ""
-        _to_markdown_kwargs = to_markdown_kwargs or {}
+        _to_markdown_kwargs = cast(dict[str, Any], to_markdown_kwargs or {})
         _to_markdown_kwargs["page_chunks"] = True
-        _to_markdown_kwargs.pop("show_progress",None)
+        _to_markdown_kwargs.pop("show_progress", None)
         self.to_markdown_kwargs = _to_markdown_kwargs
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
         try:
-            import pymupdf4llm  # noqa:F401
             import pymupdf
+            import pymupdf4llm  # noqa:F401
         except ImportError:
             raise ImportError(
                 "pymupdf4llm package not found, please install it "
@@ -70,8 +69,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
             if doc.is_encrypted:
                 doc.authenticate(self.password)
 
-            full_text=[]
-            metadata={}
+            full_text = []
+            metadata: dict[str, Any] = {}
             for mu_doc in pymupdf4llm.to_markdown(
                 doc,
                 **self.to_markdown_kwargs,
@@ -92,6 +91,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                     page_content=self.pages_delimitor.join(full_text),
                     metadata=purge_metadata(metadata),
                 )
+
     _map_key = {"page_count": "total_pages", "file_path": "source"}
     _date_key = ["creationdate", "moddate"]
 
@@ -126,8 +126,8 @@ class PDFRouterParser(BaseBlobParser):
     # doc_regex = r"regex"
     def __init__(
         self,
-        routes: List[
-            Tuple[
+        routes: list[
+            tuple[
                 Optional[Union[re.Pattern, str]],
                 Optional[Union[re.Pattern, str]],
                 Optional[Union[re.Pattern, str]],
@@ -175,4 +175,3 @@ class PDFRouterParser(BaseBlobParser):
                     is_page = not re_page or re_page.search(page1)
                     if is_producer and is_creator and is_page:
                         yield from parser.lazy_parse(blob)
-

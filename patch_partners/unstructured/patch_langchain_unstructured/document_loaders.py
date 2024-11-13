@@ -338,6 +338,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
         if self.mode != "elements":
             unstructured_kwargs["include_page_breaks"] = True
         page_number = 0
+        path = Path(str(blob.source or blob.path))
         with blob.as_bytes_io() as pdf_file_obj:
             _single_doc_loader = _SingleDocumentLoader(
                 file=pdf_file_obj,
@@ -348,7 +349,6 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 client=self.client,
                 **unstructured_kwargs,
             )
-            path = Path(str(blob.source or blob.path))
             doc_metadata = purge_metadata(
                 _single_doc_loader._get_metadata()
                 | {
@@ -357,6 +357,16 @@ class UnstructuredPDFParser(ImagesPdfParser):
                     "filename": path.name,
                     "filetype": blob.mimetype,
                 }
+            )
+        with blob.as_bytes_io() as pdf_file_obj:
+            _single_doc_loader = _SingleDocumentLoader(
+                file=pdf_file_obj,
+                password=self.password,
+                partition_via_api=self.partition_via_api,
+                post_processors=self.post_processors,
+                # SDK parameters
+                client=self.client,
+                **unstructured_kwargs,
             )
             if self.mode == "elements":
                 yield from _single_doc_loader.lazy_load()
@@ -737,7 +747,7 @@ class _SingleDocumentLoader(BaseLoader):
         """Retrieve a list of element dicts from the API using the SDK client."""
         client = self.client
         req = self._sdk_partition_request
-        response = client.general.partition(req)  # type: ignore
+        response = client.general.partition(request=req)  # type: ignore
         if response.status_code == 200:
             return json.loads(response.raw_response.text)
         raise ValueError(
@@ -770,20 +780,18 @@ class _SingleDocumentLoader(BaseLoader):
     ) -> list[dict[str, Any]]:
         return [element.to_dict() for element in elements]
 
-    # def _get_metadata(self) -> dict[str, Any]:
-    #     """Get file_path metadata if available."""
-    #     return {"source": self.file_path} if self.file_path else {}
-    #
     def _get_metadata(self) -> Dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
         # Create a PDF parser object associated with the file object.
+        if self.unstructured_kwargs.get("url"):
+            return {"source":self.unstructured_kwargs.get("url")}
         with self.file or open(str(self.file_path), "rb") as file:
             parser = PDFParser(cast(BinaryIO, file))
 
             # Create a PDF document object that stores the document structure.
             doc = PDFDocument(parser, password=self.password)  # type: ignore
-            metadata = {}
+            metadata = {"source": self.file_path} if self.file_path else {}
 
             for info in doc.info:
                 metadata.update(info)
@@ -801,7 +809,6 @@ class _SingleDocumentLoader(BaseLoader):
 
             # Count number of pages.
             metadata["total_pages"] = len(list(PDFPage.create_pages(doc)))
-            file.seek(0)
             return metadata
 
     def _post_process_elements_json(

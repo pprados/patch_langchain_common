@@ -2,13 +2,10 @@ import logging
 import re
 from pathlib import Path
 from typing import (
-    TYPE_CHECKING,
     Any,
     Iterator,
-    List,
     Literal,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -18,11 +15,8 @@ from langchain_core.documents import Document
 
 from patch_langchain_community.document_loaders.pdf import BasePDFLoader
 
+from .parsers.new_pdf import PDFRouterParser, PyMuPDF4LLMParser
 from .parsers.pdf import _default_page_delimitor
-from .parsers.new_pdf import PyMuPDF4LLMParser, PDFRouterParser
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__file__)
 
@@ -96,8 +90,8 @@ class PDFRouterLoader(BasePDFLoader):
         self,
         file_path: Union[str, Path],
         *,
-        routes: List[
-            Tuple[
+        routes: list[
+            tuple[
                 Optional[Union[re.Pattern, str]],
                 Optional[Union[re.Pattern, str]],
                 Optional[Union[re.Pattern, str]],

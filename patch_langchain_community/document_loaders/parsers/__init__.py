@@ -20,7 +20,6 @@ _module_lookup = {
     "PyMuPDFParser": "langchain_community.document_loaders.parsers.pdf",
     "PyPDFParser": "langchain_community.document_loaders.parsers.pdf",
     "PyPDFium2Parser": "langchain_community.document_loaders.parsers.pdf",
-
     "PyMuPDF4LLMParser": "langchain_community.document_loaders.parsers.new_pdf",
     "PDFRouterParser": "langchain_community.document_loaders.parsers.new_pdf",
 }
