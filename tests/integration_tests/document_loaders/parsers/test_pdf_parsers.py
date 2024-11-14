@@ -62,7 +62,7 @@ def _assert_with_parser(parser: BaseBlobParser, splits_by_page: bool = True) -> 
 
     if isinstance(parser, PDFMinerParser):  # Replicate a bug
         if parser.extract_images:
-            splits_by_page = True  # FIXME
+            splits_by_page = True  # PPR Why is this necessary?
     if splits_by_page:
         assert len(docs) == 16
     else:

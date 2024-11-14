@@ -25,7 +25,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         self,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "paged"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         to_markdown_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> None:
@@ -46,6 +46,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         self.mode = mode
         self.pages_delimitor = pages_delimitor
         self.password = password or ""
+        if not to_markdown_kwargs:
+            to_markdown_kwargs = {}
         if "show_progress" not in to_markdown_kwargs:
             to_markdown_kwargs["show_progress"] = False
         _to_markdown_kwargs = cast(dict[str, Any], to_markdown_kwargs or {})

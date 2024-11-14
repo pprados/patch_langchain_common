@@ -73,7 +73,7 @@ __all__ = [
     "PDFMinerLoader",
     "PDFMinerPDFasHTMLLoader",
     "PDFPlumberLoader",
-    "PagedPDFSplitter",
+        "PagedPDFSplitter",
     "PyMuPDFLoader",
     "PyPDFDirectoryLoader",
     "PyPDFLoader",

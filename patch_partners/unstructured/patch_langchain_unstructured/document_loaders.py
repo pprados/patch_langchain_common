@@ -6,6 +6,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import (
     IO,
     Any,
@@ -320,11 +321,16 @@ class UnstructuredPDFParser(ImagesPdfParser):
         if extract_images and unstructured_kwargs.get("strategy") == "fast":
             logger.warning("Change strategy to 'auto' to extract images")
             unstructured_kwargs["strategy"] = "auto"
+        self.tmp_dir=None
         if extract_images:
             if partition_via_api:
                 logger.warning("extract_images is not supported with partition_via_api")
             else:
                 unstructured_kwargs["extract_images_in_pdf"] = True
+                self.tmp_dir=TemporaryDirectory(ignore_cleanup_errors=True)
+                print(self.tmp_dir.name)
+                if "extract_image_block_output_dir" not in unstructured_kwargs:
+                    unstructured_kwargs["extract_image_block_output_dir"] = self.tmp_dir.name
         self.images_to_text = images_to_text
         self.extract_tables = extract_tables
         self.partition_via_api = partition_via_api
