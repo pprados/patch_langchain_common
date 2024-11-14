@@ -26,10 +26,6 @@ from typing import (
 from urllib.parse import urlparse
 
 import numpy as np
-import pdfplumber
-import pymupdf
-import pypdf  # PPR
-import pypdfium2
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core._api.deprecation import (
@@ -39,9 +35,13 @@ from langchain_core.documents import Document
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from langchain_core.prompts import BasePromptTemplate, PromptTemplate
-from PIL import Image
 
 if TYPE_CHECKING:
+    import pdfplumber
+    import pymupdf
+    import pypdf
+    import pypdfium2
+    from PIL import Image
     import pdfplumber.page
     import pymupdf.pymupdf
     import pypdf._page
@@ -299,6 +299,12 @@ def convert_images_to_description(
             ImportError: If `rapidocr-onnxruntime` package is not installed.
         """
 
+        try:
+            from PIL import Image
+        except ImportError:
+            raise ImportError(
+                "`PIL` package not found, please install it with `pip install pillow`"
+            )
         chat = model
         for image in images:  # FIXME: Add a batch processing
             image_bytes = io.BytesIO()
@@ -404,6 +410,7 @@ class PyPDFParser(ImagesPdfParser):
         Insert image, if possible, between two paragraphs.
         In this way, a paragraph can be continued on the next page.
         """
+        import pypdf
 
         def _extract_text_from_page(page: "PageObject") -> str:
             """
@@ -474,7 +481,7 @@ class PyPDFParser(ImagesPdfParser):
                     metadata=doc_metadata,
                 )
 
-    def extract_images_from_page(self, page: pypdf._page.PageObject) -> str:
+    def extract_images_from_page(self, page: "pypdf._page.PageObject") -> str:
         """Extract images from page and get the text with RapidOCR."""
         if (
             not self.extract_images
@@ -553,7 +560,7 @@ class PDFMinerParser(ImagesPdfParser):
             logger.warning(
                 "To replicate a bug from the previous version, "
                 "force the mode to 'paged'"
-            )  # PPR: replicate a bug from the previous version
+            )
             self.mode = "paged"
 
         if concatenate_pages is not None:
@@ -725,38 +732,6 @@ class PyMuPDFParser(ImagesPdfParser):
     # See https://pymupdf.readthedocs.io/en/latest/recipes-multiprocessing.html
     _lock = threading.Lock()
 
-    from pymupdf.table import (
-        DEFAULT_JOIN_TOLERANCE,
-        DEFAULT_MIN_WORDS_HORIZONTAL,
-        DEFAULT_MIN_WORDS_VERTICAL,
-        DEFAULT_SNAP_TOLERANCE,
-    )
-
-    _default_extract_tables_settings = {
-        "clip": None,
-        "vertical_strategy": "lines",
-        "horizontal_strategy": "lines",
-        "vertical_lines": None,
-        "horizontal_lines": None,
-        "snap_tolerance": DEFAULT_SNAP_TOLERANCE,
-        "snap_x_tolerance": None,
-        "snap_y_tolerance": None,
-        "join_tolerance": DEFAULT_JOIN_TOLERANCE,
-        "join_x_tolerance": None,
-        "join_y_tolerance": None,
-        "edge_min_length": 3,
-        "min_words_vertical": DEFAULT_MIN_WORDS_VERTICAL,
-        "min_words_horizontal": DEFAULT_MIN_WORDS_HORIZONTAL,
-        "intersection_tolerance": 3,
-        "intersection_x_tolerance": None,
-        "intersection_y_tolerance": None,
-        "text_tolerance": 3,
-        "text_x_tolerance": 3,
-        "text_y_tolerance": 3,
-        "strategy": None,  # offer abbreviation
-        "add_lines": None,  # optional user-specified lines
-    }
-
     def __init__(
         self,
         *,
@@ -803,9 +778,41 @@ class PyMuPDFParser(ImagesPdfParser):
         self.text_kwargs = text_kwargs or {}
         self.extract_images = extract_images
         self.extract_tables = extract_tables
-        self.extract_tables_settings = (
-            extract_tables_settings or PyMuPDFParser._default_extract_tables_settings
-        )
+        if extract_tables_settings:
+            self.extract_tables_settings = extract_tables_settings
+        else:
+            from pymupdf.table import (
+                DEFAULT_JOIN_TOLERANCE,
+                DEFAULT_MIN_WORDS_HORIZONTAL,
+                DEFAULT_MIN_WORDS_VERTICAL,
+                DEFAULT_SNAP_TOLERANCE,
+            )
+
+            self.extract_tables_settings = {
+                "clip": None,
+                "vertical_strategy": "lines",
+                "horizontal_strategy": "lines",
+                "vertical_lines": None,
+                "horizontal_lines": None,
+                "snap_tolerance": DEFAULT_SNAP_TOLERANCE,
+                "snap_x_tolerance": None,
+                "snap_y_tolerance": None,
+                "join_tolerance": DEFAULT_JOIN_TOLERANCE,
+                "join_x_tolerance": None,
+                "join_y_tolerance": None,
+                "edge_min_length": 3,
+                "min_words_vertical": DEFAULT_MIN_WORDS_VERTICAL,
+                "min_words_horizontal": DEFAULT_MIN_WORDS_HORIZONTAL,
+                "intersection_tolerance": 3,
+                "intersection_x_tolerance": None,
+                "intersection_y_tolerance": None,
+                "text_tolerance": 3,
+                "text_x_tolerance": 3,
+                "text_y_tolerance": 3,
+                "strategy": None,  # offer abbreviation
+                "add_lines": None,  # optional user-specified lines
+            }
+
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
@@ -839,7 +846,7 @@ class PyMuPDFParser(ImagesPdfParser):
                     )
 
     def _get_page_content(
-        self, doc: pymupdf.pymupdf.Document, page: pymupdf.pymupdf.Page, blob: Blob
+        self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page", blob: Blob
     ) -> str:
         """
         Get the text of the page using PyMuPDF and RapidOCR and issue a warning
@@ -860,7 +867,7 @@ class PyMuPDFParser(ImagesPdfParser):
 
         return all_text
 
-    def _extract_metadata(self, doc: pymupdf.pymupdf.Document, blob: Blob) -> dict:
+    def _extract_metadata(self, doc: "pymupdf.pymupdf.Document", blob: Blob) -> dict:
         """Extract metadata from the document and page."""
         return purge_metadata(
             dict(
@@ -878,7 +885,7 @@ class PyMuPDFParser(ImagesPdfParser):
         )
 
     def _extract_images_from_page(
-        self, doc: pymupdf.pymupdf.Document, page: pymupdf.pymupdf.Page
+        self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page"
     ) -> str:
         """Extract images from page and get the text with RapidOCR."""
         if not self.extract_images:
@@ -907,11 +914,11 @@ class PyMuPDFParser(ImagesPdfParser):
             )
         )
 
-    def _extract_tables_from_page(self, page: pymupdf.pymupdf.Page) -> str:
+    def _extract_tables_from_page(self, page: "pymupdf.pymupdf.Page") -> str:
         """Extract images from page and get the text with RapidOCR."""
         if self.extract_tables is None:
             return ""
-        import pymupdf  # PPR import pymupdf nécessaire ?
+        import pymupdf
 
         tables_list = list(
             pymupdf.table.find_tables(page, **self.extract_tables_settings)
@@ -1038,7 +1045,7 @@ class PyPDFium2Parser(ImagesPdfParser):
                 finally:
                     pdf_reader.close()
 
-    def _extract_images_from_page(self, page: pypdfium2._helpers.page.PdfPage) -> str:
+    def _extract_images_from_page(self, page: "pypdfium2._helpers.page.PdfPage") -> str:
         """Extract images from page and get the text with RapidOCR."""
         if not self.extract_images:
             return ""
@@ -1183,7 +1190,7 @@ class PDFPlumberParser(ImagesPdfParser):
                     metadata=doc_metadata,
                 )
 
-    def _process_page_content(self, page: pdfplumber.page.Page) -> str:
+    def _process_page_content(self, page: "pdfplumber.page.Page") -> str:
         """Process the page content based on dedupe."""
         if self.dedupe:
             return page.dedupe_chars().extract_text(**self.text_kwargs)
@@ -1191,7 +1198,7 @@ class PDFPlumberParser(ImagesPdfParser):
 
     def _split_page_content(
         self,
-        page: pdfplumber.page.Page,
+        page: "pdfplumber.page.Page",
         tables_bbox: list[tuple[float, float, float, float]],
         tables_content: list[list[list[Any]]],
         images_bbox: list[tuple[float, float, float, float]],
@@ -1269,7 +1276,7 @@ class PDFPlumberParser(ImagesPdfParser):
         for content in images_content:
             yield content
 
-    def _extract_images_from_page(self, page: pdfplumber.page.Page) -> list[np.ndarray]:
+    def _extract_images_from_page(self, page: "pdfplumber.page.Page") -> list[np.ndarray]:
         """Extract images from page and get the text with RapidOCR."""
         if not self.extract_images:
             return []
@@ -1292,7 +1299,7 @@ class PDFPlumberParser(ImagesPdfParser):
 
     def _extract_tables_bbox_from_page(
         self,
-        page: pdfplumber.page.Page,
+        page: "pdfplumber.page.Page",
     ) -> list[tuple]:
         if not self.extract_tables:
             return []
@@ -1304,7 +1311,7 @@ class PDFPlumberParser(ImagesPdfParser):
 
     def _extract_tables_from_page(
         self,
-        page: pdfplumber.page.Page,
+        page: "pdfplumber.page.Page",
     ) -> list[list[list[Any]]]:
         if not self.extract_tables:
             return []

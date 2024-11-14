@@ -1,7 +1,9 @@
 SHELL=/bin/bash
 .PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
-POETRY_EXTRA?=--all-extras
+#POETRY_EXTRA?=--all-extras
+POETRY_EXTRA?=
 POETRY_WITH?=dev,lint,test,codespell
+export PYTHONPATH=patch_partners/unstructured
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -10,7 +12,6 @@ all: help
 TEST_FILE ?= tests/unit_tests/
 
 integration_tests:
-	PYTHONPATH=patch_partners/unstructured \
 	poetry run pytest tests/integration_tests patch_partners/unstructured/tests/integration_tests
 
 test tests:

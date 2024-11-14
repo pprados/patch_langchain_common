@@ -46,16 +46,17 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         self.mode = mode
         self.pages_delimitor = pages_delimitor
         self.password = password or ""
+        if "show_progress" not in to_markdown_kwargs:
+            to_markdown_kwargs["show_progress"] = False
         _to_markdown_kwargs = cast(dict[str, Any], to_markdown_kwargs or {})
         _to_markdown_kwargs["page_chunks"] = True
-        _to_markdown_kwargs.pop("show_progress", None)
         self.to_markdown_kwargs = _to_markdown_kwargs
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
         try:
-            import pymupdf
             import pymupdf4llm  # noqa:F401
+            import pymupdf
         except ImportError:
             raise ImportError(
                 "pymupdf4llm package not found, please install it "

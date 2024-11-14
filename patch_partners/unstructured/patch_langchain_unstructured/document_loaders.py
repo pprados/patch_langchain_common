@@ -16,19 +16,16 @@ from typing import (
     Literal,
     Optional,
     Union,
-    cast,
+    cast, TYPE_CHECKING,
 )
 
 import numpy as np
-import pandas as pd
 from bs4 import BeautifulSoup
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 from PIL import Image
 from typing_extensions import List, TypeAlias
-from unstructured_client import UnstructuredClient
-from unstructured_client.models import operations, shared  # type: ignore
 
 from patch_langchain_community.document_loaders.parsers.pdf import (
     CONVERT_IMAGE_TO_TEXT,
@@ -38,6 +35,11 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
     purge_metadata,
 )
 from patch_langchain_community.document_loaders.pdf import BasePDFLoader
+
+if TYPE_CHECKING:
+    import pandas as pd
+    from unstructured_client import UnstructuredClient
+    from unstructured_client.models import operations, shared  # type: ignore
 
 Element: TypeAlias = Any
 
@@ -274,6 +276,13 @@ class UnstructuredPDFParser(ImagesPdfParser):
 
         Args:
         """
+        try:
+            import unstructured_client
+        except ImportError:
+            raise ImportError(
+                "unstructured package not found, please install it "
+                "with `pip install 'unstructured[pdf]'`"
+            )
         if unstructured_kwargs.get("strategy") == "ocr_only" and extract_images:
             logger.warning("extract_images is not supported with strategy='ocr_only")
             extract_images = False
@@ -296,7 +305,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
 
         unstructured_api_key = api_key or os.getenv("UNSTRUCTURED_API_KEY") or ""
         unstructured_url = url or os.getenv("UNSTRUCTURED_URL") or _DEFAULT_URL
-        self.client = client or UnstructuredClient(
+        self.client = client or unstructured_client.UnstructuredClient(
             api_key_auth=unstructured_api_key, server_url=unstructured_url
         )
 
@@ -322,9 +331,6 @@ class UnstructuredPDFParser(ImagesPdfParser):
         self.post_processors = post_processors
         self.unstructured_kwargs = unstructured_kwargs
 
-        self.client = client or UnstructuredClient(
-            api_key_auth=unstructured_api_key, server_url=unstructured_url
-        )
         if web_url:
             self.unstructured_kwargs["url"] = web_url
 
@@ -791,7 +797,7 @@ class _SingleDocumentLoader(BaseLoader):
 
             # Create a PDF document object that stores the document structure.
             doc = PDFDocument(parser, password=self.password)  # type: ignore
-            metadata = {"source": self.file_path} if self.file_path else {}
+            metadata:dict[str,Any] = {"source": self.file_path} if self.file_path else {}
 
             for info in doc.info:
                 metadata.update(info)

@@ -336,7 +336,7 @@ class PyPDFDirectoryLoader(BaseLoader):
         extract_images: bool = False,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"],
+        mode: Literal["single", "paged"] = "paged",
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         headers: Optional[dict] = None,
         extraction_mode: Literal["plain", "layout"] = "plain",
