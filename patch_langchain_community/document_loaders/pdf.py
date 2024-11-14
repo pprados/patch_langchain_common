@@ -604,7 +604,7 @@ class PDFPlumberLoader(BasePDFLoader):
         yield from self.parser.lazy_parse(blob)
 
 
-# PPR: split with parser
+# PPR: DedocPDFLoader
 class DedocPDFLoader(DedocBaseLoader):
     """
     DedocPDFLoader document loader integration to load PDF files using `dedoc`.

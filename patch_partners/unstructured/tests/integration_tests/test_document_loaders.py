@@ -28,7 +28,7 @@ def test_unstructured_pdf_loader_paged_mode() -> None:
     assert len(docs) == 16
 
 
-def test_unstructured_pdf_loader_default_mode() -> None:  # PPR: a déplacer
+def test_unstructured_pdf_loader_default_mode() -> None:
     """Test unstructured loader."""
     file_path = EXAMPLE_DOCS_DIRECTORY / "hello.pdf"
     loader = UnstructuredPDFLoader(str(file_path))

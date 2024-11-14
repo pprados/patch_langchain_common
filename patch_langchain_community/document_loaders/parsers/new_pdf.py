@@ -96,6 +96,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
     _date_key = ["creationdate", "moddate"]
 
 
+# PPR PDFRouterParser à revoir
 class PDFRouterParser(BaseBlobParser):
     """
     Parse PDFs using different parsers based on the metadata of the PDF.
@@ -121,7 +122,6 @@ class PDFRouterParser(BaseBlobParser):
     ```
     """
 
-    # PPR
     # {"metadata":r"regex"},
     # doc_regex = r"regex"
     def __init__(

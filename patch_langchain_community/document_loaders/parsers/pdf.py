@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 _format_image_str = "\n{image_text}\n"
 _join_images = "\n"
 _join_tables = "\n"
-_default_page_delimitor = "\f"  # PPR: \f ?
+_default_page_delimitor = "\f"
 
 
 def purge_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
@@ -553,7 +553,7 @@ class PDFMinerParser(ImagesPdfParser):
             logger.warning(
                 "To replicate a bug from the previous version, "
                 "force the mode to 'paged'"
-            )  # PPR
+            )  # PPR: replicate a bug from the previous version
             self.mode = "paged"
 
         if concatenate_pages is not None:
@@ -812,7 +812,7 @@ class PyMuPDFParser(ImagesPdfParser):
 
         import pymupdf
 
-        with PyMuPDFParser._lock:  # PPR: toto integration images
+        with PyMuPDFParser._lock:  # PPR: todo integration images dans PyMuPDFParser
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
                 if blob.data is None:  # type: ignore[attr-defined]
                     doc = pymupdf.open(file_path)
@@ -911,7 +911,7 @@ class PyMuPDFParser(ImagesPdfParser):
         """Extract images from page and get the text with RapidOCR."""
         if self.extract_tables is None:
             return ""
-        import pymupdf  # PPR FIXME nécessaire ?
+        import pymupdf  # PPR import pymupdf nécessaire ?
 
         tables_list = list(
             pymupdf.table.find_tables(page, **self.extract_tables_settings)
@@ -1169,7 +1169,7 @@ class PDFPlumberParser(ImagesPdfParser):
                     )
                 else:
                     contents.append(all_text)
-                # PPR: ajouter les tables et les images dans tous les scénarios ?
+                # PPR: ajouter les tables_as_html et les images dans tous les scénarios ?
                 # "tables_as_html": [self._convert_table_to_html(table)
                 #                    for
                 #                    table in tables_content],
@@ -1253,9 +1253,6 @@ class PDFPlumberParser(ImagesPdfParser):
                         used_arrays[i] = True
                         # print(f"yield table {i}")
                         yield tables_content[i]
-                    else:
-                        # PPR print(f"  saute yield sur tableau deja vu")
-                        pass
                     break
             if not is_table:
                 # print(f'  Add {word["text"]}')
@@ -1355,7 +1352,7 @@ class PDFPlumberParser(ImagesPdfParser):
         If clean is true, markdown syntax is removed from cell content."""
         if not len(table):
             return ""
-        output = "<table>\n"  # PPR: border=1 ?
+        output = "<table>\n"
         clean = True
 
         # iterate over detail rows

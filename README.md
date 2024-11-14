@@ -6,7 +6,7 @@ To use the patch, replace
 from langchain_community.document_loaders.pdf import *
 from langchain_unstructured import *
 ```
-else
+with
 ```python
 from patch_langchain_community.document_loaders.pdf import *
 from patch_langchain_unstructured import *
