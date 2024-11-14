@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 from dotenv import load_dotenv
 
 from langchain_community.document_loaders.base import BaseBlobParser
@@ -163,10 +164,11 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
 
 def compare_parsing(experiment_name : str):
     debug_mode=True
-    sources_dir_path = './parser_comparator/sources_pdf'
-    results_dir_path = './parser_comparator/multi_parsing_results'
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    sources_dir_path = os.path.join(base_dir, 'sources_pdf')
+    results_dir_path = os.path.join(base_dir, 'multi_parsing_results')
 
-    # Parcourir le dossier sources_pdf
+    # Iterating over the directories in the sources directory
     for root, dirs, files in os.walk(sources_dir_path):
         for dir_name in dirs:
             doc_db_source_path = os.path.join(root, dir_name)
@@ -226,7 +228,7 @@ def compare_parsing(experiment_name : str):
                         # get the best parser name and its concatenated parsed docs
                         best_parser_concatenated_docs = parser_name2concatenated_parsed_docs[best_parser_name]
 
-                        # Save the best parsing as .txt file
+                        # save the best parsing as .txt file
                         best_parsing_file_path = os.path.join(sub_dir_pdf_path,
                                                               f"best_parsing_{best_parser_name}.txt")
                         with open(best_parsing_file_path, 'w', encoding='utf-8') as f:
@@ -241,7 +243,7 @@ def compare_parsing(experiment_name : str):
                     # if not debug mode only save the best parsing as .txt file
                     else:
                         best_parser_associated_documents_list = pdf_multi_loader.load()
-                        # Save the best parsing as .txt file
+                        # save the best parsing as .txt file
                         best_parser_concatenated_docs = _default_page_delimitor.join(
                             [doc.page_content for doc in best_parser_associated_documents_list])
                         best_parsing_file_path = os.path.join(sub_dir_pdf_path,
@@ -250,7 +252,10 @@ def compare_parsing(experiment_name : str):
                             f.write(best_parser_concatenated_docs)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Compare PDF parsing results.")
-    parser.add_argument("experiment_name", type=str, help="Name of the experiment")
-    args = parser.parse_args()
-    compare_parsing(args.experiment_name)
+    if len(sys.argv) > 1:
+        parser = argparse.ArgumentParser(description="Compare PDF parsing results.")
+        parser.add_argument("experiment_name", type=str, help="Name of the experiment")
+        args = parser.parse_args()
+        compare_parsing(args.experiment_name)
+    else:
+        compare_parsing("default_experiment_name")
