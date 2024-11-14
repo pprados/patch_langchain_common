@@ -7,6 +7,7 @@ from typing import (
     Literal,
     Optional,
     Union,
+    Dict,
 )
 
 from langchain_community.document_loaders.blob_loaders import Blob
@@ -15,10 +16,33 @@ from langchain_core.documents import Document
 
 from patch_langchain_community.document_loaders.pdf import BasePDFLoader
 
-from .parsers.new_pdf import PDFRouterParser, PyMuPDF4LLMParser
+from .parsers.new_pdf import PDFMultiParser, PDFRouterParser, PyMuPDF4LLMParser
 from .parsers.pdf import _default_page_delimitor
 
 logger = logging.getLogger(__file__)
+
+class PDFMultiLoader(BasePDFLoader):
+
+    def __init__(
+            self,
+            file_path: str,
+            pdf_multi_parser: PDFMultiParser,
+            headers: Optional[Dict] = None,
+    ) -> None:
+        """Load PDF using a multi parser"""
+        super().__init__(file_path, headers=headers)
+        self.parser = pdf_multi_parser
+
+    def lazy_load(
+        self,
+    ) -> Iterator[tuple[list[Document], str]]:
+        """Lazy load given path as pages."""
+        if self.web_path:
+            blob = Blob.from_data(open(self.file_path, "rb").read(), path=self.web_path)  # type: ignore[attr-defined]
+        else:
+            blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        yield from self.parser.parse(blob)
+
 
 
 class PyMuPDF4LLMLoader(BasePDFLoader):
