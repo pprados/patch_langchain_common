@@ -5,7 +5,6 @@ from typing import (
     Any,
     Iterator,
     Literal,
-    Mapping,
     Optional,
     Union,
     cast,
@@ -27,7 +26,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         password: Optional[str] = None,
         mode: Literal["single", "paged"] = "single",
         pages_delimitor: str = _default_page_delimitor,
-        to_markdown_kwargs: Optional[Mapping[str, Any]] = None,
+        to_markdown_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize the parser.
 
@@ -57,8 +56,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
         try:
-            import pymupdf4llm  # noqa:F401
             import pymupdf
+            import pymupdf4llm  # noqa:F401
         except ImportError:
             raise ImportError(
                 "pymupdf4llm package not found, please install it "

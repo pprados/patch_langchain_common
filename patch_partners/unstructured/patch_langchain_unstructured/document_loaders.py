@@ -9,6 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import (
     IO,
+    TYPE_CHECKING,
     Any,
     BinaryIO,
     Callable,
@@ -17,7 +18,7 @@ from typing import (
     Literal,
     Optional,
     Union,
-    cast, TYPE_CHECKING,
+    cast,
 )
 
 import numpy as np
@@ -38,7 +39,6 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
 from patch_langchain_community.document_loaders.pdf import BasePDFLoader
 
 if TYPE_CHECKING:
-    import pandas as pd
     from unstructured_client import UnstructuredClient
     from unstructured_client.models import operations, shared  # type: ignore
 
@@ -321,16 +321,17 @@ class UnstructuredPDFParser(ImagesPdfParser):
         if extract_images and unstructured_kwargs.get("strategy") == "fast":
             logger.warning("Change strategy to 'auto' to extract images")
             unstructured_kwargs["strategy"] = "auto"
-        self.tmp_dir=None
+        self.tmp_dir = None
         if extract_images:
             if partition_via_api:
                 logger.warning("extract_images is not supported with partition_via_api")
             else:
                 unstructured_kwargs["extract_images_in_pdf"] = True
-                self.tmp_dir=TemporaryDirectory(ignore_cleanup_errors=True)
-                print(self.tmp_dir.name)
+                self.tmp_dir = TemporaryDirectory(ignore_cleanup_errors=True)
                 if "extract_image_block_output_dir" not in unstructured_kwargs:
-                    unstructured_kwargs["extract_image_block_output_dir"] = self.tmp_dir.name
+                    unstructured_kwargs[
+                        "extract_image_block_output_dir"
+                    ] = self.tmp_dir.name
         self.images_to_text = images_to_text
         self.extract_tables = extract_tables
         self.partition_via_api = partition_via_api
@@ -452,6 +453,12 @@ class UnstructuredPDFParser(ImagesPdfParser):
                         )
 
     def _convert_table(self, html_table: Optional[str]) -> str:
+        try:
+            import pandas as pd
+        except ImportError:
+            raise ImportError(
+                "pandas package not found, please install it with `pip install pandas`"
+            )
         if not self.extract_tables:
             return ""
         if not html_table:
@@ -615,7 +622,13 @@ class UnstructuredLoader(BaseLoader):
         web_url: Optional[str] = None,
         **kwargs: Any,
     ):
-        """Initialize loader."""
+        try:
+            import unstructured_client
+        except ImportError:
+            raise ImportError(
+                "unstructured package not found, please install it "
+                "with `pip install 'unstructured[pdf]'`"
+            )
         if file_path is not None and file is not None:
             raise ValueError("file_path and file cannot be defined simultaneously.")
         if client is not None:
@@ -633,7 +646,7 @@ class UnstructuredLoader(BaseLoader):
         unstructured_api_key = api_key or os.getenv("UNSTRUCTURED_API_KEY") or ""
         unstructured_url = url or os.getenv("UNSTRUCTURED_URL") or _DEFAULT_URL
 
-        self.client = client or UnstructuredClient(
+        self.client = client or unstructured_client.UnstructuredClient(
             api_key_auth=unstructured_api_key, server_url=unstructured_url
         )
 
@@ -797,13 +810,15 @@ class _SingleDocumentLoader(BaseLoader):
 
         # Create a PDF parser object associated with the file object.
         if self.unstructured_kwargs.get("url"):
-            return {"source":self.unstructured_kwargs.get("url")}
+            return {"source": self.unstructured_kwargs.get("url")}
         with self.file or open(str(self.file_path), "rb") as file:
             parser = PDFParser(cast(BinaryIO, file))
 
             # Create a PDF document object that stores the document structure.
             doc = PDFDocument(parser, password=self.password)  # type: ignore
-            metadata:dict[str,Any] = {"source": self.file_path} if self.file_path else {}
+            metadata: dict[str, Any] = (
+                {"source": self.file_path} if self.file_path else {}
+            )
 
             for info in doc.info:
                 metadata.update(info)

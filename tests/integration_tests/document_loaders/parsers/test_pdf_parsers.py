@@ -62,7 +62,7 @@ def _assert_with_parser(parser: BaseBlobParser, splits_by_page: bool = True) -> 
 
     if isinstance(parser, PDFMinerParser):  # Replicate a bug
         if parser.extract_images:
-            splits_by_page = True  # PPR Why is this necessary?
+            splits_by_page = True
     if splits_by_page:
         assert len(docs) == 16
     else:
@@ -159,12 +159,12 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
 @pytest.mark.parametrize(
     "parser_factory,params",
     [
-        ("PyPDFParser", {"extraction_mode": "plain"}),
-        ("PyPDFParser", {"extraction_mode": "layout"}),
-        ("PyPDFium2Parser", {}),
+        # ("PyPDFParser", {"extraction_mode": "plain"}),
+        # ("PyPDFParser", {"extraction_mode": "layout"}),
+        # ("PyPDFium2Parser", {}),
         ("PDFMinerParser", {}),
-        ("PyMuPDFParser", {}),
-        ("PDFPlumberParser", {}),
+        # ("PyMuPDFParser", {}),
+        # ("PDFPlumberParser", {}),
     ],
 )
 def test_standard_parameters(

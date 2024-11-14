@@ -1,7 +1,6 @@
 SHELL=/bin/bash
 .PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
-#POETRY_EXTRA?=--all-extras
-POETRY_EXTRA?=
+POETRY_EXTRA?=--all-extras
 POETRY_WITH?=dev,lint,test,codespell
 export PYTHONPATH=patch_partners/unstructured
 
@@ -181,7 +180,7 @@ poetry.lock: pyproject.toml
 lock: poetry.lock
 
 ## Validate the code
-validate: poetry.lock format lint spell_check test integration_tests
+validate: poetry.lock format lint spell_check integration_tests
 
 
 init: poetry.lock

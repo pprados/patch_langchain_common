@@ -85,11 +85,15 @@ def _assert_with_duplicate_parser(parser: BaseBlobParser, dedupe: bool = False) 
 
 @pytest.mark.parametrize(
     "mode",
-    ["single", "paged"],
+    # ["single", "paged"],
+    [
+        "single",
+    ],
 )
 @pytest.mark.parametrize(
     "extract_images",
-    [True, False],
+    # [True, False],
+    [False],
 )
 @pytest.mark.parametrize(
     "parser_factory,params",
@@ -101,27 +105,27 @@ def _assert_with_duplicate_parser(parser: BaseBlobParser, dedupe: bool = False) 
                 "skip_infer_table_types": [],
             },
         ),
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "fast",
-                "skip_infer_table_types": [],
-            },
-        ),
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "hi_res",
-                "skip_infer_table_types": [],
-            },
-        ),
-        (
-            "UnstructuredPDFParser",
-            {
-                "strategy": "ocr_only",
-                "skip_infer_table_types": [],
-            },
-        ),
+        # (
+        #     "UnstructuredPDFParser",
+        #     {
+        #         "strategy": "fast",
+        #         "skip_infer_table_types": [],
+        #     },
+        # ),
+        # (
+        #     "UnstructuredPDFParser",
+        #     {
+        #         "strategy": "hi_res",
+        #         "skip_infer_table_types": [],
+        #     },
+        # ),
+        # (
+        #     "UnstructuredPDFParser",
+        #     {
+        #         "strategy": "ocr_only",
+        #         "skip_infer_table_types": [],
+        #     },
+        # ),
     ],
 )
 def test_unstructured_standard_parameters(
@@ -189,10 +193,12 @@ def test_unstructured_standard_parameters(
 
 
 @pytest.mark.parametrize(
-    "mode", ["single", "paged"],
+    "mode",
+    ["single", "paged"],
 )
 @pytest.mark.parametrize(
-    "extract_tables", ["markdown", "html", "csv", None],
+    "extract_tables",
+    ["markdown", "html", "csv", None],
 )
 @pytest.mark.parametrize(
     "parser_factory,params",

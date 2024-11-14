@@ -38,14 +38,14 @@ from langchain_core.prompts import BasePromptTemplate, PromptTemplate
 
 if TYPE_CHECKING:
     import pdfplumber
-    import pymupdf
-    import pypdf
-    import pypdfium2
-    from PIL import Image
     import pdfplumber.page
+    import pymupdf
     import pymupdf.pymupdf
+    import pypdf
     import pypdf._page
+    import pypdfium2
     import pypdfium2._helpers.page
+    from PIL import Image
     from pypdf import PageObject
     from textractor.data.text_linearization_config import TextLinearizationConfig
 
@@ -655,6 +655,7 @@ class PDFMinerParser(ImagesPdfParser):
         )
         from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
         from pdfminer.pdfpage import PDFPage
+        from PIL import Image
 
         with blob.as_bytes_io() as pdf_file_obj, TemporaryDirectory() as tempdir:
             pages = PDFPage.get_pages(pdf_file_obj, password=self.password or "")
@@ -812,7 +813,6 @@ class PyMuPDFParser(ImagesPdfParser):
                 "strategy": None,  # offer abbreviation
                 "add_lines": None,  # optional user-specified lines
             }
-
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
@@ -1176,7 +1176,7 @@ class PDFPlumberParser(ImagesPdfParser):
                     )
                 else:
                     contents.append(all_text)
-                # PPR: ajouter les tables_as_html et les images dans tous les scénarios ?
+                # PPR: add les tables_as_html et les images dans tous les scénarios ?
                 # "tables_as_html": [self._convert_table_to_html(table)
                 #                    for
                 #                    table in tables_content],
@@ -1276,7 +1276,9 @@ class PDFPlumberParser(ImagesPdfParser):
         for content in images_content:
             yield content
 
-    def _extract_images_from_page(self, page: "pdfplumber.page.Page") -> list[np.ndarray]:
+    def _extract_images_from_page(
+        self, page: "pdfplumber.page.Page"
+    ) -> list[np.ndarray]:
         """Extract images from page and get the text with RapidOCR."""
         if not self.extract_images:
             return []
