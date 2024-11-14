@@ -1,5 +1,6 @@
 import argparse
 import os
+from dotenv import load_dotenv
 
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.parsers.pdf import (
@@ -8,6 +9,9 @@ from langchain_community.document_loaders.parsers.pdf import (
     PyMuPDFParser as old_PyMuPDFParser,
     PyPDFium2Parser as old_PyPDFium2Parser,
     PyPDFParser as old_PyPDFParser,
+)
+from langchain_community.document_loaders.parsers import (
+    AzureAIDocumentIntelligenceParser,
 )
 
 from patch_langchain_community.document_loaders.parsers.pdf import (
@@ -45,6 +49,10 @@ _join_images = "\n"
 _join_tables = "\n"
 _default_page_delimitor = "\f"  # PPR: \f ?
 
+load_dotenv()
+AZURE_API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT')
+AZURE_API_KEY = os.getenv('AZURE_API_KEY')
+AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
 
 pdf_parsers_dict : dict[str, BaseBlobParser] = {
     "new-PDFMinerParser" :
@@ -144,6 +152,12 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
     #     extraction_mode="plain",
     #     extraction_kwargs=None,
     # ),
+    "AzureAIDocumentIntelligenceParser" :
+    AzureAIDocumentIntelligenceParser(
+        api_endpoint=AZURE_API_ENDPOINT,
+        api_key=AZURE_API_KEY,
+        api_version=AZURE_API_VERSION,
+    )
 }
 
 
