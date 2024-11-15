@@ -30,20 +30,19 @@ from patch_partners.unstructured.patch_langchain_unstructured.document_loaders i
 from patch_langchain_community.document_loaders.parsers.new_pdf import PyMuPDF4LLMParser, PDFMultiParser
 from patch_langchain_community.document_loaders.new_pdf import PDFMultiLoader
 
-
 import pandas as pd
 import shutil
 
 # FIXME ajouter des instructions en commentaire pour qu'ils comprenennt les valeurs possibles et les foncitons des paramtetres
 PASSWORD = None
-MODE = "paged"
-EXTRACT_IMAGES = True
-conv_images=convert_images_to_text_with_rapidocr()
-#conv_images=convert_images_to_text_with_tesseract() #FIXME 'pytesseract package not found'
+MODE = "single"
+EXTRACT_IMAGES = False
+IMAGE_FORMAT = "markdown"
+#conv_images=convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
+conv_images=convert_images_to_text_with_tesseract(langs=['en'], format=IMAGE_FORMAT) #FIXME 'pytesseract package not found' --> RAJOUTER DANS PYPROJECT.TOML
 #conv_images=convert_images_to_description() #need use of multimodal model
 EXTRACT_TABLES = "markdown"
 PAGE_DELIMITER = "\n------------------\n"
-IMAGE_FORMAT = "markdown" #FIXME inutile ??
 
 _format_image_str = "\n{image_text}\n"
 _join_images = "\n"
@@ -76,17 +75,17 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
     #     text_kwargs=None,
     #     dedupe=False,
     # ),
-    # "new-PyMuPDFParser" :
-    # PyMuPDFParser(
-    #     password=PASSWORD,
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,
-    #     extract_tables_settings=None,
-    #     text_kwargs=None,
-    # ),
+    "new-PyMuPDFParser" :
+    PyMuPDFParser(
+        password=PASSWORD,
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+        extract_tables_settings=None,
+        text_kwargs=None,
+    ),
     # "new-PyPDFium2Parser" :
     # PyPDFium2Parser(
     #     password=PASSWORD,
@@ -153,12 +152,12 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
     #     extraction_mode="plain",
     #     extraction_kwargs=None,
     # ),
-    "AzureAIDocumentIntelligenceParser" :
-    AzureAIDocumentIntelligenceParser(
-        api_endpoint=AZURE_API_ENDPOINT,
-        api_key=AZURE_API_KEY,
-        api_version=AZURE_API_VERSION,
-    )
+    # "AzureAIDocumentIntelligenceParser" :
+    # AzureAIDocumentIntelligenceParser(
+    #     api_endpoint=AZURE_API_ENDPOINT,
+    #     api_key=AZURE_API_KEY,
+    #     api_version=AZURE_API_VERSION,
+    # )
 }
 
 

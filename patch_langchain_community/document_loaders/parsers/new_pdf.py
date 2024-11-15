@@ -1,5 +1,5 @@
 """Module contains common parsers for PDFs."""
-DEV_DEBUG=False
+DEV_DEBUG=True
 import re
 from typing import (
     Any,
