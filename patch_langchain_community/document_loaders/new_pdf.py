@@ -6,59 +6,17 @@ from typing import (
     Iterator,
     Literal,
     Optional,
-    Union,
-)
+    Union, )
 
-from langchain_community.document_loaders.blob_loaders import Blob, FileSystemBlobLoader
-from langchain_community.document_loaders.generic import GenericLoader
+from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.document_loaders import BaseBlobParser
 from langchain_core.documents import Document
 
-from .pdf import BasePDFLoader
 from .parsers.new_pdf import PDFRouterParser, PyMuPDF4LLMParser, LlamaIndexPDFParser
-from .parsers.pdf import _default_page_delimitor
+from .parsers.pdf import _default_page_delimitor, CONVERT_IMAGE_TO_TEXT
+from .pdf import BasePDFLoader
 
 logger = logging.getLogger(__file__)
-
-
-class PyMuPDF4LLMLoader(BasePDFLoader):
-    """Load `PDF` files using `PyMuPDF`."""
-
-    def __init__(
-            self,
-            file_path: Union[str, Path],
-            *,
-            password: Optional[str] = None,
-            mode: Literal["single", "paged"] = "single",
-            pages_delimitor: str = _default_page_delimitor,
-            extract_images: bool = False,  # FIXME
-            extract_tables: Optional[Literal["markdown"]] = None,  # FIXME
-            **kwargs: Any,
-    ) -> None:
-        """Initialize with a file path."""
-        try:
-            import pymupdf4llm  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "`PyMuPDF4LLM` package not found, please install it with "
-                "`pip install pymupdf4llm`"
-            )
-        super().__init__(file_path)
-        # if extract_images:
-        #     raise NotImplemented("extract_images is not implemented yet.")
-        self.parser = PyMuPDF4LLMParser(
-            mode=mode,
-            pages_delimitor=pages_delimitor,
-            password=password,
-            to_markdown_kwargs=kwargs,
-        )
-
-    def lazy_load(
-            self,
-    ) -> Iterator[Document]:
-        """Lazily load documents."""
-        blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
-        yield from self.parser.lazy_parse(blob)
 
 
 class PDFRouterLoader(BasePDFLoader):
@@ -121,22 +79,87 @@ class PDFRouterLoader(BasePDFLoader):
         yield from self.parser.lazy_parse(blob)
 
 
-class LlamaIndexPDFLoader(GenericLoader):
+class PyMuPDF4LLMLoader(BasePDFLoader):
+    """Load `PDF` files using `PyMuPDF`."""
+
+    def __init__(
+            self,
+            file_path: Union[str, Path],
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "single",
+            pages_delimitor: str = _default_page_delimitor,
+            extract_images: bool = False,  # FIXME
+            extract_tables: Optional[Literal["markdown"]] = None,  # FIXME
+            **kwargs: Any,
+    ) -> None:
+        """Initialize with a file path."""
+        try:
+            import pymupdf4llm  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "`PyMuPDF4LLM` package not found, please install it with "
+                "`pip install pymupdf4llm`"
+            )
+        super().__init__(file_path)
+        # if extract_images:
+        #     raise NotImplemented("extract_images is not implemented yet.")
+        self.parser = PyMuPDF4LLMParser(
+            mode=mode,
+            pages_delimitor=pages_delimitor,
+            password=password,
+            to_markdown_kwargs=kwargs,
+        )
+
+    def lazy_load(
+            self,
+    ) -> Iterator[Document]:
+        """Lazily load documents."""
+        blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        yield from self.parser.lazy_parse(blob)
+
+
+class LlamaIndexPDFLoader(BasePDFLoader):
     def __init__(self,
                  file_path: Union[str, Path],
                  *,
                  password: Optional[str] = None,
                  mode: Literal["single", "paged"] = "single",
                  pages_delimitor: str = _default_page_delimitor,
-                 # extract_images: bool = False,  # FIXME
                  extract_tables: Literal["markdown"] = "markdown",
+                 api_key: Optional[str] = None,
+                 verbose: bool = False,
+                 language: str = "en",
+                 extract_images: bool = False,
+                 images_to_text: CONVERT_IMAGE_TO_TEXT = None,
                  ):
-        super().__init__(blob_loader=FileSystemBlobLoader(
-            path=file_path,
-        ),
-            blob_parser=LlamaIndexPDFParser(
-                password=password,
-                mode=mode,
-                pages_delimitor=pages_delimitor,
-                extract_tables=extract_tables,
-            ))
+        try:
+            from llama_parse import LlamaParse
+        except ImportError:
+            raise ImportError(
+                "llama_parse package not found, please install it "
+                "with `pip install llama_parse`"
+            )
+        super().__init__(file_path)
+        if extract_images:
+            logger.info("Ignore extract_images==True in LlamaIndexPDFParser.")
+        if extract_tables != "markdown" or images_to_text:
+            logger.info("Ignore extract_tables!='markdown' in LlamaIndexPDFParser.")
+        self.parser = LlamaIndexPDFParser(
+            password=password,
+            mode=mode,
+            pages_delimitor=pages_delimitor,
+            extract_images=extract_images,
+            images_to_text=images_to_text,
+            extract_tables=extract_tables,
+            api_key=api_key,
+            verbose=verbose,
+            language=language,
+        )
+
+    def lazy_load(
+            self,
+    ) -> Iterator[Document]:
+        """Lazily load documents."""
+        blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        yield from self.parser.lazy_parse(blob)
