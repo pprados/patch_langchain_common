@@ -483,6 +483,8 @@ class PyPDFParser(ImagesPdfParser):
 
     def extract_images_from_page(self, page: "pypdf._page.PageObject") -> str:
         """Extract images from page and get the text with RapidOCR."""
+        from PIL import Image
+
         if (
             not self.extract_images
             or "/XObject" not in cast(dict, page["/Resources"]).keys()
@@ -1279,7 +1281,8 @@ class PDFPlumberParser(ImagesPdfParser):
     def _extract_images_from_page(
         self, page: "pdfplumber.page.Page"
     ) -> list[np.ndarray]:
-        """Extract images from page and get the text with RapidOCR."""
+        from PIL import Image
+
         if not self.extract_images:
             return []
 

@@ -29,6 +29,8 @@ pymupdf = { version = "^1.24", optional = true }
 pymupdf4llm = { version = "^0.0.17", optional = true }
 rapidocr-onnxruntime = { version = "^1.3", optional = true }
 unstructured = { version = "^0.15.0", extras = ["pdf"], optional = true }
+pytesseract = { version = "^0.3.13", optional = true }
+langchain-openai = { version = "^0.2", optional = true }
 
 [tool.poetry.extras]
 pdf = [
@@ -41,6 +43,9 @@ pdf = [
     "pymupdf4llm",
     "rapidocr-onnxruntime",
     "unstructured",
+
+    "pytesseract",
+    "langchain-openai",
 ]
 
 [tool.poetry.group.dev]
