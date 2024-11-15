@@ -33,21 +33,24 @@ from patch_langchain_community.document_loaders.new_pdf import PDFMultiLoader
 import pandas as pd
 import shutil
 
-# FIXME ajouter des instructions en commentaire pour qu'ils comprenennt les valeurs possibles et les foncitons des paramtetres
 PASSWORD = None
-MODE = "paged"
+# Password to use to open the PDF. If None, no password will be used
+MODE = "single"
+# Extraction mode to use. Either "single" or "paged"
 EXTRACT_IMAGES = True
+# Whether to extract images from the PDF. True/False
 IMAGE_FORMAT = "markdown"
-#conv_images=convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
-conv_images=convert_images_to_text_with_tesseract(langs=['eng'], format=IMAGE_FORMAT)
+# Format to use for the extracted images. Either "text", "html" or "markdown"
+conv_images=convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
+# Function to extract text from images using rapid OCR
+#conv_images=convert_images_to_text_with_tesseract(langs=['eng'], format=IMAGE_FORMAT)
+# Function to extract text from images using tesseract
 #conv_images=convert_images_to_description() #need use of multimodal model
+# Function to extract text from images using multimodal model
 EXTRACT_TABLES = "markdown"
-PAGE_DELIMITER = "\n------------------\n"
-
-_format_image_str = "\n{image_text}\n"
-_join_images = "\n"
-_join_tables = "\n"
-_default_page_delimitor = "\f"  # PPR: \f ?
+# Format to use for the extracted tables. Either "text", "html" or "markdown"
+_default_page_delimitor = "\f"
+# Delimiter that will be put between pages in 'single' mode
 
 load_dotenv()
 AZURE_API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT')
@@ -114,7 +117,6 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
     ),
     "UnstructuredPDFParser_new" :
     UnstructuredPDFParser(
-        password=PASSWORD,
         mode=MODE,
         pages_delimitor=_default_page_delimitor,
         strategy='hi_res',
