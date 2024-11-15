@@ -30,6 +30,7 @@ pymupdf4llm = { version = "^0.0.17", optional = true }
 rapidocr-onnxruntime = { version = "^1.3", optional = true }
 unstructured = { version = "^0.15.0", extras = ["pdf"], optional = true }
 azure-ai-documentintelligence = { version = "^1.0.0b4", optional = true }
+pytesseract = { version = "^0.3.13", optional = true }
 # For Parser Comparator
 openpyxl = { version = "^3.1.5", optional = true }
 
@@ -45,6 +46,7 @@ pdf = [
     "rapidocr-onnxruntime",
     "unstructured",
     "azure-ai-documentintelligence",
+    "pytesseract",
 ]
 parser-comparator = [
     "openpyxl",

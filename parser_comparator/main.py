@@ -35,11 +35,11 @@ import shutil
 
 # FIXME ajouter des instructions en commentaire pour qu'ils comprenennt les valeurs possibles et les foncitons des paramtetres
 PASSWORD = None
-MODE = "single"
-EXTRACT_IMAGES = False
+MODE = "paged"
+EXTRACT_IMAGES = True
 IMAGE_FORMAT = "markdown"
 #conv_images=convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
-conv_images=convert_images_to_text_with_tesseract(langs=['en'], format=IMAGE_FORMAT) #FIXME 'pytesseract package not found' --> RAJOUTER DANS PYPROJECT.TOML
+conv_images=convert_images_to_text_with_tesseract(langs=['eng'], format=IMAGE_FORMAT)
 #conv_images=convert_images_to_description() #need use of multimodal model
 EXTRACT_TABLES = "markdown"
 PAGE_DELIMITER = "\n------------------\n"
@@ -54,8 +54,9 @@ AZURE_API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT')
 AZURE_API_KEY = os.getenv('AZURE_API_KEY')
 AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
 
+
 pdf_parsers_dict : dict[str, BaseBlobParser] = {
-    "new-PDFMinerParser" :
+    "PDFMinerParser_new" :
     PDFMinerParser(
         password=PASSWORD,
         mode=MODE,
@@ -63,19 +64,19 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
-    # "new-PDFPlumberParser" :
-    # PDFPlumberParser(
-    #     password=PASSWORD,
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,
-    #     extract_tables_settings=None,
-    #     text_kwargs=None,
-    #     dedupe=False,
-    # ),
-    "new-PyMuPDFParser" :
+    "PDFPlumberParser_new" :
+    PDFPlumberParser(
+        password=PASSWORD,
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+        extract_tables_settings=None,
+        text_kwargs=None,
+        dedupe=False,
+    ),
+    "PyMuPDFParser_new" :
     PyMuPDFParser(
         password=PASSWORD,
         mode=MODE,
@@ -86,78 +87,85 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
         extract_tables_settings=None,
         text_kwargs=None,
     ),
-    # "new-PyPDFium2Parser" :
-    # PyPDFium2Parser(
-    #     password=PASSWORD,
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
-    # "new-PyPDFParser" :
-    # PyPDFParser(
-    #     password=PASSWORD,
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extraction_mode="plain",
-    #     extraction_kwargs=None,
-    # ),
-    # "new-PyMuPDF4LLMParser" :
-    # PyMuPDF4LLMParser(
-    #     password=PASSWORD,
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     to_markdown_kwargs=None,
-    # ),
-    # # "new-UnstructuredPDFParser" :
-    # # UnstructuredPDFParser(
-    # #     password=PASSWORD,
-    # #     mode=MODE,
-    # #     pages_delimitor=_default_page_delimitor,
-    # #     strategy='hi_res',
-    # #     extract_images=EXTRACT_IMAGES,
-    # #     images_to_text=conv_images,
-    # #     extract_tables=EXTRACT_TABLES,
-    # #     partition_via_api=False,
-    # #     post_processors=None,
-    # # ),
-    #
-    # "old-PDFMinerParser" :
-    # old_PDFMinerParser(
-    #     extract_images=EXTRACT_IMAGES,
-    #     concatenate_pages=(MODE=="single"),
-    # ),
-    # "old-PDFPlumberParser" :
-    # old_PDFPlumberParser(
-    #     text_kwargs=None,
-    #     dedupe=False,
-    #     extract_images=EXTRACT_IMAGES,
-    # ),
-    # "old-PyMuPDFParser" :
-    # old_PyMuPDFParser(
-    #     text_kwargs=None,
-    #     extract_images=EXTRACT_IMAGES,
-    #
-    # ),
-    # "old-PyPDFium2Parser" :
-    # old_PyPDFium2Parser(
-    #     extract_images=False,
-    # ),
-    # "old-PyPDFParser" :
-    # old_PyPDFParser(
-    #     password=PASSWORD,
-    #     extract_images=EXTRACT_IMAGES,
-    #     extraction_mode="plain",
-    #     extraction_kwargs=None,
-    # ),
-    # "AzureAIDocumentIntelligenceParser" :
-    # AzureAIDocumentIntelligenceParser(
-    #     api_endpoint=AZURE_API_ENDPOINT,
-    #     api_key=AZURE_API_KEY,
-    #     api_version=AZURE_API_VERSION,
-    # )
+    "PyPDFium2Parser_new" :
+    PyPDFium2Parser(
+        password=PASSWORD,
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
+    "PyPDFParser_new" :
+    PyPDFParser(
+        password=PASSWORD,
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extraction_mode="plain",
+        extraction_kwargs=None,
+    ),
+    "PyMuPDF4LLMParser_new" :
+    PyMuPDF4LLMParser(
+        password=PASSWORD,
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        to_markdown_kwargs=None,
+    ),
+    "UnstructuredPDFParser_new" :
+    UnstructuredPDFParser(
+        password=PASSWORD,
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        strategy='hi_res',
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+        partition_via_api=False,
+        post_processors=None,
+    ),
+    "PDFMinerParser_old" :
+    old_PDFMinerParser(
+        extract_images=EXTRACT_IMAGES,
+        concatenate_pages=(MODE=="single"),
+    ),
+    "PDFPlumberParser_old" :
+    old_PDFPlumberParser(
+        text_kwargs=None,
+        dedupe=False,
+        extract_images=EXTRACT_IMAGES,
+    ),
+    "PyMuPDFParser_old" :
+    old_PyMuPDFParser(
+        text_kwargs=None,
+        extract_images=EXTRACT_IMAGES,
+
+    ),
+    "PyPDFium2Parser_old" :
+    old_PyPDFium2Parser(
+        extract_images=False,
+    ),
+    "PyPDFParser_old" :
+    old_PyPDFParser(
+        password=PASSWORD,
+        extract_images=EXTRACT_IMAGES,
+        extraction_mode="plain",
+        extraction_kwargs=None,
+    ),
+    "AzureAIDocumentIntelligenceParser" :
+    AzureAIDocumentIntelligenceParser(
+        api_endpoint=AZURE_API_ENDPOINT,
+        api_key=AZURE_API_KEY,
+        api_version=AZURE_API_VERSION,
+    ),
+    "PyMuPDF4LLMParser":
+        PyMuPDF4LLMParser(
+            password=PASSWORD,
+            mode=MODE,
+            pages_delimitor=_default_page_delimitor,
+            to_markdown_kwargs=None,
+        ),
+
 }
 
 
