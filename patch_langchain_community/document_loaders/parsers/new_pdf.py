@@ -4,11 +4,12 @@ import os
 import re
 from typing import (
     Any,
+    BinaryIO,
     Iterator,
     Literal,
     Optional,
     Union,
-    cast, BinaryIO,
+    cast,
 )
 
 import pytest
@@ -16,8 +17,13 @@ from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.documents import Document
 
-from .pdf import ImagesPdfParser, _default_page_delimitor, purge_metadata, \
-    CONVERT_IMAGE_TO_TEXT, PDFMinerParser
+from .pdf import (
+    CONVERT_IMAGE_TO_TEXT,
+    ImagesPdfParser,
+    PDFMinerParser,
+    _default_page_delimitor,
+    purge_metadata,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +32,12 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
     """Parse `PDF` using `PyMuPDF`."""
 
     def __init__(
-            self,
-            *,
-            password: Optional[str] = None,
-            mode: Literal["single", "paged"] = "single",
-            pages_delimitor: str = _default_page_delimitor,
-            to_markdown_kwargs: Optional[dict[str, Any]] = None,
+        self,
+        *,
+        password: Optional[str] = None,
+        mode: Literal["single", "paged"] = "single",
+        pages_delimitor: str = _default_page_delimitor,
+        to_markdown_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize the parser.
 
@@ -82,8 +88,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
             full_text = []
             metadata: dict[str, Any] = {}
             for mu_doc in pymupdf4llm.to_markdown(
-                    doc,
-                    **self.to_markdown_kwargs,
+                doc,
+                **self.to_markdown_kwargs,
             ):
                 if self.mode == "single":
                     full_text.append(mu_doc["text"])
@@ -135,17 +141,17 @@ class PDFRouterParser(BaseBlobParser):
     # {"metadata":r"regex"},
     # doc_regex = r"regex"
     def __init__(
-            self,
-            routes: list[
-                tuple[
-                    Optional[Union[re.Pattern, str]],
-                    Optional[Union[re.Pattern, str]],
-                    Optional[Union[re.Pattern, str]],
-                    BaseBlobParser,
-                ]
-            ],
-            *,
-            password: Optional[str] = None,
+        self,
+        routes: list[
+            tuple[
+                Optional[Union[re.Pattern, str]],
+                Optional[Union[re.Pattern, str]],
+                Optional[Union[re.Pattern, str]],
+                BaseBlobParser,
+            ]
+        ],
+        *,
+        password: Optional[str] = None,
     ):
         """Initialize with a file path."""
         try:
@@ -194,21 +200,21 @@ class LlamaIndexPDFParser(BaseBlobParser):
     """Parse `PDF` using `LlamaIndex`."""
 
     def __init__(
-            self,
-            *,
-            password: Optional[str] = None,
-            mode: Literal["single", "paged"] = "single",
-            pages_delimitor: str = _default_page_delimitor,
-            extract_tables: Literal["markdown"] = "markdown",
-            api_key: Optional[str] = None,
-            verbose: bool = False,
-            language: str = "en",
-            extract_images: bool = False,
-            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+        self,
+        *,
+        password: Optional[str] = None,
+        mode: Literal["single", "paged"] = "single",
+        pages_delimitor: str = _default_page_delimitor,
+        extract_tables: Literal["markdown"] = "markdown",
+        api_key: Optional[str] = None,
+        verbose: bool = False,
+        language: str = "en",
+        extract_images: bool = False,
+        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
     ) -> None:
         try:
+            import pdfminer  # noqa:F401
             from llama_parse import LlamaParse
-            import pdfminer
         except ImportError:
             raise ImportError(
                 "llama_parse package not found, please install it "
@@ -244,9 +250,9 @@ class LlamaIndexPDFParser(BaseBlobParser):
 
     @staticmethod
     def __get_metadata(
-            fp: BinaryIO,
-            password: str = "",
-            caching: bool = True,
+        fp: BinaryIO,
+        password: str = "",
+        caching: bool = True,
     ) -> dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
@@ -279,11 +285,10 @@ class LlamaIndexPDFParser(BaseBlobParser):
         # with open("/home/pprados/workspace.bda/patch_pdf_loader/llama-parse.pickle",
         #           "rb") as f:
         #     llama_documents = pickle.load(f)
-        doc_metadata = (self._get_metadata(blob)
-                        | {"source": blob.source})
+        doc_metadata = self._get_metadata(blob) | {"source": blob.source}
         llama_documents = self._llama_parser.load_data(
-            blob.as_bytes(),
-            extra_info={"file_name": blob.source})
+            blob.as_bytes(), extra_info={"file_name": blob.source}
+        )
 
         full_text = []
         for page_number, llama_doc in enumerate(llama_documents):
@@ -292,9 +297,7 @@ class LlamaIndexPDFParser(BaseBlobParser):
             else:
                 yield Document(
                     page_content=llama_doc.text,
-                    metadata=doc_metadata | llama_doc.metadata | {
-                        "page": page_number
-                    },
+                    metadata=doc_metadata | llama_doc.metadata | {"page": page_number},
                 )
         if self.mode == "single":
             yield Document(

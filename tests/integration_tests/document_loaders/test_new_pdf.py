@@ -1,7 +1,9 @@
 from pathlib import Path
 
 from patch_langchain_community.document_loaders.new_pdf import (
-    PyMuPDF4LLMLoader, LlamaIndexPDFLoader)
+    LlamaIndexPDFLoader,
+    PyMuPDF4LLMLoader,
+)
 
 
 def test_pymupdf4llm_loader() -> None:

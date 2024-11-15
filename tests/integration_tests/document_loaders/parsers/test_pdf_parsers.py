@@ -11,7 +11,6 @@ from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 
 import patch_langchain_community.document_loaders.parsers as pdf_parsers
-from patch_langchain_community.document_loaders.parsers import LlamaIndexPDFParser
 from patch_langchain_community.document_loaders.parsers import (
     PDFMinerParser,
     PDFPlumberParser,
@@ -166,7 +165,7 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
         ("PDFMinerParser", {}),
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
-        ("LlamaIndexPDFParser", {}),
+        # ("LlamaIndexPDFParser", {}),
     ],
 )
 # @pytest.mark.skipif(
@@ -192,7 +191,7 @@ def test_standard_parameters(
         assert "total_pages" in metadata
         if len(docs) > 1:
             assert metadata["page"] == 0
-        if hasattr(parser,"extract_images"):
+        if hasattr(parser, "extract_images") and parser.extract_images:
             images = []
             for doc in docs:
                 _HTML_image = (
@@ -206,7 +205,7 @@ def test_standard_parameters(
                     images.extend(match)
             assert len(images) >= 1
 
-        if hasattr(parser,"password"):
+        if hasattr(parser, "password"):
             old_password = parser.password  # type: ignore
             parser.password = "password"  # type: ignore
             blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)

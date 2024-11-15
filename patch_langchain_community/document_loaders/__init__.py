@@ -20,9 +20,9 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .new_pdf import (
-        PyMuPDF4LLMLoader,
         LlamaIndexPDFLoader,
         PDFRouterLoader,
+        PyMuPDF4LLMLoader,
     )
     from .pdf import (
         AmazonTextractPDFLoader,
@@ -55,7 +55,6 @@ _module_lookup = {
     "PyPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFium2Loader": "patch_langchain_community.document_loaders.pdf",
     "UnstructuredPDFLoader": "patch_langchain_community.document_loaders.pdf",
-
     "PyMuPDF4LLMLoader": "patch_langchain_community.document_loaders.new_pdf",
     "LlamaIndexPDFLoader": "patch_langchain_community.document_loaders.new_pdf",
     "PDFRouterLoader": "patch_langchain_community.document_loaders.new_pdf",
@@ -83,7 +82,6 @@ __all__ = [
     "PyPDFLoader",
     "PyPDFium2Loader",
     "UnstructuredPDFLoader",
-
     "PyMuPDF4LLMLoader",
     "LlamaIndexPDFLoader",
     "PDFRouterLoader",
