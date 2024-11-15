@@ -176,13 +176,13 @@ XXXLoader(
 
 # Metadata
 The different parsers offer a minimum set of common metadata:
+
 - `source`
 - `page`
 - `total_page`
 - `creationdate`
 - `creator`
 - `producer`
-
 - and whatever additional metadata the modules can extract from PDF files. 
 - Dates are converted to ISO 8601 format for easier handling and consistency with 
 other file formats.

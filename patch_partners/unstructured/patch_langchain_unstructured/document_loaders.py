@@ -442,7 +442,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
                         page_content.append(doc.page_content)
                 if self.mode == "single":
                     yield Document(
-                        page_content=self.pages_delimitor.join(page_content),
+                        page_content="\n".join(page_content),
                         metadata=doc_metadata,
                     )
                 else:
