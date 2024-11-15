@@ -55,8 +55,8 @@ conv_images=convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
 # Function to extract text from images using multimodal model
 EXTRACT_TABLES = "markdown"
 # Format to use for the extracted tables. Either "text", "html" or "markdown"
-# Delimiter that will be put between pages in 'single' mode
 _default_page_delimitor = "\f"
+# Delimiter that will be put between pages in 'single' mode
 
 load_dotenv()
 AZURE_API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT')

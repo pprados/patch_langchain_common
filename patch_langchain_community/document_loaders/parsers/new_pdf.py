@@ -30,7 +30,6 @@ logger = logging.getLogger(__name__)
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 
-import logging
 logger = logging.getLogger(__name__)
 
 class PDFMultiParser(BaseBlobParser):
