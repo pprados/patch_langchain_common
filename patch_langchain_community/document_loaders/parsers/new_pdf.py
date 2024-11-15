@@ -178,7 +178,7 @@ class PDFRouterParser(BaseBlobParser):
                         yield from parser.lazy_parse(blob)
 
 
-class LlamaIndexParser(BaseBlobParser):
+class LlamaIndexPDFParser(BaseBlobParser):
     """Parse `PDF` using `PyMuPDF`."""
 
     def __init__(

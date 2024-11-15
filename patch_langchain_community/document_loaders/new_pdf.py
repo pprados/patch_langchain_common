@@ -9,13 +9,13 @@ from typing import (
     Union,
 )
 
-from langchain_community.document_loaders.blob_loaders import Blob
+from langchain_community.document_loaders.blob_loaders import Blob, FileSystemBlobLoader
+from langchain_community.document_loaders.generic import GenericLoader
 from langchain_core.document_loaders import BaseBlobParser
 from langchain_core.documents import Document
 
-from patch_langchain_community.document_loaders.pdf import BasePDFLoader
-
-from .parsers.new_pdf import PDFRouterParser, PyMuPDF4LLMParser
+from .pdf import BasePDFLoader
+from .parsers.new_pdf import PDFRouterParser, PyMuPDF4LLMParser, LlamaIndexPDFParser
 from .parsers.pdf import _default_page_delimitor
 
 logger = logging.getLogger(__file__)
@@ -25,15 +25,15 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
     """Load `PDF` files using `PyMuPDF`."""
 
     def __init__(
-        self,
-        file_path: Union[str, Path],
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
-        pages_delimitor: str = _default_page_delimitor,
-        extract_images: bool = False,  # FIXME
-        extract_tables: Optional[Literal["markdown"]] = None,  # FIXME
-        **kwargs: Any,
+            self,
+            file_path: Union[str, Path],
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "single",
+            pages_delimitor: str = _default_page_delimitor,
+            extract_images: bool = False,  # FIXME
+            extract_tables: Optional[Literal["markdown"]] = None,  # FIXME
+            **kwargs: Any,
     ) -> None:
         """Initialize with a file path."""
         try:
@@ -54,7 +54,7 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
         )
 
     def lazy_load(
-        self,
+            self,
     ) -> Iterator[Document]:
         """Lazily load documents."""
         blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
@@ -87,18 +87,18 @@ class PDFRouterLoader(BasePDFLoader):
     """
 
     def __init__(
-        self,
-        file_path: Union[str, Path],
-        *,
-        routes: list[
-            tuple[
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
-                BaseBlobParser,
-            ]
-        ],
-        password: Optional[str] = None,
+            self,
+            file_path: Union[str, Path],
+            *,
+            routes: list[
+                tuple[
+                    Optional[Union[re.Pattern, str]],
+                    Optional[Union[re.Pattern, str]],
+                    Optional[Union[re.Pattern, str]],
+                    BaseBlobParser,
+                ]
+            ],
+            password: Optional[str] = None,
     ):
         """Initialize with a file path."""
         try:
@@ -111,10 +111,32 @@ class PDFRouterLoader(BasePDFLoader):
         self.parser = PDFRouterParser(routes, password=password)
 
     def lazy_load(
-        self,
+            self,
     ) -> Iterator[Document]:
         if self.web_path:
-            blob = Blob.from_data(open(self.file_path, "rb").read(), path=self.web_path)  # type: ignore[attr-defined]
+            blob = Blob.from_data(open(self.file_path, "rb").read(),
+                                  path=self.web_path)  # type: ignore[attr-defined]
         else:
             blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
         yield from self.parser.lazy_parse(blob)
+
+
+class LlamaIndexPDFLoader(GenericLoader):
+    def __init__(self,
+                 file_path: Union[str, Path],
+                 *,
+                 password: Optional[str] = None,
+                 mode: Literal["single", "paged"] = "single",
+                 pages_delimitor: str = _default_page_delimitor,
+                 # extract_images: bool = False,  # FIXME
+                 extract_tables: Literal["markdown"] = "markdown",
+                 ):
+        super().__init__(blob_loader=FileSystemBlobLoader(
+            path=file_path,
+        ),
+            blob_parser=LlamaIndexPDFParser(
+                password=password,
+                mode=mode,
+                pages_delimitor=pages_delimitor,
+                extract_tables=extract_tables,
+            ))
