@@ -21,7 +21,7 @@ from .pdf import (
     ImagesPdfParser,
     PDFMinerParser,
     _default_page_delimitor,
-    purge_metadata,
+    purge_metadata, PyMuPDFParser,
 )
 
 logger = logging.getLogger(__name__)
@@ -243,36 +243,37 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                 "pymupdf4llm package not found, please install it "
                 "with `pip install pymupdf4llm`"
             )
-        with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
-            if blob.data is None:  # type: ignore[attr-defined]
-                doc = pymupdf.open(file_path)
-            else:
-                doc = pymupdf.open(stream=file_path, filetype="pdf")
-            if doc.is_encrypted:
-                doc.authenticate(self.password)
+        with (PyMuPDFParser._lock):
+            with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
+                if blob.data is None:  # type: ignore[attr-defined]
+                    doc = pymupdf.open(file_path)
+                else:
+                    doc = pymupdf.open(stream=file_path, filetype="pdf")
+                if doc.is_encrypted:
+                    doc.authenticate(self.password)
 
-            full_text = []
-            metadata: dict[str, Any] = {}
-            for mu_doc in pymupdf4llm.to_markdown(
-                doc,
-                **self.to_markdown_kwargs,
-            ):
+                full_text = []
+                metadata: dict[str, Any] = {}
+                for mu_doc in pymupdf4llm.to_markdown(
+                    doc,
+                    **self.to_markdown_kwargs,
+                ):
+                    if self.mode == "single":
+                        full_text.append(mu_doc["text"])
+                        if not metadata:
+                            metadata = mu_doc["metadata"]
+                    elif self.mode == "paged":
+                        yield Document(
+                            page_content=mu_doc["text"],
+                            metadata=purge_metadata(mu_doc["metadata"]),
+                        )
+                        # PPR TODO: extraire les images. Voir PyMuPDFParser
+                        # PPR TODO: extraire les tableaux ? Voir PyMuPDFParser
                 if self.mode == "single":
-                    full_text.append(mu_doc["text"])
-                    if not metadata:
-                        metadata = mu_doc["metadata"]
-                elif self.mode == "paged":
                     yield Document(
-                        page_content=mu_doc["text"],
-                        metadata=purge_metadata(mu_doc["metadata"]),
+                        page_content=self.pages_delimitor.join(full_text),
+                        metadata=purge_metadata(metadata),
                     )
-                    # PPR TODO: extraire les images. Voir PyMuPDFParser
-                    # PPR TODO: extraire les tableaux ? Voir PyMuPDFParser
-            if self.mode == "single":
-                yield Document(
-                    page_content=self.pages_delimitor.join(full_text),
-                    metadata=purge_metadata(metadata),
-                )
 
     _map_key = {"page_count": "total_pages", "file_path": "source"}
     _date_key = ["creationdate", "moddate"]
