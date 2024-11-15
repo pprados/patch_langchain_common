@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 from patch_langchain_community.document_loaders.parsers.new_pdf import (
     PDFRouterParser,
     PyMuPDF4LLMParser,
+    LlamaIndexPDFParser,
 )
 
 _module_lookup = {
@@ -20,7 +21,9 @@ _module_lookup = {
     "PyMuPDFParser": "langchain_community.document_loaders.parsers.pdf",
     "PyPDFParser": "langchain_community.document_loaders.parsers.pdf",
     "PyPDFium2Parser": "langchain_community.document_loaders.parsers.pdf",
+
     "PyMuPDF4LLMParser": "langchain_community.document_loaders.parsers.new_pdf",
+    "LlamaIndexPDFParser": "langchain_community.document_loaders.parsers.new_pdf",
     "PDFRouterParser": "langchain_community.document_loaders.parsers.new_pdf",
 }
 
@@ -36,8 +39,10 @@ __all__ = [
     "PDFMinerParser",
     "PDFPlumberParser",
     "PyMuPDFParser",
-    "PyMuPDF4LLMParser",
     "PyPDFParser",
     "PyPDFium2Parser",
+
+    "PyMuPDF4LLMParser",
+    "LlamaIndexPDFParser",
     "PDFRouterParser",
 ]
