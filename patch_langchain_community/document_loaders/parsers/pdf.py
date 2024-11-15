@@ -45,7 +45,6 @@ if TYPE_CHECKING:
     import pypdf._page
     import pypdfium2
     import pypdfium2._helpers.page
-    from PIL import Image
     from pypdf import PageObject
     from textractor.data.text_linearization_config import TextLinearizationConfig
 

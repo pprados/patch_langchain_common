@@ -10,8 +10,8 @@ import pytest
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 
-import patch_langchain_community.document_loaders.parsers.pdf as pdf_parsers
-from patch_langchain_community.document_loaders.parsers.pdf import (
+import patch_langchain_community.document_loaders.parsers as pdf_parsers
+from patch_langchain_community.document_loaders.parsers import (
     PDFMinerParser,
     PDFPlumberParser,
     PyMuPDFParser,
@@ -159,14 +159,18 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
 @pytest.mark.parametrize(
     "parser_factory,params",
     [
-        # ("PyPDFParser", {"extraction_mode": "plain"}),
-        # ("PyPDFParser", {"extraction_mode": "layout"}),
-        # ("PyPDFium2Parser", {}),
+        ("PyPDFParser", {"extraction_mode": "plain"}),
+        ("PyPDFParser", {"extraction_mode": "layout"}),
+        ("PyPDFium2Parser", {}),
         ("PDFMinerParser", {}),
-        # ("PyMuPDFParser", {}),
-        # ("PDFPlumberParser", {}),
+        ("PyMuPDFParser", {}),
+        ("PDFPlumberParser", {}),
+        # ("LlamaIndexPDFParser", {}),
     ],
 )
+# @pytest.mark.skipif(
+#     not os.environ.get("LLAMA_CLOUD_API_KEY"), reason="Llama cloud API key not found"
+# )
 def test_standard_parameters(
     parser_factory: str, params: dict, mode: str, extract_images: bool
 ) -> None:
@@ -187,7 +191,7 @@ def test_standard_parameters(
         assert "total_pages" in metadata
         if len(docs) > 1:
             assert metadata["page"] == 0
-        if extract_images:
+        if hasattr(parser, "extract_images") and parser.extract_images:
             images = []
             for doc in docs:
                 _HTML_image = (
@@ -201,13 +205,14 @@ def test_standard_parameters(
                     images.extend(match)
             assert len(images) >= 1
 
-        old_password = parser.password  # type: ignore
-        parser.password = "password"  # type: ignore
-        blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)
-        doc_generator = parser.lazy_parse(blob)
-        docs = list(doc_generator)
-        assert len(docs)
-        parser.password = old_password  # type: ignore
+        if hasattr(parser, "password"):
+            old_password = parser.password  # type: ignore
+            parser.password = "password"  # type: ignore
+            blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)
+            doc_generator = parser.lazy_parse(blob)
+            docs = list(doc_generator)
+            assert len(docs)
+            parser.password = old_password  # type: ignore
 
     os.environ["SCARF_NO_ANALYTICS"] = "false"
     os.environ["DO_NOT_TRACK"] = "true"
@@ -236,11 +241,15 @@ def test_standard_parameters(
 )
 @pytest.mark.parametrize(
     "parser_factory,params",
-    [
+    [  # PPR: reactiver tous les tests
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
+        ("LlamaIndexPDFParser", {}),
     ],
 )
+# @pytest.mark.skipif(
+#     not os.environ.get("LLAMA_CLOUD_API_KEY"), reason="Llama cloud API key not found"
+# )
 def test_parser_with_table(
     parser_factory: str,
     params: dict,

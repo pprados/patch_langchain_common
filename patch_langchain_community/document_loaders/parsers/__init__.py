@@ -10,18 +10,20 @@ if TYPE_CHECKING:
         PyPDFParser,
     )
 from patch_langchain_community.document_loaders.parsers.new_pdf import (
+    LlamaIndexPDFParser,
     PDFRouterParser,
     PyMuPDF4LLMParser,
 )
 
 _module_lookup = {
-    "PDFMinerParser": "langchain_community.document_loaders.parsers.pdf",
-    "PDFPlumberParser": "langchain_community.document_loaders.parsers.pdf",
-    "PyMuPDFParser": "langchain_community.document_loaders.parsers.pdf",
-    "PyPDFParser": "langchain_community.document_loaders.parsers.pdf",
-    "PyPDFium2Parser": "langchain_community.document_loaders.parsers.pdf",
-    "PyMuPDF4LLMParser": "langchain_community.document_loaders.parsers.new_pdf",
-    "PDFRouterParser": "langchain_community.document_loaders.parsers.new_pdf",
+    "PDFMinerParser": "patch_langchain_community.document_loaders.parsers.pdf",
+    "PDFPlumberParser": "patch_langchain_community.document_loaders.parsers.pdf",
+    "PyMuPDFParser": "patch_langchain_community.document_loaders.parsers.pdf",
+    "PyPDFParser": "patch_langchain_community.document_loaders.parsers.pdf",
+    "PyPDFium2Parser": "patch_langchain_community.document_loaders.parsers.pdf",
+    "PyMuPDF4LLMParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
+    "LlamaIndexPDFParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
+    "PDFRouterParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
 }
 
 
@@ -36,8 +38,9 @@ __all__ = [
     "PDFMinerParser",
     "PDFPlumberParser",
     "PyMuPDFParser",
-    "PyMuPDF4LLMParser",
     "PyPDFParser",
     "PyPDFium2Parser",
+    "PyMuPDF4LLMParser",
+    "LlamaIndexPDFParser",
     "PDFRouterParser",
 ]

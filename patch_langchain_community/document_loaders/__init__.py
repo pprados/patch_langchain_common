@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .new_pdf import (
+        LlamaIndexPDFLoader,
+        PDFRouterLoader,
         PyMuPDF4LLMLoader,
     )
     from .pdf import (
@@ -47,7 +49,6 @@ _module_lookup = {
     "PDFMinerLoader": "patch_langchain_community.document_loaders.pdf",
     "PDFMinerPDFasHTMLLoader": "patch_langchain_community.document_loaders.pdf",
     "PDFPlumberLoader": "patch_langchain_community.document_loaders.pdf",
-    "PDFRouterLoader": "patch_langchain_community.document_loaders.pdf",
     "PagedPDFSplitter": "patch_langchain_community.document_loaders.pdf",
     "PyMuPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFDirectoryLoader": "patch_langchain_community.document_loaders.pdf",
@@ -55,6 +56,8 @@ _module_lookup = {
     "PyPDFium2Loader": "patch_langchain_community.document_loaders.pdf",
     "UnstructuredPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "PyMuPDF4LLMLoader": "patch_langchain_community.document_loaders.new_pdf",
+    "LlamaIndexPDFLoader": "patch_langchain_community.document_loaders.new_pdf",
+    "PDFRouterLoader": "patch_langchain_community.document_loaders.new_pdf",
 }
 
 
@@ -80,4 +83,6 @@ __all__ = [
     "PyPDFium2Loader",
     "UnstructuredPDFLoader",
     "PyMuPDF4LLMLoader",
+    "LlamaIndexPDFLoader",
+    "PDFRouterLoader",
 ]
