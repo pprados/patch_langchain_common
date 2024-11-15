@@ -183,7 +183,6 @@ The different parsers offer a minimum set of common metadata:
 - `creationdate`
 - `creator`
 - `producer`
-
 - and whatever additional metadata the modules can extract from PDF files. 
 - Dates are converted to ISO 8601 format for easier handling and consistency with 
 other file formats.

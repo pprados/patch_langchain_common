@@ -1,5 +1,5 @@
 """Module contains common parsers for PDFs."""
-
+import os
 import re
 from typing import (
     Any,
@@ -21,12 +21,12 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
     """Parse `PDF` using `PyMuPDF`."""
 
     def __init__(
-        self,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
-        pages_delimitor: str = _default_page_delimitor,
-        to_markdown_kwargs: Optional[dict[str, Any]] = None,
+            self,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "single",
+            pages_delimitor: str = _default_page_delimitor,
+            to_markdown_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize the parser.
 
@@ -39,7 +39,6 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
             to_markdown_kwargs: Keyword arguments to pass to the PyMuPDF4LLM
              extraction method.
         """
-        # self.password = password
         if mode not in ["single", "paged"]:
             raise ValueError("mode must be single or paged")
         self.mode = mode
@@ -74,8 +73,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
             full_text = []
             metadata: dict[str, Any] = {}
             for mu_doc in pymupdf4llm.to_markdown(
-                doc,
-                **self.to_markdown_kwargs,
+                    doc,
+                    **self.to_markdown_kwargs,
             ):
                 if self.mode == "single":
                     full_text.append(mu_doc["text"])
@@ -127,17 +126,17 @@ class PDFRouterParser(BaseBlobParser):
     # {"metadata":r"regex"},
     # doc_regex = r"regex"
     def __init__(
-        self,
-        routes: list[
-            tuple[
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
-                BaseBlobParser,
-            ]
-        ],
-        *,
-        password: Optional[str] = None,
+            self,
+            routes: list[
+                tuple[
+                    Optional[Union[re.Pattern, str]],
+                    Optional[Union[re.Pattern, str]],
+                    Optional[Union[re.Pattern, str]],
+                    BaseBlobParser,
+                ]
+            ],
+            *,
+            password: Optional[str] = None,
     ):
         """Initialize with a file path."""
         try:
@@ -177,3 +176,60 @@ class PDFRouterParser(BaseBlobParser):
                     is_page = not re_page or re_page.search(page1)
                     if is_producer and is_creator and is_page:
                         yield from parser.lazy_parse(blob)
+
+
+class LlamaIndexParser(BaseBlobParser):
+    """Parse `PDF` using `PyMuPDF`."""
+
+    def __init__(
+            self,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "paged"] = "single",
+            pages_delimitor: str = _default_page_delimitor,
+            extract_tables: Literal["markdown"] = "markdown",
+            api_key: Optional[str] = None,
+            verbose: bool = False,
+            language: str = "en",
+    ) -> None:
+        try:
+            from llama_parse import LlamaParse
+        except ImportError:
+            raise ImportError(
+                "llama_parse package not found, please install it "
+                "with `pip install llama_parse`"
+            )
+        if mode not in ["single", "paged"]:
+            raise ValueError("mode must be single or paged")
+        self.password = password
+        self.mode = mode
+        self.extract_tables = extract_tables
+        self.pages_delimitor = pages_delimitor
+        self._llama_parser = LlamaParse(
+            api_key=os.environ.get("LLAMA_CLOUD_API_KEY", api_key),
+            result_type="markdown",  # "markdown" and "text" are available
+            num_workers=1,
+            verbose=verbose,
+            language=language,
+        )
+
+    def lazy_parse(self, blob: Blob) -> Iterator[Document]:
+        # llama_documents = self._llama_parser.load_data(blob.as_bytes())
+        import pickle
+        with open("llama-parse.pickle", "rb") as f:
+            llama_documents = pickle.load(f)
+
+        full_text = []
+        for llama_doc in llama_documents:
+            if self.mode == "single":
+                full_text.append(llama_doc.text)
+            else:
+                yield Document(
+                    page_content=llama_doc.text,
+                    metadata=llama_doc.metadata,
+                )
+        if self.mode == "single":
+            yield Document(
+                page_content=self.pages_delimitor.join(full_text),
+                metadata=llama_documents[0].metadata,
+            )
