@@ -1,5 +1,10 @@
 """Module contains common parsers for PDFs."""
-DEV_DEBUG=True
+from dotenv import load_dotenv
+import os
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
+DEV_DEBUG = os.getenv('DEV_DEBUG', False)
+print('DEV_DEBUG', DEV_DEBUG)
 import logging
 import os
 import re
