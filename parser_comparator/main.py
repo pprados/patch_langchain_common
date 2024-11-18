@@ -51,7 +51,7 @@ conv_images=convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
 # Function to extract text from images using rapid OCR
 #conv_images=convert_images_to_text_with_tesseract(langs=['eng'], format=IMAGE_FORMAT)
 # Function to extract text from images using tesseract
-#conv_images=convert_images_to_description() #need use of multimodal model
+#conv_images=convert_images_to_description(model=ChatOpenAI(model='gpt-4o'))
 # Function to extract text from images using multimodal model
 EXTRACT_TABLES = "markdown"
 # Format to use for the extracted tables. Either "text", "html" or "markdown"
@@ -90,7 +90,7 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
         images_to_text=conv_images,
         extract_tables=EXTRACT_TABLES,
     ),
-    #%%
+    # #%%
     "PyPDFium2Parser_new" :
     PyPDFium2Parser(
         mode=MODE,
@@ -98,7 +98,7 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
-    #%%
+    # #%%
     "PyPDFParser_new" :
     PyPDFParser(
         mode=MODE,
