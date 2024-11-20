@@ -166,3 +166,4 @@ cython_debug/
 .ruff_cache
 
 parser_comparator/multi_parsing_results
+.idea/
