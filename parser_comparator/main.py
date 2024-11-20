@@ -65,7 +65,7 @@ _default_page_delimitor = "\f"
 load_dotenv()
 AZURE_API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT')
 AZURE_API_KEY = os.getenv('AZURE_API_KEY')
-AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
+#AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
 
 
 pdf_parsers_dict : dict[str, BaseBlobParser] = {
@@ -186,22 +186,22 @@ pdf_parsers_dict : dict[str, BaseBlobParser] = {
     #     api_version=AZURE_API_VERSION,
     # ),
     #%%
-    "PyMuPDF4LLMParser":
-        PyMuPDF4LLMParser(
-            mode=MODE,
-            pages_delimitor=_default_page_delimitor,
-            to_markdown_kwargs=None,
-        ),
-    #%%
-    "LlamaIndexPDFParser":
-        LlamaIndexPDFParser(
-            mode=MODE,
-            pages_delimitor=_default_page_delimitor,
-            extract_tables=EXTRACT_TABLES,
-            language='en',
-            extract_images=EXTRACT_IMAGES,
-            images_to_text=conv_images,
-        ),
+    # "PyMuPDF4LLMParser":
+    #     PyMuPDF4LLMParser(
+    #         mode=MODE,
+    #         pages_delimitor=_default_page_delimitor,
+    #         to_markdown_kwargs=None,
+    #     ),
+    # #%%
+    # "LlamaIndexPDFParser":
+    #     LlamaIndexPDFParser(
+    #         mode=MODE,
+    #         pages_delimitor=_default_page_delimitor,
+    #         extract_tables=EXTRACT_TABLES,
+    #         language='en',
+    #         extract_images=EXTRACT_IMAGES,
+    #         images_to_text=conv_images,
+    #     ),
 
 }
 
