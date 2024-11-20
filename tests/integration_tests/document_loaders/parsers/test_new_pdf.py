@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import Mock
 
-from patch_langchain_community.document_loaders.parsers.new_pdf import PDFMultiParser
 from patch_langchain_community.document_loaders.parsers import PyMuPDF4LLMParser
+from patch_langchain_community.document_loaders.parsers.new_pdf import PDFMultiParser
 
 from .test_pdf_parsers import _assert_with_parser
 

@@ -24,54 +24,61 @@ from .pdf import (
     CONVERT_IMAGE_TO_TEXT,
     ImagesPdfParser,
     PDFMinerParser,
+    PyMuPDFParser,
     _default_page_delimitor,
-    purge_metadata, PyMuPDFParser,
+    purge_metadata,
 )
 
 logger = logging.getLogger(__name__)
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-class PDFMultiParser(BaseBlobParser):
 
+class PDFMultiParser(BaseBlobParser):
     def __init__(
-            self,
-            parsers: dict[str : BaseBlobParser],
-            *,
-            continue_if_error: bool = True,
-            debug: bool = False,
+        self,
+        parsers: dict[str:BaseBlobParser],
+        *,
+        max_workers: Optional[int] = None,
+        continue_if_error: bool = True,
+        debug: bool = False,
     ) -> None:
         """"""
         self.parsers = parsers
+        self.max_workers = max_workers
         self.continue_if_error = continue_if_error
         self.debug = debug
 
     def lazy_parse(
-            self,
-            blob: Blob,
+        self,
+        blob: Blob,
     ) -> Iterator[Document]:
         parsers_result = {}
-        all_exceptions:dict[str,Exception]= {}
-        with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
+        all_exceptions: dict[str, Exception] = {}
+        with ThreadPoolExecutor(
+            max_workers=self.max_workers or len(self.parsers)
+        ) as executor:
             # Submit each parser's load method to the executor
-            futures = {executor.submit(self._safe_parse, parser, blob):
-                           parser_name for parser_name, parser in self.parsers.items()
-                       }
+            futures = {
+                executor.submit(self._safe_parse, parser, blob): parser_name
+                for parser_name, parser in self.parsers.items()
+            }
             # Collect the results from the futures as they complete
             for future in as_completed(futures):
                 parser_name = futures[future]
                 try:
                     documents_list = future.result()
-                    #print(f"documents list for parser {parser_name} :", documents_list)
+                    # print(f"documents list for parser {parser_name} :", documents_list)
                     scores_dict = self.evaluate_parsing_quality(documents_list)
                     global_score = np.mean(list(scores_dict.values()))
-                    scores_dict['global_score']=global_score  # FIXME
+                    scores_dict["global_score"] = global_score  # FIXME
                     parsers_result[parser_name] = (documents_list, scores_dict)
-                    #print(f"{parser_name} \u001B[32m completed \u001B[0m")
-                    #print(parsers_result)
+                    # print(f"{parser_name} \u001B[32m completed \u001B[0m")
+                    # print(parsers_result)
 
                 except Exception as e:
                     logger.warning(f"Parser {parser_name} failed with exception : {e}")
@@ -83,9 +90,13 @@ class PDFMultiParser(BaseBlobParser):
             if len(all_exceptions) == 1:
                 raise list(all_exceptions.values())[0]
             else:
-                raise ExceptionGroup("All parsers have failed.", list(all_exceptions.values()))
+                raise ExceptionGroup(
+                    "All parsers have failed.", list(all_exceptions.values())
+                )
 
-        best_parser_data = max(parsers_result.items(), key=lambda item: item[1][1]['global_score'])
+        best_parser_data = max(
+            parsers_result.items(), key=lambda item: item[1][1]["global_score"]
+        )
         best_parser_name = best_parser_data[0]
         if self.debug:
             return list(parsers_result.items()), best_parser_name
@@ -93,11 +104,10 @@ class PDFMultiParser(BaseBlobParser):
             best_parser_associated_documents_list = best_parser_data[1][0]
             return iter(best_parser_associated_documents_list)
 
-
     @staticmethod
     def _safe_parse(
-            parser: BaseBlobParser,
-            blob: Blob,
+        parser: BaseBlobParser,
+        blob: Blob,
     ) -> list[Document]:
         """Parse function handling errors for logging purposes in the multi thread process"""
         try:
@@ -105,17 +115,15 @@ class PDFMultiParser(BaseBlobParser):
         except Exception as e:
             raise e
 
-
     def evaluate_parsing_quality(
-            self,
-            documents_list : list[Document],
-    ) -> dict[str: float]:
+        self,
+        documents_list: list[Document],
+    ) -> dict[str:float]:
         """Evaluate the quality of a parsing based on some metrics measured by heuristics.
         Return the dictionnary {key=metric_name: value=score}"""
 
-
         def evaluate_tables_identification(
-                content : str,
+            content: str,
         ) -> float:
             """Evaluate the quality of tables identification in a document."""
 
@@ -133,7 +141,7 @@ class PDFMultiParser(BaseBlobParser):
                 r"|[^\n,]*),){2,}"
                 r"(?:"
                 r'(?:"(?:[^"]*(?:""[^"]*)*)"'
-                r"|[^\n]*))\n){2,})"
+                r"|[^\n]*))\n){2,})",
             ]
 
             for pattern in patterns:
@@ -142,17 +150,17 @@ class PDFMultiParser(BaseBlobParser):
                     tables_scores_sum += len(matches)
 
         def evaluate_titles_identification(
-                content : str,
+            content: str,
         ) -> float:
             """Evaluate the quality of titles identification in a document."""
 
             titles_tags_weights = {
-                r'# ': np.exp(0),
-                r'## ': np.exp(1),
-                r'### ': np.exp(2),
-                r'#### ': np.exp(3),
-                r'##### ': np.exp(4),
-                r'###### ': np.exp(5)
+                r"# ": np.exp(0),
+                r"## ": np.exp(1),
+                r"### ": np.exp(2),
+                r"#### ": np.exp(3),
+                r"##### ": np.exp(4),
+                r"###### ": np.exp(5),
             }
 
             nonlocal title_level_scores_sum
@@ -165,11 +173,13 @@ class PDFMultiParser(BaseBlobParser):
             return title_level_scores_sum
 
         def evaluate_lists_identification(
-                content : str,
+            content: str,
         ) -> float:
             """Evaluate the quality of lists identification in a document."""
 
-            list_regex = re.compile(r"^([ \t]*)([-*+•◦▪·o]|\d+([./]|(\\.))) .+", re.MULTILINE)
+            list_regex = re.compile(
+                r"^([ \t]*)([-*+•◦▪·o]|\d+([./]|(\\.))) .+", re.MULTILINE
+            )
 
             nonlocal list_level_scores_sum
 
@@ -177,8 +187,9 @@ class PDFMultiParser(BaseBlobParser):
             for match in matches:
                 indent = match[0]  # get indentation
                 level = len(indent)  # a tab is considered equivalent to one space
-                list_level_scores_sum += (level + 1)  # the more indent the parser identify the more it is rewarded
-
+                list_level_scores_sum += (
+                    level + 1
+                )  # the more indent the parser identify the more it is rewarded
 
             return list_level_scores_sum
 
@@ -191,7 +202,7 @@ class PDFMultiParser(BaseBlobParser):
         evaluation_functions_dict = {
             "titles": evaluate_titles_identification,
             "lists": evaluate_lists_identification,
-            'tables': evaluate_tables_identification,
+            "tables": evaluate_tables_identification,
             # You can add more evaluation functions here
         }
 
@@ -207,6 +218,7 @@ class PDFMultiParser(BaseBlobParser):
             # You can add more resulting scores here
         }
         return scores_dict
+
 
 class PyMuPDF4LLMParser(ImagesPdfParser):
     """Parse `PDF` using `PyMuPDF`."""
@@ -257,7 +269,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                 "pymupdf4llm package not found, please install it "
                 "with `pip install pymupdf4llm`"
             )
-        with (PyMuPDFParser._lock):
+        with PyMuPDFParser._lock:
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
                 if blob.data is None:  # type: ignore[attr-defined]
                     doc = pymupdf.open(file_path)
