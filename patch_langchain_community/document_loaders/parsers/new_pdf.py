@@ -2,6 +2,7 @@
 import logging
 import os
 import re
+import sys
 from typing import (
     Any,
     BinaryIO,
@@ -11,6 +12,9 @@ from typing import (
     Union,
     cast,
 )
+
+if sys.version_info < (3, 11):  # FIXME: (3,11)
+    from exceptiongroup import ExceptionGroup
 
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
@@ -37,10 +41,12 @@ class PDFMultiParser(BaseBlobParser):
             self,
             parsers: dict[str : BaseBlobParser],
             *,
+            continue_if_error: bool = True,
             debug: bool = False,
     ) -> None:
         """"""
         self.parsers = parsers
+        self.continue_if_error = continue_if_error
         self.debug = debug
 
     def lazy_parse(
@@ -48,9 +54,10 @@ class PDFMultiParser(BaseBlobParser):
             blob: Blob,
     ) -> Iterator[Document]:
         parsers_result = {}
+        all_exceptions:dict[str,Exception]= {}
         with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
             # Submit each parser's load method to the executor
-            futures = {executor.submit(self.safe_parse, parser, blob):
+            futures = {executor.submit(self._safe_parse, parser, blob):
                            parser_name for parser_name, parser in self.parsers.items()
                        }
             # Collect the results from the futures as they complete
@@ -69,10 +76,14 @@ class PDFMultiParser(BaseBlobParser):
                 except Exception as e:
                     logger.warning(f"Parser {parser_name} failed with exception : {e}")
                     # FIXME: aggregation des exceptions dans une seule exception terminale
-                    if self.debug:
-                        raise e
+                    all_exceptions[parser_name] = e
+        if not self.continue_if_error and all_exceptions:
+            raise ExceptionGroup("Some parsers have failed.", all_exceptions)
         if not parsers_result:
-            raise RuntimeError("All parsers have failed.")
+            if len(all_exceptions) == 1:
+                raise list(all_exceptions.values())[0]
+            else:
+                raise ExceptionGroup("All parsers have failed.", list(all_exceptions.values()))
 
         best_parser_data = max(parsers_result.items(), key=lambda item: item[1][1]['global_score'])
         best_parser_name = best_parser_data[0]
@@ -83,8 +94,8 @@ class PDFMultiParser(BaseBlobParser):
             return iter(best_parser_associated_documents_list)
 
 
-    @staticmethod  # FIXME
-    def safe_parse(
+    @staticmethod
+    def _safe_parse(
             parser: BaseBlobParser,
             blob: Blob,
     ) -> list[Document]:
