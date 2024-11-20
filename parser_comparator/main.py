@@ -69,13 +69,13 @@ AZURE_API_KEY = os.getenv('AZURE_API_KEY')
 
 
 pdf_parsers_dict : dict[str, BaseBlobParser] = {
-    # "PDFMinerParser_new" :
-    # PDFMinerParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
+    "PDFMinerParser_new" :
+    PDFMinerParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
     # #%%
     # "PDFPlumberParser_new" :
     # PDFPlumberParser(

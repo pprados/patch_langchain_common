@@ -195,15 +195,18 @@ def convert_images_to_text_with_rapidocr(
 
         for img in images:
             ocr_result, _ = ocr(img)
-            result = ("\n".join([text[1] for text in ocr_result])).strip()
-            if result:
-                if format == "markdown":
-                    result = result.replace("]", r"\\]")
-                    result = f"![{result}](.)"
-                elif format == "html":
-                    result = f'<img alt="{html.escape(result, quote=True)}" />'
-            logger.debug("RapidOCR text: " + result.replace("\n", "\\n"))
-            yield result
+            if ocr_result:
+                result = ("\n".join([text[1] for text in ocr_result])).strip()
+                if result:
+                    if format == "markdown":
+                        result = result.replace("]", r"\\]")
+                        result = f"![{result}](.)"
+                    elif format == "html":
+                        result = f'<img alt="{html.escape(result, quote=True)}" />'
+                logger.debug("RapidOCR text: " + result.replace("\n", "\\n"))
+                yield result
+            else:
+                yield ""
 
     return _convert_images_to_text
 
