@@ -1,9 +1,4 @@
 """Module contains common parsers for PDFs."""
-from dotenv import load_dotenv
-import os
-# Charger les variables d'environnement depuis le fichier .env
-load_dotenv()
-DEV_DEBUG = os.getenv('DEV_DEBUG', False)
 import logging
 import os
 import re
@@ -40,21 +35,24 @@ class PDFMultiParser(BaseBlobParser):
 
     def __init__(
             self,
-            parsers_dict: dict[str : BaseBlobParser],
-            debug_mode: bool = False,
+            parsers: dict[str : BaseBlobParser],
+            *,
+            debug: bool = False,
     ) -> None:
         """"""
-        self.parsers_dict = parsers_dict
-        self.debug_mode = debug_mode
+        self.parsers = parsers
+        self.debug = debug
 
     def lazy_parse(
             self,
             blob: Blob,
     ) -> Iterator[Document]:
         parsers_result = {}
-        with ThreadPoolExecutor(max_workers=len(self.parsers_dict)) as executor:
+        with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
             # Submit each parser's load method to the executor
-            futures = {executor.submit(self.safe_parse, parser, blob): parser_name for parser_name, parser in self.parsers_dict.items()}
+            futures = {executor.submit(self.safe_parse, parser, blob):
+                           parser_name for parser_name, parser in self.parsers.items()
+                       }
             # Collect the results from the futures as they complete
             for future in as_completed(futures):
                 parser_name = futures[future]
@@ -63,28 +61,29 @@ class PDFMultiParser(BaseBlobParser):
                     #print(f"documents list for parser {parser_name} :", documents_list)
                     scores_dict = self.evaluate_parsing_quality(documents_list)
                     global_score = np.mean(list(scores_dict.values()))
-                    scores_dict['global_score']=global_score
+                    scores_dict['global_score']=global_score  # FIXME
                     parsers_result[parser_name] = (documents_list, scores_dict)
-                    print(f"{parser_name} \u001B[32m completed \u001B[0m")
+                    #print(f"{parser_name} \u001B[32m completed \u001B[0m")
                     #print(parsers_result)
 
                 except Exception as e:
                     logger.warning(f"Parser {parser_name} failed with exception : {e}")
-                    if DEV_DEBUG:
+                    # FIXME: aggregation des exceptions dans une seule exception terminale
+                    if self.debug:
                         raise e
         if not parsers_result:
             raise RuntimeError("All parsers have failed.")
 
         best_parser_data = max(parsers_result.items(), key=lambda item: item[1][1]['global_score'])
         best_parser_name = best_parser_data[0]
-        if self.debug_mode:
+        if self.debug:
             return list(parsers_result.items()), best_parser_name
         else:
             best_parser_associated_documents_list = best_parser_data[1][0]
             return iter(best_parser_associated_documents_list)
 
 
-    @staticmethod
+    @staticmethod  # FIXME
     def safe_parse(
             parser: BaseBlobParser,
             blob: Blob,

@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from patch_langchain_community.document_loaders.parsers.new_pdf import PDFMultiParser
 
+
 class TestPDFMultiParser(unittest.TestCase):
 
     def test_partial_failure(self):
@@ -17,7 +18,7 @@ class TestPDFMultiParser(unittest.TestCase):
         parser2.parse.return_value = [doc_parser2]
         parser3.parse.side_effect = Exception("Parser 3 failed")
 
-        multi_parser = PDFMultiParser(parsers_dict={
+        multi_parser = PDFMultiParser(parsers={
             "parser1" : parser1,
             "parser2" : parser2,
             "parser3" : parser3},
@@ -43,7 +44,7 @@ class TestPDFMultiParser(unittest.TestCase):
         parser2.parse.side_effect = Exception("Parser 2 failed.")
         parser3.parse.side_effect = Exception("Parser 3 failed.")
 
-        multi_parser = PDFMultiParser(parsers_dict={
+        multi_parser = PDFMultiParser(parsers={
             "parser1" : parser1,
             "parser2" : parser2,
             "parser3" : parser3},
@@ -57,6 +58,3 @@ class TestPDFMultiParser(unittest.TestCase):
             self.assertEqual(str(e), "All parsers have failed.")
         else:
             self.fail("An exception was expected, but none was raised.")
-
-if __name__ == '__main__':
-    unittest.main()

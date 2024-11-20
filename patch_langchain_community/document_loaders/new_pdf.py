@@ -7,7 +7,6 @@ from typing import (
     Literal,
     Optional,
     Union,
-    Dict,
 )
 
 from langchain_community.document_loaders.blob_loaders import Blob
@@ -28,9 +27,10 @@ class PDFMultiLoader(BasePDFLoader):
 
     def __init__(
             self,
-            file_path: str,
+            file_path: Union[str, Path],
+            
             pdf_multi_parser: PDFMultiParser,
-            headers: Optional[Dict] = None,
+            headers: Optional[dict] = None,
     ) -> None:
         """Load PDF using a multi parser"""
         super().__init__(file_path, headers=headers)
