@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_community.document_loaders.base import BaseBlobParser
+from langchain_community.document_loaders.parsers.doc_intelligence import AzureAIDocumentIntelligenceParser
 
 from patch_langchain_community.document_loaders.new_pdf import (
     PDFMultiLoader,
@@ -40,28 +41,26 @@ _default_page_delimitor = "\f"
 # Delimiter that will be put between pages in 'single' mode
 
 load_dotenv()
-AZURE_API_ENDPOINT = os.getenv('AZURE_API_ENDPOINT')
-AZURE_API_KEY = os.getenv('AZURE_API_KEY')
 # AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
 
 
 pdf_parsers_dict: dict[str, BaseBlobParser] = {
-    "PDFMinerParser_new":
-        PDFMinerParser(
-            mode=MODE,
-            pages_delimitor=_default_page_delimitor,
-            extract_images=EXTRACT_IMAGES,
-            images_to_text=conv_images,
-        ),
-    # %%
-    "PDFPlumberParser_new":
-        PDFPlumberParser(
-            mode=MODE,
-            pages_delimitor=_default_page_delimitor,
-            extract_images=EXTRACT_IMAGES,
-            images_to_text=conv_images,
-            extract_tables=EXTRACT_TABLES,
-        ),
+    # "PDFMinerParser_new":
+    #     PDFMinerParser(
+    #         mode=MODE,
+    #         pages_delimitor=_default_page_delimitor,
+    #         extract_images=EXTRACT_IMAGES,
+    #         images_to_text=conv_images,
+    #     ),
+    # # %%
+    # "PDFPlumberParser_new":
+    #     PDFPlumberParser(
+    #         mode=MODE,
+    #         pages_delimitor=_default_page_delimitor,
+    #         extract_images=EXTRACT_IMAGES,
+    #         images_to_text=conv_images,
+    #         extract_tables=EXTRACT_TABLES,
+    #     ),
     # #%%
     # "PyMuPDFParser_new" :
     # PyMuPDFParser(
@@ -155,13 +154,13 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     extract_images=EXTRACT_IMAGES,
     #     extraction_mode="plain",
     # ),
-    # #%%
-    # "AzureAIDocumentIntelligenceParser" :
-    # AzureAIDocumentIntelligenceParser(
-    #     api_endpoint=AZURE_API_ENDPOINT,
-    #     api_key=AZURE_API_KEY,
-    #     api_version=AZURE_API_VERSION,
-    # ),
+    #%%
+    "AzureAIDocumentIntelligenceParser" :
+    AzureAIDocumentIntelligenceParser(
+        api_endpoint=os.environ['AZURE_API_ENDPOINT'],
+        api_key=os.environ['AZURE_API_KEY'],
+        # api_version=AZURE_API_VERSION,
+    ),
     # %%
     # "PyMuPDF4LLMParser":
     #     PyMuPDF4LLMParser(
