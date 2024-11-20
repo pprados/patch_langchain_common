@@ -9473,9 +9473,9 @@ type = ["pytest-mypy"]
 
 [extras]
 parser-comparator = ["openpyxl"]
-pdf = ["amazon-textract-caller", "azure-ai-documentintelligence", "llama-parse", "markdownify", "opencv-python", "pdfminer-six", "pdfplumber", "pymupdf", "pymupdf4llm", "pytesseract", "rapidocr-onnxruntime", "unstructured"]
+pdf = ["amazon-textract-caller", "azure-ai-documentintelligence", "exceptiongroup", "llama-parse", "markdownify", "opencv-python", "pdfminer-six", "pdfplumber", "pymupdf", "pymupdf4llm", "pytesseract", "rapidocr-onnxruntime", "unstructured"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "9169cced2d36452506fc7b4de8c2638f70020e10405d79563e4beca5f6cd08f4"
+content-hash = "0ec919467315a8062a46e80856db86a0871da2bbf6c4e88d0d5cd4ed4714418c"
