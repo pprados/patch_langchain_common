@@ -7,18 +7,36 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_community.document_loaders.base import BaseBlobParser
-from langchain_community.document_loaders.parsers.doc_intelligence import AzureAIDocumentIntelligenceParser
+from langchain_community.document_loaders.parsers.pdf import (
+    PDFMinerParser as old_PDFMinerParser,
+    PDFPlumberParser as old_PDFPlumberParser,
+    PyMuPDFParser as old_PyMuPDFParser,
+    PyPDFium2Parser as old_PyPDFium2Parser,
+    PyPDFParser as old_PyPDFParser,
+)
+from langchain_community.document_loaders.parsers import (
+    AzureAIDocumentIntelligenceParser,
+)
 
-from patch_langchain_community.document_loaders.new_pdf import (
-    PDFMultiLoader,
-)
-from patch_langchain_community.document_loaders.parsers.new_pdf import (
-    PDFMultiParser,
-)
 from patch_langchain_community.document_loaders.parsers.pdf import (
     PDFMinerParser,
     PDFPlumberParser,
+    PyMuPDFParser,
+    PyPDFium2Parser,
+    PyPDFParser,
     convert_images_to_text_with_rapidocr,
+    convert_images_to_text_with_tesseract,
+    convert_images_to_description,
+)
+from patch_langchain_unstructured.document_loaders import UnstructuredPDFParser
+
+from patch_langchain_community.document_loaders.parsers.new_pdf import (
+    PyMuPDF4LLMParser,
+    PDFMultiParser,
+    LlamaIndexPDFParser,
+)
+from patch_langchain_community.document_loaders.new_pdf import (
+    PDFMultiLoader,
 )
 
 # Under each parameter you can read a description of it and its possible values
@@ -39,6 +57,7 @@ EXTRACT_TABLES = "markdown"
 # Format to use for the extracted tables. Either "text", "html" or "markdown"
 _default_page_delimitor = "\f"
 # Delimiter that will be put between pages in 'single' mode
+SUFFIX="md"
 
 load_dotenv()
 # AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
@@ -123,44 +142,44 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     images_to_text=conv_images,
     #     extract_tables=EXTRACT_TABLES,
     # ),
-    # #%%
-    # "PDFMinerParser_old" :
-    # old_PDFMinerParser(
-    #     extract_images=EXTRACT_IMAGES,
-    #     concatenate_pages=(MODE=="single"),
-    # ),
-    # #%%
-    # "PDFPlumberParser_old" :
-    # old_PDFPlumberParser(
-    #     text_kwargs=None,
-    #     dedupe=False,
-    #     extract_images=EXTRACT_IMAGES,
-    # ),
-    # #%%
-    # "PyMuPDFParser_old" :
-    # old_PyMuPDFParser(
-    #     text_kwargs=None,
-    #     extract_images=EXTRACT_IMAGES,
-    #
-    # ),
-    # #%%
-    # "PyPDFium2Parser_old" :
-    # old_PyPDFium2Parser(
-    #     extract_images=False,
-    # ),
-    # #%%
-    # "PyPDFParser_old" :
-    # old_PyPDFParser(
-    #     extract_images=EXTRACT_IMAGES,
-    #     extraction_mode="plain",
-    # ),
     #%%
-    "AzureAIDocumentIntelligenceParser" :
-    AzureAIDocumentIntelligenceParser(
-        api_endpoint=os.environ['AZURE_API_ENDPOINT'],
-        api_key=os.environ['AZURE_API_KEY'],
-        # api_version=AZURE_API_VERSION,
+    "PDFMinerParser_old" :
+    old_PDFMinerParser(
+        extract_images=EXTRACT_IMAGES,
+        concatenate_pages=(MODE=="single"),
     ),
+    #%%
+    "PDFPlumberParser_old" :
+    old_PDFPlumberParser(
+        text_kwargs=None,
+        dedupe=False,
+        extract_images=EXTRACT_IMAGES,
+    ),
+    #%%
+    "PyMuPDFParser_old" :
+    old_PyMuPDFParser(
+        text_kwargs=None,
+        extract_images=EXTRACT_IMAGES,
+
+    ),
+    #%%
+    "PyPDFium2Parser_old" :
+    old_PyPDFium2Parser(
+        extract_images=False,
+    ),
+    #%%
+    "PyPDFParser_old" :
+    old_PyPDFParser(
+        extract_images=EXTRACT_IMAGES,
+        extraction_mode="plain",
+    ),
+    # #%%
+    # "AzureAIDocumentIntelligenceParser" :
+    # AzureAIDocumentIntelligenceParser(
+    #     api_endpoint=os.environ['AZURE_API_ENDPOINT'],
+    #     api_key=os.environ['AZURE_API_KEY'],
+    #     # api_version=AZURE_API_VERSION,
+    # ),
     # %%
     # "PyMuPDF4LLMParser":
     #     PyMuPDF4LLMParser(
@@ -229,7 +248,7 @@ def compare_parsing(experiment_name: str):
                 # save concatenated docs parsings as text files
                 for parser_name, concatenated_docs in parser_name2concatenated_parsed_docs.items():
                     output_file_path = (sub_sub_parsings_dir /
-                                        f"{pdf_filename.name}_parsed_{parser_name}.md")
+                                        f"{pdf_filename.name}_parsed_{parser_name}.{SUFFIX}")
                     output_file_path.parent.mkdir(exist_ok=True)
                     with open(output_file_path, 'w', encoding='utf-8') as f:
                         f.write(concatenated_docs)
@@ -239,7 +258,7 @@ def compare_parsing(experiment_name: str):
                     best_parser_name]
 
                 # save the best parsing as .txt file
-                best_parsing_file_path = (result_dir / f"best_parsing_{best_parser_name}.txt")
+                best_parsing_file_path = (result_dir / f"best_parsing_{best_parser_name}.{SUFFIX}")
                 with open(best_parsing_file_path, 'w', encoding='utf-8') as f:
                     f.write(best_parser_concatenated_docs)
 
@@ -259,7 +278,7 @@ def compare_parsing(experiment_name: str):
             # save the best parsing as .txt file
             best_parser_concatenated_docs = _default_page_delimitor.join(
                 [doc.page_content for doc in best_parser_associated_documents_list])
-            best_parsing_file_path = sub_dir_pdf_path / "best_parsing.txt"
+            best_parsing_file_path = result_dir / f"best_parsing.{SUFFIX}"
             with open(best_parsing_file_path, 'w', encoding='utf-8') as f:
                 f.write(best_parser_concatenated_docs)
 
