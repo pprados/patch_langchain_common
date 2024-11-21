@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import threading
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import (
@@ -696,6 +697,8 @@ class _SingleDocumentLoader(BaseLoader):
     locally or via the Unstructured API.
     """
 
+    _lock = threading.Lock()
+
     def __init__(
         self,
         file_path: Optional[str | Path] = None,
@@ -719,22 +722,23 @@ class _SingleDocumentLoader(BaseLoader):
 
     def lazy_load(self) -> Iterator[Document]:
         """Load file."""
-        elements_json = (
-            self._post_process_elements_json(self._elements_json)
-            if self.post_processors
-            else self._elements_json
-        )
-        file_metadata = purge_metadata(self._get_metadata())
-        for element in elements_json:
-            metadata = file_metadata.copy()
-            metadata.update(element.get("metadata"))  # type: ignore
-            metadata.update(
-                {"category": element.get("category") or element.get("type")}
+        with _SingleDocumentLoader._lock:
+            elements_json = (
+                self._post_process_elements_json(self._elements_json)
+                if self.post_processors
+                else self._elements_json
             )
-            metadata.update({"element_id": element.get("element_id")})
-            yield Document(
-                page_content=cast(str, element.get("text")), metadata=metadata
-            )
+            file_metadata = purge_metadata(self._get_metadata())
+            for element in elements_json:
+                metadata = file_metadata.copy()
+                metadata.update(element.get("metadata"))  # type: ignore
+                metadata.update(
+                    {"category": element.get("category") or element.get("type")}
+                )
+                metadata.update({"element_id": element.get("element_id")})
+                yield Document(
+                    page_content=cast(str, element.get("text")), metadata=metadata
+                )
 
     @property
     def _elements_json(self) -> list[dict[str, Any]]:

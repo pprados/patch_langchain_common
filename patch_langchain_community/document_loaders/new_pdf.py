@@ -13,24 +13,26 @@ from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.document_loaders import BaseBlobParser
 from langchain_core.documents import Document
 
-from .parsers.new_pdf import LlamaIndexPDFParser, PDFRouterParser, PyMuPDF4LLMParser
-from .parsers.pdf import CONVERT_IMAGE_TO_TEXT, _default_page_delimitor
-from .pdf import BasePDFLoader
 from patch_langchain_community.document_loaders.pdf import BasePDFLoader
 
-from .parsers.new_pdf import PDFMultiParser, PDFRouterParser, PyMuPDF4LLMParser
-from .parsers.pdf import _default_page_delimitor
+from .parsers.new_pdf import (
+    LlamaIndexPDFParser,
+    PDFMultiParser,
+    PDFRouterParser,
+    PyMuPDF4LLMParser,
+)
+from .parsers.pdf import CONVERT_IMAGE_TO_TEXT, _default_page_delimitor
+from .pdf import BasePDFLoader
 
 logger = logging.getLogger(__file__)
 
-class PDFMultiLoader(BasePDFLoader):
 
+class PDFMultiLoader(BasePDFLoader):
     def __init__(
-            self,
-            file_path: Union[str, Path],
-            
-            pdf_multi_parser: PDFMultiParser,
-            headers: Optional[dict] = None,
+        self,
+        file_path: Union[str, Path],
+        pdf_multi_parser: PDFMultiParser,  # FIXME: Non. C'est implicite normalement
+        headers: Optional[dict] = None,
     ) -> None:
         """Load PDF using a multi parser"""
         super().__init__(file_path, headers=headers)
@@ -45,7 +47,6 @@ class PDFMultiLoader(BasePDFLoader):
         else:
             blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
         yield from self.parser.parse(blob)
-
 
 
 class PDFRouterLoader(BasePDFLoader):
