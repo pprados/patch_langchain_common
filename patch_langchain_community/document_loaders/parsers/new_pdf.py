@@ -39,9 +39,10 @@ logger = logging.getLogger(__name__)
 
 
 class PDFMultiParser(BaseBlobParser):
+
     def __init__(
             self,
-            parsers: dict[str, BaseBlobParser],
+            parsers: dict[str : BaseBlobParser],
             *,
             max_workers: Optional[int] = None,
             continue_if_error: bool = True,
@@ -141,11 +142,11 @@ class PDFMultiParser(BaseBlobParser):
                 except Exception as e:
                     log = f"Parser {parser_name} failed with exception : {e}"
                     logger.warning(log)
-                    all_exceptions[parser_name]=log
+                    all_exceptions[parser_name]=e
 
         # si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des erreurs alors exception
         if not self.continue_if_error and all_exceptions:
-            raise ExceptionGroup("Some parsers have failed.", all_exceptions)
+            raise ExceptionGroup("Some parsers have failed.", list(all_exceptions.values()))
         # si tu ne veux pas que ça continue en cas d'erreur et qu'il n'y a pas d'erreur PASS
         # si tu veux que ça continue en cas d'erreur et qu'il y a des erreurs (PASS elles sont affichées plus haut grâce au logger)
         # si tu veux que ça continue en cas d'erreur et qu'il n'y a pas d'erreur PASS
@@ -229,7 +230,6 @@ class PDFMultiParser(BaseBlobParser):
                 indent = match[0]  # get indentation
                 level = len(indent)  # a tab is considered equivalent to one space
                 list_level_scores_sum += (level + 1)  # the more indent the parser identify the more it is rewarded
-
 
 
             return list_level_scores_sum
