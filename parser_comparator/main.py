@@ -193,7 +193,6 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
 
 
 def compare_parsing(experiment_name: str):
-    debug = True
     base_dir = Path(__file__).parent
     sources_dir_path = base_dir / "sources_pdf"
     results_dir_path = base_dir / "multi_parsing_results"
@@ -208,7 +207,6 @@ def compare_parsing(experiment_name: str):
 
         pdf_multi_parser = PDFMultiParser(
             parsers=pdf_parsers_dict,
-            debug=debug,
             max_workers=MAX_WORKERS,
         )
         # pdf_multi_loader = PDFMultiLoader(

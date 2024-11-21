@@ -141,13 +141,13 @@ class PDFMultiParser(BaseBlobParser):
                     documents = future.result()
                     #print(f"{parser_name} \u001B[32m completed \u001B[0m")
                     #print(f"documents list for parser {parser_name} :", documents)
+                    parser_name2parser_results[parser_name] = {}
                     parser_name2parser_results[parser_name]['is_best'] = False
                     metric_name2score = self.evaluate_parsing_quality(documents)
                     global_score = metric_name2score['global_score']
                     if global_score >= current_best_score:
                         current_best_score = global_score
                         current_best_parser_name = parser_name
-                    parser_name2parser_results[parser_name] = {}
                     parser_name2parser_results[parser_name]['documents'] = documents
                     parser_name2parser_results[parser_name]['metrics'] = metric_name2score
                 except Exception as e:
