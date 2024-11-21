@@ -60,10 +60,10 @@ class PDFMultiParser(BaseBlobParser):
         parsing score.)
         Memory optimisation at least: In multi-thread process we keep in memory only the current parser Documents list
         and the current best parser Documents list."""
+        all_exceptions: dict[str, Exception] = {}
         current_best_score = 0
         current_best_parsing_documents = []
         current_best_parser_name = None
-        all_exceptions: dict[str, Exception] = {}
 
         with ThreadPoolExecutor(
                 max_workers=self.max_workers or len(self.parsers)
@@ -122,12 +122,16 @@ class PDFMultiParser(BaseBlobParser):
     def parse_and_return_all_results(
             self,
             blob: Blob,
-    ) :
-        parser_name2parser_results:dict[str, tuple[list[Document], dict[str, float]]]
+    ) -> dict[str, tuple[list[Document], dict[str, float]]]:
+        """Parse the blob with all parsers and return the results as a dictionary {parser_name: (documents, metrics)}"""
+        parser_name2parser_results:dict[str, dict[str, Any]] = {}
         all_exceptions:dict[str,Exception]= {}
+        current_best_score = 0
+        current_best_parsing_documents = []
+        current_best_parser_name = None
         with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
             # Submit each parser's load method to the executor
-            futures = {executor.submit(self.safe_parse, parser, blob):
+            futures = {executor.submit(self._safe_parse, parser, blob):
                            parser_name for parser_name, parser in self.parsers.items()
                        }
             # Collect the results from the futures as they complete
@@ -137,12 +141,22 @@ class PDFMultiParser(BaseBlobParser):
                     documents = future.result()
                     #print(f"{parser_name} \u001B[32m completed \u001B[0m")
                     #print(f"documents list for parser {parser_name} :", documents)
+                    parser_name2parser_results[parser_name]['is_best'] = False
                     metric_name2score = self.evaluate_parsing_quality(documents)
-                    parser_name2parser_results[parser_name] = (documents, metric_name2score)
+                    global_score = metric_name2score['global_score']
+                    if global_score >= current_best_score:
+                        current_best_score = global_score
+                        current_best_parser_name = parser_name
+                    parser_name2parser_results[parser_name] = {}
+                    parser_name2parser_results[parser_name]['documents'] = documents
+                    parser_name2parser_results[parser_name]['metrics'] = metric_name2score
                 except Exception as e:
                     log = f"Parser {parser_name} failed with exception : {e}"
                     logger.warning(log)
                     all_exceptions[parser_name]=e
+
+        if current_best_parser_name:
+            parser_name2parser_results[current_best_parser_name]['is_best'] = True
 
         # si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des erreurs alors exception
         if not self.continue_if_error and all_exceptions:
