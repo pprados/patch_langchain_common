@@ -1,23 +1,25 @@
-import unittest
 import sys
-from unittest.mock import Mock, MagicMock
+import unittest
+from unittest.mock import MagicMock, Mock
+
 if sys.version_info < (3, 11):  # FIXME: (3,11)
     from exceptiongroup import ExceptionGroup
 from patch_langchain_community.document_loaders.parsers.new_pdf import PDFMultiParser
 
 
 class TestPDFMultiParser(unittest.TestCase):
-
     def setUp(self):
         self.parser1 = Mock()
         self.parser2 = Mock()
         self.parser3 = Mock()
 
-        self.multi_parser = PDFMultiParser(parsers={
-            "parser1_name": self.parser1,
-            "parser2_name": self.parser2,
-            "parser3_name": self.parser3,
-        })
+        self.multi_parser = PDFMultiParser(
+            parsers={
+                "parser1_name": self.parser1,
+                "parser2_name": self.parser2,
+                "parser3_name": self.parser3,
+            }
+        )
 
         self.blob = Mock()
 
@@ -30,12 +32,12 @@ class TestPDFMultiParser(unittest.TestCase):
         self.parser2.parse.return_value = [doc_parser2]
         self.parser3.parse.side_effect = exception_example_2
 
-        with self.assertLogs(level='WARNING') as lo:
+        with self.assertLogs(level="WARNING") as lo:
             self.multi_parser.lazy_parse(self.blob)
 
         logger_output = lo.output
         self.assertEqual(len(logger_output), 2)
-        concatenated_log = ' '.join([log for log in logger_output])
+        concatenated_log = " ".join([log for log in logger_output])
         self.assertIn(str(exception_example_1), concatenated_log)
         self.assertIn(str(exception_example_2), concatenated_log)
 

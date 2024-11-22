@@ -38,11 +38,12 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 
-class PDFMultiParser(BaseBlobParser):
 
+
+class PDFMultiParser(BaseBlobParser):
     def __init__(
             self,
-            parsers: dict[str : BaseBlobParser],
+            parsers: dict[str:BaseBlobParser],
             *,
             max_workers: Optional[int] = None,
             continue_if_error: bool = True,
@@ -56,21 +57,26 @@ class PDFMultiParser(BaseBlobParser):
             self,
             blob: Blob,
     ) -> Iterator[Document]:
-        """Lazily parse the blob. (Fakely because for each parser all Documents are loaded at once to compute the global
-        parsing score.)
-        Memory optimisation at least: In multi-thread process we keep in memory only the current parser Documents list
-        and the current best parser Documents list."""
-        all_exceptions: dict[str, Exception] = {}
-        current_best_score = 0
-        current_best_parsing_documents = []
-        current_best_parser_name = None
+        """Lazily parse the blob. (Fakely because for each parser all Documents need to be loaded at once in order to
+        compute the global parsing score.)"""
+        parsers_results = self.parse_and_evaluate(blob)
+        best_parsing_documents = parsers_results[0][1]
+        for document in best_parsing_documents:
+            document.metadata["parser_name"] = parsers_results[0][0]
 
-        with ThreadPoolExecutor(
-                max_workers=self.max_workers or len(self.parsers)
-        ) as executor:
+        return iter(best_parsing_documents)
+
+    def parse_and_evaluate(
+            self,
+            blob: Blob,
+    ) -> list[tuple[str, list[Document], dict[str, float]]]:
+        """Parse the blob with all parsers and return the results as a dictionary {parser_name: (documents, metrics)}"""
+        parsers_results = []
+        all_exceptions: dict[str, Exception] = {}
+        with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
             # Submit each parser's load method to the executor
             futures = {
-                executor.submit(self._safe_parse, parser, blob): parser_name
+                executor.submit(parser.parse, blob): parser_name
                 for parser_name, parser in self.parsers.items()
             }
             # Collect the results from the futures as they complete
@@ -78,110 +84,40 @@ class PDFMultiParser(BaseBlobParser):
                 parser_name = futures[future]
                 try:
                     documents = future.result()
-                    #print(f"{parser_name} \u001B[32m completed \u001B[0m")
-                    #print(f"documents list for parser {parser_name} :", documents)
+                    # print(f"{parser_name} \u001B[32m completed \u001B[0m")
+                    # print(f"documents list for parser {parser_name} :", documents)
                     metric_name2score = self.evaluate_parsing_quality(documents)
-                    global_score = metric_name2score['global_score']
-                    if global_score >= current_best_score:
-                        current_best_score = global_score
-                        current_best_parsing_documents = documents
-                        current_best_parser_name = parser_name
-
+                    parsers_results.append((parser_name, documents, metric_name2score))
                 except Exception as e:
                     log = f"Parser {parser_name} failed with exception : {e}"
                     logger.warning(log)
-                    all_exceptions[parser_name]=e
+                    all_exceptions[parser_name] = e
 
         # si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des erreurs alors exception
         if not self.continue_if_error and all_exceptions:
-            raise ExceptionGroup("Some parsers have failed.", list(all_exceptions.values()))
-        # si tu ne veux pas que ça continue en cas d'erreur et qu'il n'y a pas d'erreur PASS
-        # si tu veux que ça continue en cas d'erreur et qu'il y a des erreurs (PASS elles sont affichées plus haut grâce au logger)
-        # si tu veux que ça continue en cas d'erreur et qu'il n'y a pas d'erreur PASS
+            raise ExceptionGroup(
+                "Some parsers have failed.", list(all_exceptions.values())
+            )
 
         # si tous les parsers sont en erreur, soulever une exception
         if len(all_exceptions) == len(self.parsers):
-            raise ExceptionGroup("All parsers have failed.", list(all_exceptions.values()))
+            raise ExceptionGroup(
+                "All parsers have failed.", list(all_exceptions.values())
+            )
 
-        current_best_parsing_documents[0].metadata['parser_name'] = current_best_parser_name
-
-        return iter(current_best_parsing_documents)
-
-
-    @staticmethod  # FIXME
-    def _safe_parse(
-            parser: BaseBlobParser,
-            blob: Blob,
-    ) -> list[Document]:
-        """Parse function handling errors for logging purposes in the multi thread process"""
-        try:
-            return parser.parse(blob)
-        except Exception as e:
-            raise e
-
-    def parse_and_return_all_results(
-            self,
-            blob: Blob,
-    ) -> dict[str, tuple[list[Document], dict[str, float]]]:
-        """Parse the blob with all parsers and return the results as a dictionary {parser_name: (documents, metrics)}"""
-        parser_name2parser_results:dict[str, dict[str, Any]] = {}
-        all_exceptions:dict[str,Exception]= {}
-        current_best_score = 0
-        current_best_parsing_documents = []
-        current_best_parser_name = None
-        with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
-            # Submit each parser's load method to the executor
-            futures = {executor.submit(self._safe_parse, parser, blob):
-                           parser_name for parser_name, parser in self.parsers.items()
-                       }
-            # Collect the results from the futures as they complete
-            for future in as_completed(futures):
-                parser_name = futures[future]
-                try:
-                    documents = future.result()
-                    #print(f"{parser_name} \u001B[32m completed \u001B[0m")
-                    #print(f"documents list for parser {parser_name} :", documents)
-                    parser_name2parser_results[parser_name] = {}
-                    parser_name2parser_results[parser_name]['is_best'] = False
-                    metric_name2score = self.evaluate_parsing_quality(documents)
-                    global_score = metric_name2score['global_score']
-                    if global_score >= current_best_score:
-                        current_best_score = global_score
-                        current_best_parser_name = parser_name
-                    parser_name2parser_results[parser_name]['documents'] = documents
-                    parser_name2parser_results[parser_name]['metrics'] = metric_name2score
-                except Exception as e:
-                    log = f"Parser {parser_name} failed with exception : {e}"
-                    logger.warning(log)
-                    all_exceptions[parser_name]=e
-
-        if current_best_parser_name:
-            parser_name2parser_results[current_best_parser_name]['is_best'] = True
-
-        # si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des erreurs alors exception
-        if not self.continue_if_error and all_exceptions:
-            raise ExceptionGroup("Some parsers have failed.", list(all_exceptions.values()))
-        # si tu ne veux pas que ça continue en cas d'erreur et qu'il n'y a pas d'erreur PASS
-        # si tu veux que ça continue en cas d'erreur et qu'il y a des erreurs (PASS elles sont affichées plus haut grâce au logger)
-        # si tu veux que ça continue en cas d'erreur et qu'il n'y a pas d'erreur PASS
-
-        # si tous les parsers sont en erreur, soulever une exception
-        if len(all_exceptions) == len(self.parsers):
-            raise ExceptionGroup("All parsers have failed.", list(all_exceptions.values()))
-
-        return parser_name2parser_results
-
+        # sort parsers results by global score
+        parsers_results.sort(key=lambda x: x[2]["global_score"], reverse=True)
+        return parsers_results
 
     def evaluate_parsing_quality(
             self,
-            documents_list : list[Document],
-    ) -> dict[str: float]:
+            documents_list: list[Document],
+    ) -> dict[str:float]:
         """Evaluate the quality of a parsing based on some metrics measured by heuristics.
         Return the dictionnary {key=metric_name: value=score}"""
 
-
         def evaluate_tables_identification(
-                content : str,
+                content: str,
         ) -> float:
             """Evaluate the quality of tables identification in a document."""
 
@@ -199,7 +135,7 @@ class PDFMultiParser(BaseBlobParser):
                 r"|[^\n,]*),){2,}"
                 r"(?:"
                 r'(?:"(?:[^"]*(?:""[^"]*)*)"'
-                r"|[^\n]*))\n){2,})"
+                r"|[^\n]*))\n){2,})",
             ]
 
             for pattern in patterns:
@@ -208,17 +144,17 @@ class PDFMultiParser(BaseBlobParser):
                     tables_scores_sum += len(matches)
 
         def evaluate_titles_identification(
-                content : str,
+                content: str,
         ) -> float:
             """Evaluate the quality of titles identification in a document."""
 
             titles_tags_weights = {
-                r'# ': np.exp(0),
-                r'## ': np.exp(1),
-                r'### ': np.exp(2),
-                r'#### ': np.exp(3),
-                r'##### ': np.exp(4),
-                r'###### ': np.exp(5)
+                r"# ": np.exp(0),
+                r"## ": np.exp(1),
+                r"### ": np.exp(2),
+                r"#### ": np.exp(3),
+                r"##### ": np.exp(4),
+                r"###### ": np.exp(5),
             }
 
             nonlocal title_level_scores_sum
@@ -231,11 +167,13 @@ class PDFMultiParser(BaseBlobParser):
             return title_level_scores_sum
 
         def evaluate_lists_identification(
-                content : str,
+                content: str,
         ) -> float:
             """Evaluate the quality of lists identification in a document."""
 
-            list_regex = re.compile(r"^([ \t]*)([-*+•◦▪·o]|\d+([./]|(\\.))) .+", re.MULTILINE)
+            list_regex = re.compile(
+                r"^([ \t]*)([-*+•◦▪·o]|\d+([./]|(\\.))) .+", re.MULTILINE
+            )
 
             nonlocal list_level_scores_sum
 
@@ -243,16 +181,12 @@ class PDFMultiParser(BaseBlobParser):
             for match in matches:
                 indent = match[0]  # get indentation
                 level = len(indent)  # a tab is considered equivalent to one space
-                list_level_scores_sum += (level + 1)  # the more indent the parser identify the more it is rewarded
-
+                list_level_scores_sum += (
+                        level + 1
+                )  # the more indent the parser identify the more it is rewarded
 
             return list_level_scores_sum
 
-        def compute_global_parsing_score(
-                metric_name2score : dict[str, float],
-        ) -> float:
-            """Compute the global parsing score based on the scores of each metric."""
-            return np.mean(list(metric_name2score.values()))
 
 
         # Metrics
@@ -264,11 +198,11 @@ class PDFMultiParser(BaseBlobParser):
         evaluation_functions_dict = {
             "titles": evaluate_titles_identification,
             "lists": evaluate_lists_identification,
-            'tables': evaluate_tables_identification,
+            "tables": evaluate_tables_identification,
             # You can add more evaluation functions here
         }
 
-        for doc in documents_list:
+        for doc in documents_list: # FIXME la note doit se faire au niveau du texte et non de la page
             content = doc.page_content
             for func_name, func in evaluation_functions_dict.items():
                 func(content)
@@ -279,9 +213,24 @@ class PDFMultiParser(BaseBlobParser):
             "tables": tables_scores_sum,
             # You can add more resulting scores here
         }
-        global_score = compute_global_parsing_score(metric_name2score)
-        metric_name2score['global_score'] = global_score
+        global_score = self.compute_global_parsing_score(metric_name2score)
+        metric_name2score["global_score"] = global_score
         return metric_name2score
+
+    def compute_global_parsing_score(
+            self,
+            metric_name2score: dict[str, float],
+    ) -> float:
+        """Compute the global parsing score based on the scores of each metric."""
+        return np.mean(list(metric_name2score.values()))
+
+    def metric_x(self,
+                 ):
+        ...
+
+    def metric_y(self,
+             ):
+        ... # FIXME méthode d'invocation de toutes les méthos commençant par 'metric_' et prendre 'x' en key du dict retourné
 
 class PyMuPDF4LLMParser(ImagesPdfParser):
     """Parse `PDF` using `PyMuPDF`."""
@@ -332,7 +281,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                 "pymupdf4llm package not found, please install it "
                 "with `pip install pymupdf4llm`"
             )
-        with (PyMuPDFParser._lock):
+        with PyMuPDFParser._lock:
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
                 if blob.data is None:  # type: ignore[attr-defined]
                     doc = pymupdf.open(file_path)

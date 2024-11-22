@@ -31,12 +31,19 @@ class PDFMultiLoader(BasePDFLoader):
     def __init__(
         self,
         file_path: Union[str, Path],
-        pdf_multi_parser: PDFMultiParser,  # FIXME: Non. C'est implicite normalement
+        *,
         headers: Optional[dict] = None,
+        parsers: dict[str:BaseBlobParser],
+        max_workers: Optional[int] = None,
+        continue_if_error: bool = True,
     ) -> None:
         """Load PDF using a multi parser"""
         super().__init__(file_path, headers=headers)
-        self.parser = pdf_multi_parser
+        self.parser = PDFMultiParser(
+            parsers=parsers,
+            max_workers=max_workers,
+            continue_if_error=continue_if_error,
+        )
 
     def lazy_load(
         self,

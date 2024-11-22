@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_community.document_loaders.base import BaseBlobParser
+from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_community.document_loaders.parsers import (
     AzureAIDocumentIntelligenceParser,
 )
@@ -71,7 +71,8 @@ MAX_WORKERS = 1
 
 load_dotenv()
 # AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
-
+import logging # Set the logging level to WARNING to reduce verbosity
+logging.getLogger('azure').setLevel(logging.WARNING)
 
 pdf_parsers_dict: dict[str, BaseBlobParser] = {
     "PDFMinerParser_new": PDFMinerParser(
@@ -110,21 +111,21 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     extract_images=EXTRACT_IMAGES,
     #     images_to_text=conv_images,
     # ),
-    # # %%
+    # %%
     # "PyMuPDF4LLMParser_new": PyMuPDF4LLMParser(
     #     mode=MODE,
     #     pages_delimitor=_default_page_delimitor,
     #     to_markdown_kwargs=None,
     # ),
     # # %%
-    # "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="fast",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,
-    # ),
+    "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        strategy="fast",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+    ),
     # # %% BUG avec 11:SIGSEGV
     # "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
     #     mode=MODE,
@@ -159,27 +160,27 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     text_kwargs=None,
     #     extract_images=EXTRACT_IMAGES,
     # ),
-    # # %%
-    # "PyPDFium2Parser_old": old_PyPDFium2Parser(
-    #     extract_images=False,
-    # ),
+    # %%
+    "PyPDFium2Parser_old": old_PyPDFium2Parser(
+        extract_images=False,
+    ),
     # # %%
     # "PyPDFParser_old": old_PyPDFParser(
     #     extract_images=EXTRACT_IMAGES,
     #     extraction_mode="plain",
     # ),
     # # %%
-    # "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
-    #     api_endpoint=os.environ["AZURE_API_ENDPOINT"],
-    #     api_key=os.environ["AZURE_API_KEY"],
-    #     # api_version=AZURE_API_VERSION,
-    # ),
+    "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
+        api_endpoint=os.environ["AZURE_API_ENDPOINT"],
+        api_key=os.environ["AZURE_API_KEY"],
+        # api_version=AZURE_API_VERSION,
+    ),
     # # %%
-    # "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     to_markdown_kwargs=None,
-    # ),
+    "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        to_markdown_kwargs=None,
+    ),
     # # %%
     # "LlamaIndexPDFParser": LlamaIndexPDFParser(
     #     mode=MODE,
@@ -199,30 +200,34 @@ def compare_parsing(experiment_name: str):
 
     # Iterating over the directories in the sources directory
     # for root, dirs, files in os.walk(sources_dir_path):
-    for pdf_file_relative_path in glob("**/*.pdf", root_dir=sources_dir_path, recursive=True):
+    for pdf_file_relative_path in glob(
+        "**/*.pdf", root_dir=sources_dir_path, recursive=True
+    ):
         pdf_file_relative_path = Path(pdf_file_relative_path)
         experiment_dir = results_dir_path / pdf_file_relative_path / experiment_name
-
         print(f"processing {pdf_file_relative_path}... ")
 
         pdf_multi_parser = PDFMultiParser(
             parsers=pdf_parsers_dict,
             max_workers=MAX_WORKERS,
         )
-        # pdf_multi_loader = PDFMultiLoader(
-        #     file_path=sources_dir_path / pdf_file_relative_path,
-        #     pdf_multi_parser=pdf_multi_parser,
-        # )
 
         blob = Blob.from_path(sources_dir_path / pdf_file_relative_path)
 
         # get the results per parser and the best parser info
         try:
-            parser_name2parser_results = pdf_multi_parser.parse_and_return_all_results(blob)
+            parsers_results = pdf_multi_parser.parse_and_evaluate(
+                blob
+            )
 
             # create a sub directory to store the parsings by parser
             parsings_subdir = experiment_dir / "parsings_by_parser"
             parsings_subdir.mkdir(parents=True, exist_ok=True)
+
+            # if the experiment directory contains some files, delete them
+            for item in Path(experiment_dir).rglob('*'):
+                if item.is_file():
+                    item.unlink()
 
             # parser_name2list_parsed_docs_list = {parser_data[0]: parser_data[1][0] for parser_data in parsers_result}
             # for parser_name, parsed_docs_list in parser_name2list_parsed_docs_list.items(): #FIXME delete when done
@@ -231,48 +236,43 @@ def compare_parsing(experiment_name: str):
             #         raise Exception(f"{parser_name} works as if in paged mode")
             # store parsed documents
             parser_name2concatenated_parsed_docs = {
-                parser_name: _default_page_delimitor.join(
-                    [doc.page_content for doc in parser_results['documents']]
-                )
-                for parser_name, parser_results in parser_name2parser_results.items()
-            }
+                parser_data[0]:
+                    _default_page_delimitor.join([doc.page_content for doc in parser_data[1]])
+                for parser_data in parsers_results}
 
             # save concatenated docs parsings as text files
             for (
-                parser_name,
-                concatenated_docs,
+                    parser_name,
+                    concatenated_docs,
             ) in parser_name2concatenated_parsed_docs.items():
                 output_file_path = (
-                    parsings_subdir
-                    / f"{pdf_file_relative_path.name}_parsed_{parser_name}.{SUFFIX}"
+                        parsings_subdir
+                        / f"{pdf_file_relative_path.name}_parsed_{parser_name}.{SUFFIX}"
                 )
                 output_file_path.parent.mkdir(exist_ok=True)
                 with open(output_file_path, "w", encoding="utf-8") as f:
                     f.write(concatenated_docs)
 
             # get the best parser name and its concatenated parsed docs
-            best_parser_name = [parser_name for parser_name, parser_results in parser_name2parser_results.items() if parser_results['is_best']][0]
+            best_parser_name = parsers_results[0][0]
             best_parser_concatenated_docs = parser_name2concatenated_parsed_docs[
                 best_parser_name
             ]
 
             # save the best parsing as .txt file
             best_parsing_file_path = (
-                experiment_dir / f"best_parsing_{best_parser_name}.{SUFFIX}"
+                    experiment_dir / f"best_parsing_{best_parser_name}.{SUFFIX}"
             )
             with open(best_parsing_file_path, "w", encoding="utf-8") as f:
                 f.write(best_parser_concatenated_docs)
 
             # store parsing scores in excel format heatmap
             parser_name2metrics = {
-                parser_name: parser_results['metrics']
-                for parser_name, parser_results in parser_name2parser_results.items()
+                parser_data[0]: parser_data[2] for parser_data in parsers_results
             }
             df = pd.DataFrame(parser_name2metrics).T
             styled_df = df.style.background_gradient()
-            styled_df.to_excel(
-                f"{parsings_subdir}/parsers_metrics_results.xlsx"
-            )
+            styled_df.to_excel(f"{parsings_subdir}/parsers_metrics_results.xlsx")
         except Exception as e:
             print(f"Error processing {pdf_file_relative_path}: {e}")
             raise e
