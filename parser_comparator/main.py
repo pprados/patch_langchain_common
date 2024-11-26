@@ -49,7 +49,7 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
 
 # Under each parameter you can read a description of it and its possible values
 
-MODE = "single"
+MODE = "paged"
 # Extraction mode to use. Either "single" or "paged"
 EXTRACT_IMAGES = False
 # Whether to extract images from the PDF. True/False
@@ -81,7 +81,7 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
-    # # %%
+    #%%
     # "PDFPlumberParser_new": PDFPlumberParser(
     #     mode=MODE,
     #     pages_delimitor=_default_page_delimitor,
@@ -89,7 +89,7 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     images_to_text=conv_images,
     #     extract_tables=EXTRACT_TABLES,
     # ),
-    # # %%
+    #%%
     # "PyMuPDFParser_new": PyMuPDFParser(
     #     mode=MODE,
     #     pages_delimitor=_default_page_delimitor,
@@ -97,14 +97,14 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     images_to_text=conv_images,
     #     extract_tables=EXTRACT_TABLES,
     # ),
-    # # #%%
+    #%%
     # "PyPDFium2Parser_new": PyPDFium2Parser(
     #     mode=MODE,
     #     pages_delimitor=_default_page_delimitor,
     #     extract_images=EXTRACT_IMAGES,
     #     images_to_text=conv_images,
     # ),
-    # # #%%
+    #%%
     # "PyPDFParser_new": PyPDFParser(
     #     mode=MODE,
     #     pages_delimitor=_default_page_delimitor,
@@ -117,16 +117,16 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     pages_delimitor=_default_page_delimitor,
     #     to_markdown_kwargs=None,
     # ),
-    # # %%
-    "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
-        mode=MODE,
-        pages_delimitor=_default_page_delimitor,
-        strategy="fast",
-        extract_images=EXTRACT_IMAGES,
-        images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,
-    ),
-    # # %% BUG avec 11:SIGSEGV
+    # %%
+    # "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
+    #     mode=MODE,
+    #     pages_delimitor=_default_page_delimitor,
+    #     strategy="fast",
+    #     extract_images=EXTRACT_IMAGES,
+    #     images_to_text=conv_images,
+    #     extract_tables=EXTRACT_TABLES,
+    # ),
+    # %% BUG avec 11:SIGSEGV
     # "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
     #     mode=MODE,
     #     pages_delimitor=_default_page_delimitor,
@@ -161,27 +161,27 @@ pdf_parsers_dict: dict[str, BaseBlobParser] = {
     #     extract_images=EXTRACT_IMAGES,
     # ),
     # %%
-    "PyPDFium2Parser_old": old_PyPDFium2Parser(
-        extract_images=False,
-    ),
-    # # %%
+    # "PyPDFium2Parser_old": old_PyPDFium2Parser(
+    #     extract_images=False,
+    # ),
+    # %%
     # "PyPDFParser_old": old_PyPDFParser(
     #     extract_images=EXTRACT_IMAGES,
     #     extraction_mode="plain",
     # ),
-    # # %%
-    "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
-        api_endpoint=os.environ["AZURE_API_ENDPOINT"],
-        api_key=os.environ["AZURE_API_KEY"],
-        # api_version=AZURE_API_VERSION,
-    ),
-    # # %%
+    # %%
+    # "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
+    #     api_endpoint=os.environ["AZURE_API_ENDPOINT"],
+    #     api_key=os.environ["AZURE_API_KEY"],
+    #     # api_version=AZURE_API_VERSION,
+    # ),
+    # %%
     "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
         mode=MODE,
         pages_delimitor=_default_page_delimitor,
         to_markdown_kwargs=None,
     ),
-    # # %%
+    # %%
     # "LlamaIndexPDFParser": LlamaIndexPDFParser(
     #     mode=MODE,
     #     pages_delimitor=_default_page_delimitor,

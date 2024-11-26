@@ -115,107 +115,85 @@ class PDFMultiParser(BaseBlobParser):
     ) -> dict[str:float]:
         """Evaluate the quality of a parsing based on some metrics measured by heuristics.
         Return the dictionnary {key=metric_name: value=score}"""
+        metric_methods = [getattr(self, m) for m in dir(self) if m.startswith("metric_")]
 
-        def evaluate_tables_identification(
-                content: str,
-        ) -> float:
-            """Evaluate the quality of tables identification in a document."""
+        metric_name2score = {}
+        concatenated_docs = "\n".join([doc.page_content for doc in documents_list])
+        for method in metric_methods:
+            metric_name2score[method.__name__.split('metric_')[1]] = method(concatenated_docs)
 
-            nonlocal tables_scores_sum
-
-            patterns = [
-                r"(?s)("
-                r"(?:(?:[^\n]*\|)\n)"
-                r"(?:\|(?:\s?:?---*:?\s?\|)+)\n"
-                r"(?:(?:[^\n]*\|)\n)+"
-                r")",
-                r"(?s)(<table[^>]*>(?:.*?)<\/table>)",
-                r"((?:(?:"
-                r'(?:"(?:[^"]*(?:""[^"]*)*)"'
-                r"|[^\n,]*),){2,}"
-                r"(?:"
-                r'(?:"(?:[^"]*(?:""[^"]*)*)"'
-                r"|[^\n]*))\n){2,})",
-            ]
-
-            for pattern in patterns:
-                matches = re.findall(pattern, content)
-                if matches:
-                    tables_scores_sum += len(matches)
-
-        def evaluate_titles_identification(
-                content: str,
-        ) -> float:
-            """Evaluate the quality of titles identification in a document."""
-
-            titles_tags_weights = {
-                r"# ": np.exp(0),
-                r"## ": np.exp(1),
-                r"### ": np.exp(2),
-                r"#### ": np.exp(3),
-                r"##### ": np.exp(4),
-                r"###### ": np.exp(5),
-            }
-
-            nonlocal title_level_scores_sum
-
-            for title, weight in titles_tags_weights.items():
-                pattern = re.compile(rf"^{re.escape(title)}", re.MULTILINE)
-                matches = re.findall(pattern, content)
-                title_level_scores_sum += len(matches) * weight
-
-            return title_level_scores_sum
-
-        def evaluate_lists_identification(
-                content: str,
-        ) -> float:
-            """Evaluate the quality of lists identification in a document."""
-
-            list_regex = re.compile(
-                r"^([ \t]*)([-*+•◦▪·o]|\d+([./]|(\\.))) .+", re.MULTILINE
-            )
-
-            nonlocal list_level_scores_sum
-
-            matches = re.findall(list_regex, content)
-            for match in matches:
-                indent = match[0]  # get indentation
-                level = len(indent)  # a tab is considered equivalent to one space
-                list_level_scores_sum += (
-                        level + 1
-                )  # the more indent the parser identify the more it is rewarded
-
-            return list_level_scores_sum
-
-
-
-        # Metrics
-        title_level_scores_sum = 0
-        list_level_scores_sum = 0
-        tables_scores_sum = 0
-
-        # Heuristics function used for each metric
-        evaluation_functions_dict = {
-            "titles": evaluate_titles_identification,
-            "lists": evaluate_lists_identification,
-            "tables": evaluate_tables_identification,
-            # You can add more evaluation functions here
-        }
-
-        for doc in documents_list: # FIXME la note doit se faire au niveau du texte et non de la page
-            content = doc.page_content
-            for func_name, func in evaluation_functions_dict.items():
-                func(content)
-
-        metric_name2score = {
-            "titles": title_level_scores_sum,
-            "lists": list_level_scores_sum,
-            "tables": tables_scores_sum,
-            # You can add more resulting scores here
-        }
         global_score = self.compute_global_parsing_score(metric_name2score)
         metric_name2score["global_score"] = global_score
         return metric_name2score
+
+    def metric_tables(
+            self,
+            content: str,
+    ) -> float:
+        """Evaluate the quality of tables identification in a document."""
+        tables_score = 0
+        patterns = [
+            r"(?s)("
+            r"(?:(?:[^\n]*\|)\n)"
+            r"(?:\|(?:\s?:?---*:?\s?\|)+)\n"
+            r"(?:(?:[^\n]*\|)\n)+"
+            r")",
+            r"(?s)(<table[^>]*>(?:.*?)<\/table>)",
+            r"((?:(?:"
+            r'(?:"(?:[^"]*(?:""[^"]*)*)"'
+            r"|[^\n,]*),){2,}"
+            r"(?:"
+            r'(?:"(?:[^"]*(?:""[^"]*)*)"'
+            r"|[^\n]*))\n){2,})",
+        ]
+
+        for pattern in patterns:
+            matches = re.findall(pattern, content)
+            if matches:
+                tables_score += len(matches)
+        return tables_score
+
+    def metric_titles(
+            self,
+            content: str,
+    ) -> float:
+        """Evaluate the quality of titles identification in a document."""
+        title_score = 0
+        titles_tags_weights = {
+            r"# ": np.exp(0),
+            r"## ": np.exp(1),
+            r"### ": np.exp(2),
+            r"#### ": np.exp(3),
+            r"##### ": np.exp(4),
+            r"###### ": np.exp(5),
+        }
+
+        for title, weight in titles_tags_weights.items():
+            pattern = re.compile(rf"^{re.escape(title)}", re.MULTILINE)
+            matches = re.findall(pattern, content)
+            title_score += len(matches) * weight
+
+        return title_score
+
+    def metric_lists(
+            self,
+            content: str,
+    ) -> float:
+        """Evaluate the quality of lists identification in a document."""
+        lists_score = 0
+        list_regex = re.compile(
+            r"^([ \t]*)([-*+•◦▪·o]|\d+([./]|(\\.))) .+", re.MULTILINE
+        )
+
+        matches = re.findall(list_regex, content)
+        for match in matches:
+            indent = match[0]  # get indentation
+            level = len(indent)
+            lists_score += (
+                    level + 1
+            )  # the more indent the parser identify the more it is rewarded
+
+        return lists_score
 
     def compute_global_parsing_score(
             self,
@@ -223,14 +201,6 @@ class PDFMultiParser(BaseBlobParser):
     ) -> float:
         """Compute the global parsing score based on the scores of each metric."""
         return np.mean(list(metric_name2score.values()))
-
-    def metric_x(self,
-                 ):
-        ...
-
-    def metric_y(self,
-             ):
-        ... # FIXME méthode d'invocation de toutes les méthos commençant par 'metric_' et prendre 'x' en key du dict retourné
 
 class PyMuPDF4LLMParser(ImagesPdfParser):
     """Parse `PDF` using `PyMuPDF`."""
