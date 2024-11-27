@@ -1,53 +1,60 @@
+import sys
 import unittest
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
+if sys.version_info < (3, 11):  # FIXME: (3,11)
+    from exceptiongroup import ExceptionGroup
 from patch_langchain_community.document_loaders.parsers.new_pdf import PDFMultiParser
 
 
 class TestPDFMultiParser(unittest.TestCase):
-    def test_partial_failure(self):
-        parser1 = Mock()
-        parser2 = Mock()
-        parser3 = Mock()
+    def setUp(self):
+        self.parser1 = Mock()
+        self.parser2 = Mock()
+        self.parser3 = Mock()
 
-        parser1.parse.side_effect = Exception("Parser 1 failed")
-        doc_parser2 = Mock()
-        doc_parser2.page_content = ""
-        parser2.parse.return_value = [doc_parser2]
-        parser3.parse.side_effect = Exception("Parser 3 failed")
-
-        multi_parser = PDFMultiParser(
-            parsers={"parser1": parser1, "parser2": parser2, "parser3": parser3},
+        self.multi_parser = PDFMultiParser(
+            parsers={
+                "parser1_name": self.parser1,
+                "parser2_name": self.parser2,
+                "parser3_name": self.parser3,
+            }
         )
 
-        blob = Mock()
+        self.blob = Mock()
+
+    def test_partial_failures_return_log_containing_parsers_exceptions(self):
+        exception_example_1 = Exception("Exception example 1")
+        exception_example_2 = Exception("Exception example 2")
+        self.parser1.parse.side_effect = exception_example_1
+        doc_parser2 = MagicMock()
+        doc_parser2.page_content = ""
+        self.parser2.parse.return_value = [doc_parser2]
+        self.parser3.parse.side_effect = exception_example_2
 
         with self.assertLogs(level="WARNING") as lo:
-            result = list(multi_parser.lazy_parse(blob))
-            print(lo.output)
+            self.multi_parser.lazy_parse(self.blob)
 
-        self.assertEqual(len(result), 1)
-        self.assertTrue(any("Parser 1 failed" in message for message in lo.output))
-        self.assertTrue(any("Parser 3 failed" in message for message in lo.output))
+        logger_output = lo.output
+        self.assertEqual(len(logger_output), 2)
+        concatenated_log = " ".join([log for log in logger_output])
+        self.assertIn(str(exception_example_1), concatenated_log)
+        self.assertIn(str(exception_example_2), concatenated_log)
 
-    def test_all_failure(self):
-        parser1 = Mock()
-        parser2 = Mock()
-        parser3 = Mock()
-
-        parser1.parse.side_effect = Exception("Parser 1 failed.")
-        parser2.parse.side_effect = Exception("Parser 2 failed.")
-        parser3.parse.side_effect = Exception("Parser 3 failed.")
-
-        multi_parser = PDFMultiParser(
-            parsers={"parser1": parser1, "parser2": parser2, "parser3": parser3},
-        )
-
-        blob = Mock()
+    def test_all_failures_raise_one_exception_containing_parsers_exceptions(self):
+        exception_example_3 = Exception("Exception example 3")
+        exception_example_4 = Exception("Exception example 4")
+        exception_example_5 = Exception("Exception example 5")
+        self.parser1.parse.side_effect = exception_example_3
+        self.parser2.parse.side_effect = exception_example_4
+        self.parser3.parse.side_effect = exception_example_5
 
         try:
-            list(multi_parser.lazy_parse(blob))
-        except Exception as e:
-            self.assertEqual(str(e), "All parsers have failed.")
+            list(self.multi_parser.lazy_parse(self.blob))
+        except ExceptionGroup as eg:
+            exceptions = eg.exceptions
+            self.assertIn(exception_example_3, exceptions)
+            self.assertIn(exception_example_4, exceptions)
+            self.assertIn(exception_example_5, exceptions)
         else:
             self.fail("An exception was expected, but none was raised.")

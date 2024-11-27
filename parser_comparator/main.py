@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 from glob import glob
 from pathlib import Path
@@ -6,8 +7,6 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from langchain_community.document_loaders.base import BaseBlobParser
-
-#%% Import Old
 from langchain_community.document_loaders.parsers import (
     AzureAIDocumentIntelligenceParser,
 )
@@ -67,7 +66,8 @@ CONTINUE_IF_ERROR=not debug
 
 load_dotenv()
 # AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
-
+import logging # Set the logging level to WARNING to reduce verbosity
+logging.getLogger('azure').setLevel(logging.WARNING)
 
 pdf_parsers_new: dict[str, BaseBlobParser] = {
     # "PDFMinerParser_new": PDFMinerParser(
@@ -231,65 +231,70 @@ def compare_parsing(experiment_name: str):
             pdf_multi_parser=pdf_multi_parser,  # FIXME: mauvaise signature
         )
 
-        if pdf_multi_loader.parser.debug:
-            # get the results per parser and the best parser info
-            try:
-                parsers_result, best_parser_name = pdf_multi_loader.load()
+        blob = Blob.from_path(sources_dir_path / pdf_file_relative_path)
 
-                # create a sub directory to store the parsings by parser
-                sub_sub_parsings_dir = result_dir / "parsings_by_parser"
-                sub_sub_parsings_dir.mkdir(parents=True, exist_ok=True)
+        # get the results per parser and the best parser info
+        try:
+            parsers_results = pdf_multi_parser.parse_and_evaluate(
+                blob
+            )
 
-                # parser_name2list_parsed_docs_list = {parser_data[0]: parser_data[1][0] for parser_data in parsers_result}
-                # for parser_name, parsed_docs_list in parser_name2list_parsed_docs_list.items(): #FIXME delete when done
-                #     if len(parsed_docs_list) > 1:
-                #         print(f"returned docs list by {parser_name} : {parsed_docs_list}")
-                #         raise Exception(f"{parser_name} works as if in paged mode")
-                # store parsed documents
-                parser_name2concatenated_parsed_docs = {
-                    parser_data[0]: _default_page_delimitor.join(
-                        [doc.page_content for doc in parser_data[1][0]]
-                    )
-                    for parser_data in parsers_result
-                }
+            # create a sub directory to store the parsings by parser
+            parsings_subdir = experiment_dir / "parsings_by_parser"
+            parsings_subdir.mkdir(parents=True, exist_ok=True)
 
-                # save concatenated docs parsings as text files
-                for (
+            # if the experiment directory contains some files, delete them
+            for item in Path(experiment_dir).rglob('*'):
+                if item.is_file():
+                    item.unlink()
+
+            # parser_name2list_parsed_docs_list = {parser_data[0]: parser_data[1][0] for parser_data in parsers_result}
+            # for parser_name, parsed_docs_list in parser_name2list_parsed_docs_list.items(): #FIXME delete when done
+            #     if len(parsed_docs_list) > 1:
+            #         print(f"returned docs list by {parser_name} : {parsed_docs_list}")
+            #         raise Exception(f"{parser_name} works as if in paged mode")
+            # store parsed documents
+            parser_name2concatenated_parsed_docs = {
+                parser_data[0]:
+                    _default_page_delimitor.join([doc.page_content for doc in parser_data[1]])
+                for parser_data in parsers_results}
+
+            # save concatenated docs parsings as text files
+            for (
                     parser_name,
                     concatenated_docs,
-                ) in parser_name2concatenated_parsed_docs.items():
-                    output_file_path = (
-                        sub_sub_parsings_dir
-                        / f"{pdf_filename.name}_parsed_{parser_name}.{SUFFIX}"
-                    )
-                    output_file_path.parent.mkdir(exist_ok=True)
-                    with open(output_file_path, "w", encoding="utf-8") as f:
-                        f.write(concatenated_docs)
-
-                # get the best parser name and its concatenated parsed docs
-                best_parser_concatenated_docs = parser_name2concatenated_parsed_docs[
-                    best_parser_name
-                ]
-
-                # save the best parsing as .txt file
-                best_parsing_file_path = (
-                    result_dir / f"best_parsing_{best_parser_name}.{SUFFIX}"
+            ) in parser_name2concatenated_parsed_docs.items():
+                output_file_path = (
+                        parsings_subdir
+                        / f"{pdf_file_relative_path.name}_parsed_{parser_name}.{SUFFIX}"
                 )
-                with open(best_parsing_file_path, "w", encoding="utf-8") as f:
-                    f.write(best_parser_concatenated_docs)
+                output_file_path.parent.mkdir(exist_ok=True)
+                with open(output_file_path, "w", encoding="utf-8") as f:
+                    f.write(concatenated_docs)
 
-                # store parsing scores in excel format heatmap
-                parser_name2metrics = {
-                    parser_data[0]: parser_data[1][1] for parser_data in parsers_result
-                }
-                df = pd.DataFrame(parser_name2metrics).T
-                styled_df = df.style.background_gradient()
-                styled_df.to_excel(
-                    f"{sub_sub_parsings_dir}/parsers_metrics_results.xlsx"
-                )
-            except Exception as e:
-                print(f"Error processing {pdf_filename}: {e}")
-                raise e
+            # get the best parser name and its concatenated parsed docs
+            best_parser_name = parsers_results[0][0]
+            best_parser_concatenated_docs = parser_name2concatenated_parsed_docs[
+                best_parser_name
+            ]
+
+            # save the best parsing as .txt file
+            best_parsing_file_path = (
+                    experiment_dir / f"best_parsing_{best_parser_name}.{SUFFIX}"
+            )
+            with open(best_parsing_file_path, "w", encoding="utf-8") as f:
+                f.write(best_parser_concatenated_docs)
+
+            # store parsing scores in excel format heatmap
+            parser_name2metrics = {
+                parser_data[0]: parser_data[2] for parser_data in parsers_results
+            }
+            df = pd.DataFrame(parser_name2metrics).T
+            styled_df = df.style.background_gradient()
+            styled_df.to_excel(f"{parsings_subdir}/parsers_metrics_results.xlsx")
+        except Exception as e:
+            print(f"Error processing {pdf_file_relative_path}: {e}")
+            raise e
 
             # To inject older loaders, without parsers
             # if USE_OLD_PARSERS:
@@ -298,7 +303,7 @@ def compare_parsing(experiment_name: str):
             #         pdf_loader.load()
 
         # if not debug mode only save the best parsing as .txt file
-        else:
+        if True:
             best_parser_associated_documents_list = pdf_multi_loader.load()
             # save the best parsing as .txt file
             best_parser_concatenated_docs = _default_page_delimitor.join(
