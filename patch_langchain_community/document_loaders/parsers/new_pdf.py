@@ -60,7 +60,8 @@ class PDFMultiParser(BaseBlobParser):
         parsers_result = {}
         all_exceptions: dict[str, Exception] = {}
         with ThreadPoolExecutor(
-            max_workers=self.max_workers or len(self.parsers)
+            max_workers=self.max_workers or len(self.parsers),
+            thread_name_prefix="PDFMultiParser",
         ) as executor:
             # Submit each parser's load method to the executor
             futures = {
@@ -82,13 +83,16 @@ class PDFMultiParser(BaseBlobParser):
 
                 except Exception as e:
                     logger.warning(f"Parser {parser_name} failed with exception : {e}")
-                    # FIXME: aggregation des exceptions dans une seule exception terminale
                     all_exceptions[parser_name] = e
         if not self.continue_if_error and all_exceptions:
-            raise ExceptionGroup("Some parsers have failed.", all_exceptions)
+            if len(all_exceptions) == 1:
+                raise list(all_exceptions.values())[0] from None
+            else:
+                raise ExceptionGroup("Some parsers have failed.",
+                                     list(all_exceptions.values())) from None
         if not parsers_result:
             if len(all_exceptions) == 1:
-                raise list(all_exceptions.values())[0]
+                raise list(all_exceptions.values())[0] from None
             else:
                 raise ExceptionGroup(
                     "All parsers have failed.", list(all_exceptions.values())
