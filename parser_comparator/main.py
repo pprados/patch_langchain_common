@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
+from langchain_core.documents.base import Blob
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.parsers import (
     AzureAIDocumentIntelligenceParser,
@@ -60,9 +61,9 @@ EXTRACT_TABLES = "markdown"
 _default_page_delimitor = "\f"
 # Delimiter that will be put between pages in 'single' mode
 SUFFIX = "md"
-USE_OLD_PARSERS = False
+USE_OLD_PARSERS = True
 MAX_WORKERS = 1
-CONTINUE_IF_ERROR=not debug
+CONTINUE_IF_ERROR=False
 
 load_dotenv()
 # AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
@@ -197,7 +198,7 @@ pdf_loader_old={
 }
 
 if USE_OLD_PARSERS:
-    pdf_parsers = pdf_parsers_old + pdf_parsers_new
+    pdf_parsers = {**pdf_parsers_old , **pdf_parsers_new}
     MAX_WORKERS = 1  # If use Old parser, set to 1
 else:
     pdf_parsers = pdf_parsers_new
@@ -212,25 +213,19 @@ def compare_parsing(experiment_name: str):
     # Iterating over the directories in the sources directory
     # for root, dirs, files in os.walk(sources_dir_path):
     # FIXME
-    # for pdf_filename in glob("**/*.pdf", root_dir=sources_dir_path, recursive=True):
-    for pdf_filename in glob("pdfminer/nonfree/naa*.pdf", root_dir=sources_dir_path, recursive=True):
+    for pdf_filename in glob("**/*.pdf", root_dir=sources_dir_path, recursive=True):
+    # for pdf_filename in glob("pdfminer/nonfree/naa*.pdf", root_dir=sources_dir_path, recursive=True):
     # for pdf_filename in glob("*/*.pdf", root_dir=sources_dir_path, recursive=False):
-        pdf_filename = Path(pdf_filename)
-        result_dir = results_dir_path / pdf_filename / experiment_name
+        pdf_file_relative_path = Path(pdf_filename)
+        experiment_dir = results_dir_path / pdf_filename / experiment_name
 
         print(f"processing {pdf_filename}... ")
 
         pdf_multi_parser = PDFMultiParser(
             parsers=pdf_parsers,
-            debug=debug,
             max_workers=MAX_WORKERS,
             continue_if_error=CONTINUE_IF_ERROR,
         )
-        pdf_multi_loader = PDFMultiLoader(
-            file_path=sources_dir_path / pdf_filename,
-            pdf_multi_parser=pdf_multi_parser,  # FIXME: mauvaise signature
-        )
-
         blob = Blob.from_path(sources_dir_path / pdf_file_relative_path)
 
         # get the results per parser and the best parser info
@@ -297,21 +292,10 @@ def compare_parsing(experiment_name: str):
             raise e
 
             # To inject older loaders, without parsers
-            # if USE_OLD_PARSERS:
-            #     for name,(clazz,kwargs) in pdf_loader_old.items():
-            #         pdf_loader = clazz(file_path=sources_dir_path / pdf_filename, **kwargs)
-            #         pdf_loader.load()
-
-        # if not debug mode only save the best parsing as .txt file
-        if True:
-            best_parser_associated_documents_list = pdf_multi_loader.load()
-            # save the best parsing as .txt file
-            best_parser_concatenated_docs = _default_page_delimitor.join(
-                [doc.page_content for doc in best_parser_associated_documents_list]
-            )
-            best_parsing_file_path = result_dir / f"best_parsing.{SUFFIX}"
-            with open(best_parsing_file_path, "w", encoding="utf-8") as f:
-                f.write(best_parser_concatenated_docs)
+            if USE_OLD_PARSERS:
+                for name,(clazz,kwargs) in pdf_loader_old.items():
+                    pdf_loader = clazz(file_path=sources_dir_path / pdf_filename, **kwargs)
+                    pdf_loader.load()
         print(f"processing {pdf_filename} done.")
 
 
