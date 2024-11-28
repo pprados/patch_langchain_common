@@ -394,14 +394,14 @@ class UnstructuredPDFParser(ImagesPdfParser):
 
                     if (
                         doc.metadata.get("category") == "Image"
-                        and "image_path" in doc.metadata
                     ):
-                        image = np.array(Image.open(doc.metadata["image_path"]))
-                        image_text = next(self.convert_image_to_text([image]))
-                        if image_text:
-                            page_content.append(
-                                _format_image_str.format(image_text=image_text)
-                            )
+                        if  "image_path" in doc.metadata:
+                            image = np.array(Image.open(doc.metadata["image_path"]))
+                            image_text = next(self.convert_image_to_text([image]))
+                            if image_text:
+                                page_content.append(
+                                    _format_image_str.format(image_text=image_text)
+                                )
 
                     elif doc.metadata.get("category") == "Table":
                         page_content.append(
@@ -819,7 +819,7 @@ class _SingleDocumentLoader(BaseLoader):
             parser = PDFParser(cast(BinaryIO, file))
 
             # Create a PDF document object that stores the document structure.
-            doc = PDFDocument(parser, password=self.password)  # type: ignore
+            doc = PDFDocument(parser, password=self.password or "")  # type: ignore
             metadata: dict[str, Any] = (
                 {"source": self.file_path} if self.file_path else {}
             )

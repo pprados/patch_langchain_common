@@ -459,7 +459,7 @@ class PyPDFParser(ImagesPdfParser):
             pdf_reader = pypdf.PdfReader(pdf_file_obj, password=self.password)
 
             doc_metadata = purge_metadata(
-                cast(dict, pdf_reader.metadata)
+                cast(dict, pdf_reader.metadata or {})
                 | {
                     "source": blob.source,
                     "total_pages": len(pdf_reader.pages),
@@ -1225,7 +1225,8 @@ class PDFPlumberParser(ImagesPdfParser):
                 # "use_text_flow": True,
                 # "presorted": True,
                 "layout_bbox": kwargs.get("layout_bbox")
-                or geometry.objects_to_bbox(page.chars),
+                # or geometry.objects_to_bbox(page.chars),
+                or page.cropbox,
             }
         )
         chars = page.dedupe_chars().objects["char"] if self.dedupe else page.chars
