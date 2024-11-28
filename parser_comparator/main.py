@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from langchain_core.documents.base import Blob
+from langchain.globals import set_llm_cache
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.parsers import (
     AzureAIDocumentIntelligenceParser,
@@ -18,11 +18,12 @@ from langchain_community.document_loaders.parsers.pdf import (
     PyPDFium2Parser as old_PyPDFium2Parser,
     PyPDFParser as old_PyPDFParser,
 )
+from langchain_core.documents.base import Blob
+from langchain_community.cache import InMemoryCache
 from langchain_unstructured.document_loaders import UnstructuredLoader
 
-#%% Import patch
+# %% Import patch
 from patch_langchain_community.document_loaders.new_pdf import (
-    PDFMultiLoader,
     LlamaIndexPDFParser,
     PDFMultiParser,
     PyMuPDF4LLMParser,
@@ -33,20 +34,15 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
     PyMuPDFParser,
     PyPDFium2Parser,
     PyPDFParser,
-    convert_images_to_description,
     convert_images_to_text_with_rapidocr,
-    convert_images_to_text_with_tesseract,
 )
 from patch_langchain_unstructured.document_loaders import UnstructuredPDFParser
 
-
 #%% Meta parameters
 # Under each parameter you can read a description of it and its possible values
-debug = True
-
 MODE = "single"
 # Extraction mode to use. Either "single" or "paged"
-EXTRACT_IMAGES = True
+EXTRACT_IMAGES = False  # TODO: activate cache for LLM
 # Whether to extract images from the PDF. True/False
 IMAGE_FORMAT = "markdown"
 # Format to use for the extracted images. Either "text", "html" or "markdown"
@@ -61,22 +57,25 @@ EXTRACT_TABLES = "markdown"
 _default_page_delimitor = "\f"
 # Delimiter that will be put between pages in 'single' mode
 SUFFIX = "md"
-USE_OLD_PARSERS = True
-MAX_WORKERS = 1
-CONTINUE_IF_ERROR=False
+USE_OLD_PARSERS = False
+USE_ONLINE_PARSERS = False
+MAX_WORKERS = None  # FIXME: MAX_WORKERS=None
+CONTINUE_IF_ERROR=True
 
 load_dotenv()
 # AZURE_API_VERSION = os.getenv('AZURE_API_VERSION')
 import logging # Set the logging level to WARNING to reduce verbosity
 logging.getLogger('azure').setLevel(logging.WARNING)
 
+set_llm_cache(InMemoryCache())
+
 pdf_parsers_new: dict[str, BaseBlobParser] = {
-    # "PDFMinerParser_new": PDFMinerParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
+    "PDFMinerParser_new": PDFMinerParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
     # %%
     "PDFPlumberParser_new": PDFPlumberParser(
         mode=MODE,
@@ -85,82 +84,93 @@ pdf_parsers_new: dict[str, BaseBlobParser] = {
         images_to_text=conv_images,
         extract_tables=EXTRACT_TABLES,
     ),
-    # # %%
-    # "PyMuPDFParser_new": PyMuPDFParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,
-    # ),
-    # # #%%
-    # "PyPDFium2Parser_new": PyPDFium2Parser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
-    # # #%%
-    # "PyPDFParser_new": PyPDFParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
-    # # %%
-    # "PyMuPDF4LLMParser_new": PyMuPDF4LLMParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     to_markdown_kwargs=None,
-    # ),
-    # # %%
-    # "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="fast",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,
-    # ),
-    # # %% BUG avec 11:SIGSEGV
-    # "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="ocr_only",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,
-    # ),
-    # # %%
-    # "UnstructuredPDFParser_hi_res_new": UnstructuredPDFParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="hi_res",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,
-    # ),
-    # # %%
-    # "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
-    #     api_endpoint=os.environ["AZURE_API_ENDPOINT"],
-    #     api_key=os.environ["AZURE_API_KEY"],
-    #     # api_version=AZURE_API_VERSION,
-    # ),
+    # %%
+    "PyMuPDFParser_new": PyMuPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+    ),
+    # #%%
+    "PyPDFium2Parser_new": PyPDFium2Parser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
+    # #%%
+    "PyPDFParser_new": PyPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
+    # %%
+    "PyMuPDF4LLMParser_new": PyMuPDF4LLMParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        to_markdown_kwargs=None,
+    ),
+    # %%
+    "UnstructuredPDFParser_auto_new": UnstructuredPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        strategy="auto",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+    ),
+    # %%
+    "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        strategy="fast",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+    ),
+    # %% BUG avec 11:SIGSEGV
+    "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        strategy="ocr_only",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+    ),
+    # %%
+    "UnstructuredPDFParser_hi_res_new": UnstructuredPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        strategy="hi_res",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,
+    ),
     # %%
     "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
         mode=MODE,
         pages_delimitor=_default_page_delimitor,
         to_markdown_kwargs=None,
     ),
-    # # %%
-    # "LlamaIndexPDFParser": LlamaIndexPDFParser(
-    #     mode=MODE,
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_tables=EXTRACT_TABLES,
-    #     language="en",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
+}
+pdf_online_parsers: dict[str, BaseBlobParser] ={
+    # %%
+    "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
+        api_endpoint=os.environ["AZURE_API_ENDPOINT"],
+        api_key=os.environ["AZURE_API_KEY"],
+        # api_version=AZURE_API_VERSION,
+    ),
+    # %%
+    "LlamaIndexPDFParser": LlamaIndexPDFParser(
+        mode=MODE,
+        pages_delimitor=_default_page_delimitor,
+        extract_tables=EXTRACT_TABLES,
+        language="en",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
 }
 
 pdf_parsers_old: dict[str, BaseBlobParser] = {
@@ -202,6 +212,8 @@ if USE_OLD_PARSERS:
     MAX_WORKERS = 1  # If use Old parser, set to 1
 else:
     pdf_parsers = pdf_parsers_new
+if USE_ONLINE_PARSERS:
+    pdf_parsers = {**pdf_parsers, **pdf_online_parsers}
 
 def compare_parsing(experiment_name: str):
     global pdf_parsers
@@ -214,7 +226,8 @@ def compare_parsing(experiment_name: str):
     # for root, dirs, files in os.walk(sources_dir_path):
     # FIXME
     for pdf_filename in glob("**/*.pdf", root_dir=sources_dir_path, recursive=True):
-    # for pdf_filename in glob("pdfminer/nonfree/naa*.pdf", root_dir=sources_dir_path, recursive=True):
+    # for pdf_filename in glob("pdfminer/contrib/issue-00352-asw-oct96-p41.pdf", root_dir=sources_dir_path, recursive=True):
+    # for pdf_filename in glob("pdfminer/nonfree/*.pdf", root_dir=sources_dir_path, recursive=True):
     # for pdf_filename in glob("*/*.pdf", root_dir=sources_dir_path, recursive=False):
         pdf_file_relative_path = Path(pdf_filename)
         experiment_dir = results_dir_path / pdf_filename / experiment_name
