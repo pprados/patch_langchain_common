@@ -230,3 +230,4 @@ class DoclingPDFLoader(BasePDFLoader):
 
 
 # TODO: https://www.linkedin.com/posts/liorsinclair_nvidia-just-released-a-powerful-pdf-extraction-ugcPost-7267580522359336962-GAQv/?utm_source=share&utm_medium=member_desktop
+# TODO: pdfact https://github.com/ad-freiburg/pdfact.git

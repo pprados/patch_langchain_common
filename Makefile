@@ -1,4 +1,4 @@
-SHELL=/bin/bash
+SHELL=/bin/zsh
 .PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
 POETRY_EXTRA?=--all-extras
 POETRY_WITH?=dev,lint,test,codespell
@@ -6,6 +6,16 @@ export PYTHONPATH=patch_partners/unstructured
 
 # Default target executed when no arguments are given to make.
 all: help
+
+.PHONY: dump-*
+# Tools to dump makefile variable (make dump-AWS_API_HOME)
+dump-%:
+	@if [ "${${*}}" = "" ]; then \
+		echo "Environment variable $* is not set"; \
+		exit 1; \
+	else \
+		echo "$*=${${*}}"; \
+	fi
 
 # Define a variable for the test file path.
 TEST_FILE ?= tests/unit_tests/
@@ -31,6 +41,7 @@ test_watch:
 PYTHON_FILES=.
 lint format: PYTHON_FILES=.
 lint_diff format_diff: PYTHON_FILES=$(shell git diff --relative=libs/experimental --name-only --diff-filter=d master | grep -E '\.py$$|\.ipynb$$')
+NB_FILES:=$(shell find docs/docs -name '*.ipynb')
 
 lint lint_diff:
 	poetry run mypy $(PYTHON_FILES)
@@ -173,14 +184,14 @@ push-sync:
 #	find . -type f -name '*.ipynb' | xargs sed -i 's/langchain\([_-]\)experimental/langchain\1qa_with_references/g'
 
 
-poetry.lock: pyproject.toml
+.venv poetry.lock: pyproject.toml
 	poetry lock
 	git add poetry.lock
 	poetry install $(POETRY_EXTRA) --with $(POETRY_WITH)
 
 
 ## Refresh lock
-lock: poetry.lock
+lock: .venv poetry.lock
 
 ## Validate the code
 validate: poetry.lock format lint spell_check integration_tests
@@ -196,3 +207,16 @@ init: poetry.lock
 	@poetry install --sync $(POETRY_EXTRA) --with $(POETRY_WITH)
 	@pre-commit install
 	@git lfs install
+
+
+.PHONY: docs
+docs/api_reference: $(PYTHON_FILES)
+	cd docs && sphinx-apidoc --remove-old -M -P -f -e -o _build/api_reference ..
+	cd docs && sphinx-apidoc --remove-old -M -P -f -e -o _build/unstructured/api_reference ../patch_partners/unstructured
+
+docs/nb: | $(NB_FILES)
+	jupyter nbconvert --to markdown --output-dir=docs/_build/nb/ docs/docs/**/*.ipynb
+
+docs: .venv docs/api_reference docs/nb
+	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
+	xdg-open docs/_build/html/index.html
