@@ -70,7 +70,7 @@ the page’s text flow. This is always better than placing them at the end of th
 # Combining Pages
 As mentioned, we want to work with the text flow of a document, rather than by page. 
 A mode is dedicated to this, which can be configured to specify the character to use 
-for page delimiters in the flow. This could simply be `\n`, or `\f` to clearly 
+for page delimiters in the flow. This could simply be `\n`, `------\n` or `\f` to clearly 
 indicate a page change, or `<!-- PAGE BREAK -->` for seamless injection in a Markdown 
 viewer without a visual effect.
 
@@ -295,6 +295,7 @@ For this parser, we introduce the following new features:
 - `extract_tables`
 - Image in the stream
 - Moving integration tests to `unstructured/tests`
+- Lock, as the code is not reentrant
 
 ## PyMuPDF4LLMLoader
 `Loader` compatible with new specifications, using the 
