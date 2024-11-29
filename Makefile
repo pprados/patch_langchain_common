@@ -211,12 +211,12 @@ init: poetry.lock
 
 .PHONY: docs
 docs/api_reference: $(PYTHON_FILES)
-	cd docs && sphinx-apidoc --remove-old -M -P -f -e -o _build/api_reference ..
-	cd docs && sphinx-apidoc --remove-old -M -P -f -e -o _build/unstructured/api_reference ../patch_partners/unstructured
+	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/api_reference ..
+	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/unstructured/api_reference ../patch_partners/unstructured
 
 docs/nb: | $(NB_FILES)
 	jupyter nbconvert --to markdown --output-dir=docs/_build/nb/ docs/docs/**/*.ipynb
 
-docs: .venv docs/api_reference docs/nb
+docs: docs/api_reference docs/nb
 	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
 	xdg-open docs/_build/html/index.html
