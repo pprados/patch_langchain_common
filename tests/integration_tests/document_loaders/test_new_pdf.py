@@ -14,7 +14,7 @@ def test_pymupdf4llm_loader() -> None:
     assert len(docs) == 1
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
-    loader = PyMuPDF4LLMLoader(file_path, mode="paged")
+    loader = PyMuPDF4LLMLoader(file_path, mode="page")
     docs = loader.load()
     assert len(docs) == 16
     assert loader.web_path is None
@@ -42,7 +42,7 @@ def test_llamaindex_loader() -> None:
     assert len(docs) == 1
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
-    loader = LlamaIndexPDFLoader(file_path, mode="paged")
+    loader = LlamaIndexPDFLoader(file_path, mode="page")
     docs = loader.load()
     assert len(docs) == 16
     assert loader.web_path is None

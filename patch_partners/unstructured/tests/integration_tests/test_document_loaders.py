@@ -19,10 +19,10 @@ def test_unstructured_pdf_loader_elements_mode() -> None:
     assert len(docs) == 2
 
 
-def test_unstructured_pdf_loader_paged_mode() -> None:
+def test_unstructured_pdf_loader_page_mode() -> None:
     """Test unstructured loader with various modes."""
     file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
-    loader = UnstructuredPDFLoader(str(file_path), mode="paged")
+    loader = UnstructuredPDFLoader(str(file_path), mode="page")
     docs = loader.load()
 
     assert len(docs) == 16
@@ -231,17 +231,21 @@ def test_loader_partitions_multiple_via_api() -> None:
 @pytest.mark.skipif(
     not os.environ.get("UNSTRUCTURED_API_KEY"), reason="Unstructured API key not found"
 )
-def test_loader_partition_via_api_raises_TypeError_with_invalid_arg() -> None:
+def test_loader_pdf_partitions_multiple_via_api() -> None:
     file_path = EXAMPLE_DOCS_DIRECTORY / "layout-parser-paper.pdf"
-    loader = UnstructuredLoader(
-        file_path=str(file_path),
+    loader = UnstructuredPDFLoader(
+        file_path=file_path,
         api_key=UNSTRUCTURED_API_KEY,
         partition_via_api=True,
         mode="elements",
+        # Unstructured kwargs
+        strategy="fast",
     )
 
-    with pytest.raises(TypeError, match="unexpected keyword argument 'mode'"):
-        loader.load()
+    docs = loader.load()
+
+    assert len(docs) > 1
+    assert docs[0].metadata.get("filename") == "layout-parser-paper.pdf"
 
 
 @pytest.mark.skipif(

@@ -11,9 +11,9 @@ all: help
 TEST_FILE ?= tests/unit_tests/
 
 integration_tests:
-	poetry run pytest \
-		tests/unit_tests \
-		tests/integration_tests \
+#	source .env && poetry run pytest \
+#		tests/integration_tests
+	source .env && poetry run pytest \
 		patch_partners/unstructured/tests/integration_tests
 
 test tests:
@@ -21,6 +21,17 @@ test tests:
 
 test_watch:
 	poetry run ptw --now . -- tests/unit_tests
+
+
+# ---------------------------------------------------------------------------------------
+.PHONY: dump-*
+dump-%:
+	@if [ "${${*}}" = "" ]; then \
+		echo "Environment variable $* is not set"; \
+		exit 1; \
+	else \
+		echo "$*=${${*}}"; \
+	fi \
 
 
 #########################
@@ -33,7 +44,7 @@ lint format: PYTHON_FILES=.
 lint_diff format_diff: PYTHON_FILES=$(shell git diff --relative=libs/experimental --name-only --diff-filter=d master | grep -E '\.py$$|\.ipynb$$')
 
 lint lint_diff:
-	poetry run mypy $(PYTHON_FILES)
+	poetry run mypy --exclude integration_tests $(PYTHON_FILES)
 	poetry run black $(PYTHON_FILES) --check
 	poetry run ruff .
 

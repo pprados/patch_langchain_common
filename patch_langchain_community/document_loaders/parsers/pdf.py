@@ -373,7 +373,7 @@ class PyPDFParser(ImagesPdfParser):
         password: Optional[Union[str, bytes]] = None,
         extract_images: bool = False,
         *,  # Move on top ?
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         pages_delimitor: str = _default_page_delimitor,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         extraction_mode: Literal["plain", "layout"] = "plain",
@@ -383,7 +383,7 @@ class PyPDFParser(ImagesPdfParser):
 
         Args:
             password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "paged".
+            mode: Extraction mode to use. Either "single" or "page".
             pages_delimitor: Delimiter to use between pages.
                              May be r'\f', '<!--PAGE BREAK -->', ...
             extract_images: Whether to extract images from PDF.
@@ -399,8 +399,8 @@ class PyPDFParser(ImagesPdfParser):
                 "pypdf package not found, please install it with `pip install pypdf`"
             )
         super().__init__(extract_images, images_to_text)
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         self.password = password
         self.mode = mode
         self.pages_delimitor = pages_delimitor
@@ -470,7 +470,7 @@ class PyPDFParser(ImagesPdfParser):
                 text_from_page = _extract_text_from_page(page=page)
                 images_from_page = self.extract_images_from_page(page)
                 all_text = _merge_text_and_extras([images_from_page], text_from_page)
-                if self.mode == "paged":
+                if self.mode == "page":
                     yield Document(
                         page_content=all_text,
                         metadata=doc_metadata | {"page": page_number},
@@ -527,7 +527,7 @@ class PDFMinerParser(ImagesPdfParser):
         extract_images: bool = False,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
+        mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         concatenate_pages: Optional[bool] = None,
@@ -538,7 +538,7 @@ class PDFMinerParser(ImagesPdfParser):
             password: Password to open the PDF.
             extract_images: Whether to extract images from PDF.
             images_to_text: Function to extract text from images.
-            mode: Extraction mode to use. Either "single" or "paged".
+            mode: Extraction mode to use. Either "single" or "page".
             pages_delimitor: Delimiter to use between pages.
                              May be r'\f', '<!--PAGE BREAK -->', ...
             concatenate_pages: Deprecated. If True, concatenate all PDF pages
@@ -552,8 +552,8 @@ class PDFMinerParser(ImagesPdfParser):
                 "with `pip install pdfminer`"
             )
         super().__init__(extract_images, images_to_text)
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         self.mode = mode
         self.pages_delimitor = pages_delimitor
         self.password = password
@@ -563,16 +563,16 @@ class PDFMinerParser(ImagesPdfParser):
         if extract_images:
             logger.warning(
                 "To replicate a bug from the previous version, "
-                "force the mode to 'paged'"
+                "force the mode to 'page'"
             )
-            self.mode = "paged"
+            self.mode = "page"
 
         if concatenate_pages is not None:
             warnings.warn(
                 "`concatenate_pages` parameter is deprecated. "
-                "Use `mode='single' or 'paged'` instead."
+                "Use `mode='single' or 'page'` instead."
             )
-            self.mode = "single" if concatenate_pages else "paged"
+            self.mode = "single" if concatenate_pages else "page"
 
     @staticmethod
     def decode_text(s: Union[bytes, str]) -> str:
@@ -715,7 +715,7 @@ class PDFMinerParser(ImagesPdfParser):
                 visitor_for_all.process_page(page)
 
                 content = text_io.getvalue()
-                if self.mode == "paged":
+                if self.mode == "page":
                     text_io.truncate(0)
                     text_io.seek(0)
                     yield Document(
@@ -741,7 +741,7 @@ class PyMuPDFParser(ImagesPdfParser):
         self,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         pages_delimitor: str = _default_page_delimitor,
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
@@ -755,7 +755,7 @@ class PyMuPDFParser(ImagesPdfParser):
 
         Args:
             password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "paged".
+            mode: Extraction mode to use. Either "single" or "page".
             pages_delimitor: Delimiter to use between pages.
                              May be r'\f', '<!--PAGE BREAK -->', ...
             extract_images: Whether to extract images from PDF.
@@ -772,8 +772,8 @@ class PyMuPDFParser(ImagesPdfParser):
             )
 
         super().__init__(extract_images, images_to_text)
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         if extract_tables and extract_tables not in ["markdown", "html", "csv"]:
             raise ValueError("mode must be markdown")
 
@@ -835,7 +835,7 @@ class PyMuPDFParser(ImagesPdfParser):
                 full_content = []
                 for page in doc:
                     all_text = self._get_page_content(doc, page, blob)
-                    if self.mode == "paged":
+                    if self.mode == "page":
                         yield Document(
                             page_content=all_text,
                             metadata=(doc_metadata | {"page": page.number}),
@@ -970,7 +970,7 @@ class PyPDFium2Parser(ImagesPdfParser):
         extract_images: bool = False,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         pages_delimitor: str = _default_page_delimitor,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
     ) -> None:
@@ -978,7 +978,7 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         Args:
             password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "paged".
+            mode: Extraction mode to use. Either "single" or "page".
             pages_delimitor: Delimiter to use between pages.
                              May be r'\f', '<!--PAGE BREAK -->', ...
             extract_images: Whether to extract images from PDF.
@@ -992,8 +992,8 @@ class PyPDFium2Parser(ImagesPdfParser):
                 " `pip install pypdfium2`"
             )
         super().__init__(extract_images, images_to_text)
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         self.mode = mode
         self.pages_delimitor = pages_delimitor
         self.password = password
@@ -1028,7 +1028,7 @@ class PyPDFium2Parser(ImagesPdfParser):
                         )
                         page.close()
 
-                        if self.mode == "paged":
+                        if self.mode == "page":
                             yield Document(
                                 page_content=all_text,
                                 metadata={
@@ -1076,7 +1076,7 @@ class PDFPlumberParser(ImagesPdfParser):
         extract_images: bool = False,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         pages_delimitor: str = _default_page_delimitor,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         extract_tables: Optional[Literal["csv", "markdown", "html"]] = None,
@@ -1086,7 +1086,7 @@ class PDFPlumberParser(ImagesPdfParser):
 
         Args:
             password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "paged".
+            mode: Extraction mode to use. Either "single" or "page".
             extract_images: Whether to extract images from PDF.
             images_to_text: Function to extract text from images.
             extract_tables: Whether to extract tables from PDF.
@@ -1104,8 +1104,8 @@ class PDFPlumberParser(ImagesPdfParser):
 
         super().__init__(extract_images, images_to_text)
         self.password = password
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         if extract_tables and extract_tables not in ["csv", "markdown", "html"]:
             raise ValueError("mode must be csv, markdown or html")
         self.mode = mode
@@ -1168,7 +1168,7 @@ class PDFPlumberParser(ImagesPdfParser):
 
                 all_text = "".join(page_text)
 
-                if self.mode == "paged":
+                if self.mode == "page":
                     yield Document(
                         page_content=all_text,
                         metadata=(

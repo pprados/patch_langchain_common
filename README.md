@@ -94,8 +94,6 @@ extension to LangChain that we propose for managing document
 references: [langchain-reference](https://github.com/pprados/langchain-references).
 
 
-**TODO: add new Markdown splitter to inject page number.**
-
 # Compatibility
 We have tried, as much as possible, to maintain compatibility with the previous 
 version. This is reflected in preserving the order of parameters and using the 
@@ -112,26 +110,36 @@ class XXXLoader(...):
 
 but this could break compatibility for positional arguments.
 
-Perhaps it would be feasible to plan a migration for LangChain v1 by modifying the 
-default parameters to make them mandatory during the transition to v1. At that point, 
+Perhaps it would be feasible to plan a migration for LangChain v1.0 by modifying the 
+default parameters to make them mandatory during the transition to v1.0. At that point, 
 we could reintroduce default values.
 
 # New parsers
 We took advantage of this refactoring to add new parsers:
-- PyMuPDF4LLMLoader / PyMuPDF4LLMParser
 - PDFRouterLoader / PDFRouterParser
 - PDFMultiLoader / PDFMultiParser
+- PyMuPDF4LLMLoader / PyMuPDF4LLMParser
+- DoclingPDFLoader / DoclingPDFParser
+- LlamaIndexPDFLoader / LlamaIndexPDFParser
 
 We describe them in detail further on. They will be included in a second PR, 
 after this one is approved.
 
 # Normalisation
 
-The different Loader and BlobParser classes now offer the following parameters:
+The `AzureAIDocumentIntelligenceParser` class introduces the `mode` parameter, which 
+accepts the values `single`, `page`, and `markdown`. 
+The `UnstructuredPDFLoader` class introduces the `mode` parameter, which 
+accepts the values `single`, `paged`, and `markdown`. 
+Based on this model, we are extending the presence of the mode parameter to most 
+parsers, with the value `single`, `page`, and `markdown`. 
+`paged` is declared depreciated.
+
+The different `Loader` and `BlobParser` classes now offer the following parameters:
 - `file_path` str or Path with the file name.
 - `password` str with the file password, if needed.
 - `mode` to return a single document per file or one document per page 
-(extended with `elements` in the case of Unstructured).
+(extended with `elements` in the case of Unstructured or other specific parser).
 - `pages_delimiter` to specify how to join pages (`\f` by default).
 - `extract_images` to enable image extraction (already present in most Loaders/Parsers).
 - `images_to_text` to specify how to handle images (invoking OCR, LLM, etc.).
@@ -196,7 +204,7 @@ Here, we list all the improvements we’re bringing to each parser.
 This parser does not support table extraction.
 
 For this parser, we introduce the following new features:
-- `mode` single or paged
+- `mode` single or page
 - `pages_delimitor`
 - `images_to_text`
 - Integration of image texts between two paragraphs.
@@ -207,7 +215,7 @@ This parser does not support table extraction.
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single or paged
+- `mode` single or page
 - `pages_delimitor`
 - `images_to_text`
 - Integration of image texts between two paragraphs
@@ -219,7 +227,7 @@ This parser does not support table extraction.
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single orou paged
+- `mode` single orou page
 - `pages_delimitor`
 - `extract_images`
 - `images_to_text`
@@ -236,7 +244,7 @@ this behavior.
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single or paged
+- `mode` single or page
 - `pages_delimitor`
 - `images_to_text`
 - Integration of image texts between two paragraphs
@@ -246,7 +254,7 @@ For this parser, we introduce the following new features:
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single or paged
+- `mode` single or page
 - `pages_delimitor`
 - `extract_images`
 - `images_to_text`
@@ -257,17 +265,11 @@ For this parser, we introduce the following new features:
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single or paged
+- `mode` single or page
 - `pages_delimitor`
 - `images_to_text`
 - `extract_tables` to `csv`, `markdown` or `html` (with `colspan`) in the stream
 - Add one TU
-
-## PDFMinerPDFastHTMLLoader
-**TODO**
-
-## DedocPDFLoader
-**TODO**
 
 ## PagedPDFSplitter
 This class is an alias for `PyPDFLoader`. I have marked it as `@deprecated`.
@@ -288,7 +290,7 @@ requires modifications to both modules and has been submitted in another pull re
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single or paged
+- `mode` single or page
 - `pages_delimitor`
 - `extract_images`
 - `images_to_text`

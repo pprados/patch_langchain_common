@@ -14,8 +14,11 @@ from typing import (
 )
 
 if sys.version_info < (3, 11):  # FIXME: (3,11)
-    from exceptiongroup import ExceptionGroup
+    pass
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import numpy as np
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.documents import Document
@@ -31,20 +34,14 @@ from .pdf import (
 
 logger = logging.getLogger(__name__)
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-import numpy as np
-
-logger = logging.getLogger(__name__)
-
 
 class PDFMultiParser(BaseBlobParser):
     def __init__(
-            self,
-            parsers: dict[str:BaseBlobParser],
-            *,
-            max_workers: Optional[int] = None,
-            continue_if_error: bool = True,
+        self,
+        parsers: dict[str, BaseBlobParser],
+        *,
+        max_workers: Optional[int] = None,
+        continue_if_error: bool = True,
     ) -> None:
         """"""
         self.parsers = parsers
@@ -52,10 +49,11 @@ class PDFMultiParser(BaseBlobParser):
         self.continue_if_error = continue_if_error
 
     def lazy_parse(
-            self,
-            blob: Blob,
+        self,
+        blob: Blob,
     ) -> Iterator[Document]:
-        """Lazily parse the blob. (Fakely because for each parser all Documents need to be loaded at once in order to
+        """Lazily parse the blob. (Fakely because for each parser all Documents
+        need to be loaded at once in order to
         compute the global parsing score.)"""
         parsers_results = self.parse_and_evaluate(blob)
         best_parsing_documents = parsers_results[0][1]
@@ -65,10 +63,11 @@ class PDFMultiParser(BaseBlobParser):
         return iter(best_parsing_documents)
 
     def parse_and_evaluate(
-            self,
-            blob: Blob,
+        self,
+        blob: Blob,
     ) -> list[tuple[str, list[Document], dict[str, float]]]:
-        """Parse the blob with all parsers and return the results as a dictionary {parser_name: (documents, metrics)}"""
+        """Parse the blob with all parsers and return the results as a dictionary
+        {parser_name: (documents, metrics)}"""
         parsers_results = []
         all_exceptions: dict[str, Exception] = {}
         with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
@@ -91,13 +90,14 @@ class PDFMultiParser(BaseBlobParser):
                     logger.warning(log)
                     all_exceptions[parser_name] = e
 
-        # si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des erreurs alors exception
+        # TODO: si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des
+        # erreurs alors exception
         if not self.continue_if_error and all_exceptions:
             raise ExceptionGroup(
                 "Some parsers have failed.", list(all_exceptions.values())
             )
 
-        # si tous les parsers sont en erreur, soulever une exception
+        # TODO si tous les parsers sont en erreur, soulever une exception
         if len(all_exceptions) == len(self.parsers):
             raise ExceptionGroup(
                 "All parsers have failed.", list(all_exceptions.values())
@@ -108,25 +108,30 @@ class PDFMultiParser(BaseBlobParser):
         return parsers_results
 
     def evaluate_parsing_quality(
-            self,
-            documents_list: list[Document],
-    ) -> dict[str:float]:
-        """Evaluate the quality of a parsing based on some metrics measured by heuristics.
-        Return the dictionnary {key=metric_name: value=score}"""
-        metric_methods = [getattr(self, m) for m in dir(self) if m.startswith("metric_")]
+        self,
+        documents_list: list[Document],
+    ) -> dict[str, float]:
+        """Evaluate the quality of a parsing based on some metrics measured
+        by heuristics.
+        Return the dictionary {key=metric_name: value=score}"""
+        metric_methods = [
+            getattr(self, m) for m in dir(self) if m.startswith("metric_")
+        ]
 
         metric_name2score = {}
         concatenated_docs = "\n".join([doc.page_content for doc in documents_list])
         for method in metric_methods:
-            metric_name2score[method.__name__.split('metric_')[1]] = method(concatenated_docs)
+            metric_name2score[method.__name__.split("metric_")[1]] = method(
+                concatenated_docs
+            )
 
         global_score = self.compute_global_parsing_score(metric_name2score)
         metric_name2score["global_score"] = global_score
         return metric_name2score
 
     def metric_tables(
-            self,
-            content: str,
+        self,
+        content: str,
     ) -> float:
         """Evaluate the quality of tables identification in a document."""
         tables_score = 0
@@ -152,8 +157,8 @@ class PDFMultiParser(BaseBlobParser):
         return tables_score
 
     def metric_titles(
-            self,
-            content: str,
+        self,
+        content: str,
     ) -> float:
         """Evaluate the quality of titles identification in a document."""
         title_score = 0
@@ -174,8 +179,8 @@ class PDFMultiParser(BaseBlobParser):
         return title_score
 
     def metric_lists(
-            self,
-            content: str,
+        self,
+        content: str,
     ) -> float:
         """Evaluate the quality of lists identification in a document."""
         lists_score = 0
@@ -188,17 +193,18 @@ class PDFMultiParser(BaseBlobParser):
             indent = match[0]  # get indentation
             level = len(indent)
             lists_score += (
-                    level + 1
+                level + 1
             )  # the more indent the parser identify the more it is rewarded
 
         return lists_score
 
     def compute_global_parsing_score(
-            self,
-            metric_name2score: dict[str, float],
-    ) -> float:
+        self,
+        metric_name2score: dict[str, float],
+    ) -> np.floating[Any]:
         """Compute the global parsing score based on the scores of each metric."""
         return np.mean(list(metric_name2score.values()))
+
 
 class PyMuPDF4LLMParser(ImagesPdfParser):
     """Parse `PDF` using `PyMuPDF`."""
@@ -207,7 +213,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         self,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
+        mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         to_markdown_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
@@ -215,7 +221,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
 
         Args:
             password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "paged".
+            mode: Extraction mode to use. Either "single" or "page".
             pages_delimitor: Delimiter to use between pages.
                              May be r'\f', '<!--PAGE BREAK -->', ...
 
@@ -226,8 +232,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
             extract_images=False,  # PPR: extract_images will be True
             images_to_text=None,
         )
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         self.mode = mode
         self.pages_delimitor = pages_delimitor
         self.password = password or ""
@@ -268,7 +274,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                         full_text.append(mu_doc["text"])
                         if not metadata:
                             metadata = mu_doc["metadata"]
-                    elif self.mode == "paged":
+                    elif self.mode == "page":
                         yield Document(
                             page_content=mu_doc["text"],
                             metadata=purge_metadata(mu_doc["metadata"]),
@@ -373,7 +379,7 @@ class LlamaIndexPDFParser(BaseBlobParser):
         self,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
+        mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         extract_tables: Literal["markdown"] = "markdown",
         api_key: Optional[str] = None,
@@ -390,8 +396,8 @@ class LlamaIndexPDFParser(BaseBlobParser):
                 "llama_parse package not found, please install it "
                 "with `pip install llama_parse pdfminer.six`"
             )
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         if extract_images:
             logger.info("Ignore extract_images==True in LlamaIndexPDFParser.")
         if extract_tables != "markdown" or images_to_text:
@@ -404,7 +410,7 @@ class LlamaIndexPDFParser(BaseBlobParser):
         self.extract_tables = extract_tables
         self.pages_delimitor = pages_delimitor
         self._llama_parser = LlamaParse(
-            api_key=os.environ.get("LLAMA_CLOUD_API_KEY", api_key),
+            api_key=os.environ.get("LLAMAINDEX_API_KEY", api_key),
             result_type="markdown",  # "markdown" and "text" are available
             num_workers=1,
             verbose=verbose,
