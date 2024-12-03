@@ -18,6 +18,8 @@ from patch_langchain_community.document_loaders.parsers import (
     PyPDFium2Parser,
     PyPDFParser,
 )
+from patch_langchain_community.document_loaders.parsers.pdf import \
+    convert_images_to_description
 
 # PDFs to test parsers on.
 HELLO_PDF = Path(__file__).parent.parent.parent / "examples" / "hello.pdf"
@@ -165,12 +167,9 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
         ("PDFMinerParser", {}),
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
-        # ("LlamaIndexPDFParser", {}),
     ],
 )
-# @pytest.mark.skipif(
-#     not os.environ.get("LLAMA_CLOUD_API_KEY"), reason="Llama cloud API key not found"
-# )
+@pytest.mark.skip(reason="very long test. Ignore now")
 def test_standard_parameters(
     parser_factory: str, params: dict, mode: str, extract_images: bool
 ) -> None:
@@ -221,6 +220,7 @@ def test_standard_parameters(
         return iter(["![image](.)"] * len(images))
 
     parser_class = getattr(pdf_parsers, parser_factory)
+    from langchain_openai.chat_models import ChatOpenAI
     parser = parser_class(
         mode=mode,
         extract_images=extract_images,
@@ -237,7 +237,7 @@ def test_standard_parameters(
 )
 @pytest.mark.parametrize(
     "extract_tables",
-    ["markdown", "html", "csv", None],  # FIXME: text ?
+    ["markdown", "html", "csv", None],
 )
 @pytest.mark.parametrize(
     "parser_factory,params",

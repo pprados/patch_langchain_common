@@ -272,7 +272,7 @@ def convert_images_to_description(
     model: BaseChatModel,
     *,
     prompt: BasePromptTemplate = _prompt_images_to_description,
-    format: Literal["text", "markdown", "html"] = "markdown",
+    format: Literal["text", "markdown", "html"] = "markdown",  # FIXME: text
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using a multimodal model.
@@ -335,6 +335,8 @@ def convert_images_to_description(
                     result = f"![{result}](.)"
                 elif format == "html":
                     result = f'<img alt="{str(html.escape(result, quote=True))}" />'
+                elif format == "text":
+                    pass
                 else:
                     raise ValueError(f"Unknown format: {format}")
             logger.debug("LLM description: " + result.replace("\n", "\\n"))
