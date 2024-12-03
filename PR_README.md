@@ -19,6 +19,10 @@ This issue is worsened by the injection of headers, footers (if parsers haven’
 properly removed them), images, or tables at the end of a page, as most current 
 implementations tend to do.
 
+In order to qualify all the code, we worked in a separate project, using the 
+`langchain-common` structure. In this way, we can compare the results of the 
+historical implementation with the new ones.
+
 # Images
 The current implementation in LangChain involves asking each parser for the text 
 on a page, then retrieving images to apply OCR. The text extracted from images is 

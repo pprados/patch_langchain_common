@@ -48,6 +48,9 @@ if TYPE_CHECKING:
     from pypdf import PageObject
     from textractor.data.text_linearization_config import TextLinearizationConfig
 
+PDFMINER_DUPLICATE_BUG_JOIN = True
+PDFMINER_DUPLICATE_BUG_IMAGES = False
+
 _PDF_FILTER_WITH_LOSS = ["DCTDecode", "DCT", "JPXDecode"]
 _PDF_FILTER_WITHOUT_LOSS = [
     "LZWDecode",
@@ -96,7 +99,9 @@ def purge_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         elif k in map_key:
             # Normliaze key with others PDF parser
             new_metadata[map_key[k]] = v
-        elif isinstance(v, (str, int)):
+        elif isinstance(v, str):
+            new_metadata[k] = v.strip()
+        elif isinstance(v, int):
             new_metadata[k] = v
     return new_metadata
 
@@ -562,12 +567,13 @@ class PDFMinerParser(ImagesPdfParser):
         self.extract_images = extract_images
         self.images_to_text = images_to_text
         self.pages_delimitor = pages_delimitor
-        if extract_images:
-            logger.warning(
-                "To replicate a bug from the previous version, "
-                "force the mode to 'page'"
-            )
-            self.mode = "page"
+        if PDFMINER_DUPLICATE_BUG_IMAGES:
+            if extract_images:
+                logger.warning(
+                    "To replicate a bug from the previous version, "
+                    "force the mode to 'page'"
+                )
+                self.mode = "page"
 
         if concatenate_pages is not None:
             warnings.warn(
@@ -656,6 +662,7 @@ class PDFMinerParser(ImagesPdfParser):
             LTItem,
             LTPage,
             LTText,
+            LTTextBox,
             LTTextContainer,
             LTTextLine,
         )
@@ -682,12 +689,13 @@ class PDFMinerParser(ImagesPdfParser):
 
                 def receive_layout(me, ltpage: LTPage) -> None:
                     def render(item: LTItem) -> None:
-                        if isinstance(item, LTTextLine):
-                            text_io.write("\n")
-                        elif isinstance(item, LTTextContainer):
-                            text_io.write(item.get_text())
+                        if isinstance(item, LTContainer):
+                            for child in item:
+                                render(child)
                         elif isinstance(item, LTText):
                             text_io.write(item.get_text())
+                        elif isinstance(item, LTTextBox):
+                            text_io.write("\n")
                         elif isinstance(item, LTImage):
                             if self.extract_images and self.images_to_text:
                                 from pdfminer.image import ImageWriter
@@ -700,9 +708,8 @@ class PDFMinerParser(ImagesPdfParser):
                                     text_io.write(
                                         _format_image_str.format(image_text=image_text)
                                     )
-                        elif isinstance(item, LTContainer):
-                            for child in item:
-                                render(child)
+                        else:
+                            pass
 
                     render(ltpage)
 
@@ -726,10 +733,18 @@ class PDFMinerParser(ImagesPdfParser):
                 else:
                     all_content.append(content)
             if self.mode == "single":
-                yield Document(
-                    page_content=self.pages_delimitor.join(all_content),
-                    metadata=doc_metadata,
-                )
+                if PDFMINER_DUPLICATE_BUG_JOIN:
+                    # Add pages_delimitor at the end of each page
+                    yield Document(
+                        page_content="".join([content+self.pages_delimitor for content in all_content]),
+                        metadata=doc_metadata,
+                    )
+                else:
+                    # Add page_delimitor between pages
+                    yield Document(
+                        page_content=self.pages_delimitor.join(all_content),
+                        metadata=doc_metadata,
+                    )
 
 
 class PyMuPDFParser(ImagesPdfParser):
