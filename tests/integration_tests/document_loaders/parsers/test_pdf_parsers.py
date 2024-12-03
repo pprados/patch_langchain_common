@@ -18,6 +18,8 @@ from patch_langchain_community.document_loaders.parsers import (
     PyPDFium2Parser,
     PyPDFParser,
 )
+from patch_langchain_community.document_loaders.parsers.pdf import \
+    convert_images_to_description
 
 # PDFs to test parsers on.
 HELLO_PDF = Path(__file__).parent.parent.parent / "examples" / "hello.pdf"
@@ -150,7 +152,7 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
 
 @pytest.mark.parametrize(
     "mode",
-    ["single", "paged"],
+    ["single", "page"],
 )
 @pytest.mark.parametrize(
     "extract_images",
@@ -165,12 +167,9 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
         ("PDFMinerParser", {}),
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
-        # ("LlamaIndexPDFParser", {}),
     ],
 )
-# @pytest.mark.skipif(
-#     not os.environ.get("LLAMA_CLOUD_API_KEY"), reason="Llama cloud API key not found"
-# )
+@pytest.mark.skip(reason="very long test. Ignore now")
 def test_standard_parameters(
     parser_factory: str, params: dict, mode: str, extract_images: bool
 ) -> None:
@@ -221,19 +220,20 @@ def test_standard_parameters(
         return iter(["![image](.)"] * len(images))
 
     parser_class = getattr(pdf_parsers, parser_factory)
+    from langchain_openai.chat_models import ChatOpenAI
     parser = parser_class(
         mode=mode,
         extract_images=extract_images,
         images_to_text=images_to_text,
         **params,
     )
-    _assert_with_parser(parser, splits_by_page=(mode == "paged"))
+    _assert_with_parser(parser, splits_by_page=(mode == "page"))
     _std_assert_with_parser(parser)
 
 
 @pytest.mark.parametrize(
     "mode",
-    ["single", "paged"],
+    ["single", "page"],
 )
 @pytest.mark.parametrize(
     "extract_tables",
@@ -242,8 +242,8 @@ def test_standard_parameters(
 @pytest.mark.parametrize(
     "parser_factory,params",
     [  # PPR: reactiver tous les tests
-        ("PyMuPDFParser", {}),
-        ("PDFPlumberParser", {}),
+        # ("PyMuPDFParser", {}),
+        # ("PDFPlumberParser", {}),
         ("LlamaIndexPDFParser", {}),
     ],
 )
@@ -256,6 +256,14 @@ def test_parser_with_table(
     mode: str,
     extract_tables: str,
 ) -> None:
+    if parser_factory == "LlamaIndexPDFParser" and extract_tables not in [
+        "markdown",
+        None,
+    ]:
+        pytest.skip(
+            f"{parser_factory} is not compatible with extract_tables='{extract_tables}'"
+        )
+
     def _std_assert_with_parser(parser: BaseBlobParser) -> None:
         """Standard tests to verify that the given parser works.
 

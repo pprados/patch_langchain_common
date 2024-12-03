@@ -45,7 +45,7 @@ def test_pdfplumber_loader() -> None:
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
     loader = PDFPlumberLoader(
         file_path,
-        mode="paged",
+        mode="page",
         extract_tables="html",
         extract_images=False,
     )

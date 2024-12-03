@@ -85,15 +85,11 @@ def _assert_with_duplicate_parser(parser: BaseBlobParser, dedupe: bool = False) 
 
 @pytest.mark.parametrize(
     "mode",
-    # ["single", "paged"],
-    [
-        "single",
-    ],
+    ["single", "page"],
 )
 @pytest.mark.parametrize(
     "extract_images",
-    # [True, False],
-    [False],
+    [True, False],
 )
 @pytest.mark.parametrize(
     "parser_factory,params",
@@ -105,27 +101,27 @@ def _assert_with_duplicate_parser(parser: BaseBlobParser, dedupe: bool = False) 
                 "skip_infer_table_types": [],
             },
         ),
-        # (
-        #     "UnstructuredPDFParser",
-        #     {
-        #         "strategy": "fast",
-        #         "skip_infer_table_types": [],
-        #     },
-        # ),
-        # (
-        #     "UnstructuredPDFParser",
-        #     {
-        #         "strategy": "hi_res",
-        #         "skip_infer_table_types": [],
-        #     },
-        # ),
-        # (
-        #     "UnstructuredPDFParser",
-        #     {
-        #         "strategy": "ocr_only",
-        #         "skip_infer_table_types": [],
-        #     },
-        # ),
+        (
+            "UnstructuredPDFParser",
+            {
+                "strategy": "fast",
+                "skip_infer_table_types": [],
+            },
+        ),
+        (
+            "UnstructuredPDFParser",
+            {
+                "strategy": "hi_res",
+                "skip_infer_table_types": [],
+            },
+        ),
+        (
+            "UnstructuredPDFParser",
+            {
+                "strategy": "ocr_only",
+                "skip_infer_table_types": [],
+            },
+        ),
     ],
 )
 def test_unstructured_standard_parameters(
@@ -161,7 +157,9 @@ def test_unstructured_standard_parameters(
                 if match:
                     images.extend(match)
             assert len(images) >= 1
-        # PPR: reactiver le test avec password lorsque le PR sera merge
+        # Reactivate the test, when the
+        # [PR](https://github.com/Unstructured-IO/unstructured/pull/3721)
+        # will be validated.
         # old_password = parser.password
         # parser.password = "password"
         # blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)
@@ -188,13 +186,13 @@ def test_unstructured_standard_parameters(
         and parser.unstructured_kwargs.get("strategy") == "ocr_only"
     ):
         return  # FIXME
-    _assert_with_parser(parser, splits_by_page=(mode == "paged"))
+    _assert_with_parser(parser, splits_by_page=(mode == "page"))
     _std_assert_with_parser(parser)
 
 
 @pytest.mark.parametrize(
     "mode",
-    ["single", "paged"],
+    ["single", "page"],
 )
 @pytest.mark.parametrize(
     "extract_tables",

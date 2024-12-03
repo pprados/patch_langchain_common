@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.11 (rag-project-template)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.10 (patch_langchain_common)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Poetry (patch_langchain_common)" project-jdk-type="Python SDK" />
 </project>

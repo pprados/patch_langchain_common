@@ -13,8 +13,6 @@ from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.document_loaders import BaseBlobParser
 from langchain_core.documents import Document
 
-from patch_langchain_community.document_loaders.pdf import BasePDFLoader
-
 from .parsers.new_pdf import (
     LlamaIndexPDFParser,
     PDFMultiParser,
@@ -33,7 +31,7 @@ class PDFMultiLoader(BasePDFLoader):
         file_path: Union[str, Path],
         *,
         headers: Optional[dict] = None,
-        parsers: dict[str:BaseBlobParser],
+        parsers: dict[str, BaseBlobParser],
         max_workers: Optional[int] = None,
         continue_if_error: bool = True,
     ) -> None:
@@ -47,7 +45,7 @@ class PDFMultiLoader(BasePDFLoader):
 
     def lazy_load(
         self,
-    ) -> Iterator[tuple[list[Document], str]]:
+    ) -> Iterator[Document]:
         """Lazy load given path as pages."""
         if self.web_path:
             blob = Blob.from_data(open(self.file_path, "rb").read(), path=self.web_path)  # type: ignore[attr-defined]
@@ -125,7 +123,7 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
         file_path: Union[str, Path],
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
+        mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         extract_images: bool = False,  # FIXME
         extract_tables: Optional[Literal["markdown"]] = None,  # FIXME
@@ -163,7 +161,7 @@ class LlamaIndexPDFLoader(BasePDFLoader):
         file_path: Union[str, Path],
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
+        mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         extract_tables: Literal["markdown"] = "markdown",
         api_key: Optional[str] = None,
@@ -206,9 +204,7 @@ class LlamaIndexPDFLoader(BasePDFLoader):
 
 # TODO docline
 # https://www.reddit.com/r/LocalLLaMA/comments/1ghbmoq/docling_is_a_new_library_from_ibm_that/?tl=fr
-# TODO: parser et parametres, tous les tests
 class DoclingPDFLoader(BasePDFLoader):
-
     def __init__(self, file_path: Union[str, Path]) -> None:
         try:
             from docling.document_converter import DocumentConverter
@@ -228,6 +224,4 @@ class DoclingPDFLoader(BasePDFLoader):
             yield Document(page_content=text)
 
 
-
 # TODO: https://www.linkedin.com/posts/liorsinclair_nvidia-just-released-a-powerful-pdf-extraction-ugcPost-7267580522359336962-GAQv/?utm_source=share&utm_medium=member_desktop
-# TODO: pdfact https://github.com/ad-freiburg/pdfact.git

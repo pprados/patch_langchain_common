@@ -7,7 +7,7 @@ import tempfile
 import time
 from abc import ABC
 from io import StringIO
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -91,7 +91,9 @@ class BasePDFLoader(BaseLoader, ABC):
         clean up the temporary file after completion.
     """
 
-    def __init__(self, file_path: Union[str, Path], *, headers: Optional[dict] = None):
+    def __init__(
+        self, file_path: Union[str, PurePath], *, headers: Optional[dict] = None
+    ):
         """Initialize with a file path.
 
         Args:
@@ -195,7 +197,7 @@ class PyPDFLoader(BasePDFLoader):
             loader = PyPDFLoader(
                 file_path = "./example_data/layout-parser-paper.pdf",
                 password = "my-pasword",
-                mode = "paged",
+                mode = "page",
                 extract_images = True,
                 # headers = None
                 # extraction_mode = "plain",
@@ -240,13 +242,13 @@ class PyPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         password: Optional[Union[str, bytes]] = None,
         headers: Optional[dict] = None,
         extract_images: bool = False,
         *,  # Move after the file_path ?
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         pages_delimitor: str = _default_page_delimitor,
         extraction_mode: Literal["plain", "layout"] = "plain",
         extraction_kwargs: Optional[dict] = None,
@@ -285,9 +287,9 @@ class PyPDFium2Loader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         *,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         pages_delimitor: str = _default_page_delimitor,
         password: Optional[str] = None,
         extract_images: bool = False,
@@ -328,7 +330,7 @@ class PyPDFDirectoryLoader(BaseLoader):
 
     def __init__(
         self,
-        path: Union[str, Path],
+        path: Union[str, PurePath],
         glob: str = "**/[!.]*.pdf",
         silent_errors: bool = False,
         load_hidden: bool = False,
@@ -336,7 +338,7 @@ class PyPDFDirectoryLoader(BaseLoader):
         extract_images: bool = False,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         headers: Optional[dict] = None,
         extraction_mode: Literal["plain", "layout"] = "plain",
@@ -356,7 +358,7 @@ class PyPDFDirectoryLoader(BaseLoader):
         self.extraction_kwargs = extraction_kwargs
 
     @staticmethod
-    def _is_visible(path: Path) -> bool:
+    def _is_visible(path: PurePath) -> bool:
         return not any(part.startswith(".") for part in path.parts)
 
     def load(self) -> list[Document]:
@@ -394,10 +396,10 @@ class PDFMinerLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "single",
+        mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
@@ -448,7 +450,7 @@ class PDFMinerPDFasHTMLLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         *,
         password: Optional[str] = None,
         headers: Optional[dict] = None,
@@ -492,10 +494,10 @@ class PyMuPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         pages_delimitor: str = _default_page_delimitor,
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
@@ -514,8 +516,8 @@ class PyMuPDFLoader(BasePDFLoader):
                 "`PyMuPDF` package not found, please install it with "
                 "`pip install pymupdf`"
             )
-        if mode not in ["single", "paged"]:
-            raise ValueError("mode must be single or paged")
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
         super().__init__(file_path, headers=headers)
         self.parser = PyMuPDFParser(
             password=password,
@@ -553,7 +555,7 @@ class PDFPlumberLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         *,
         text_kwargs: Optional[Mapping[str, Any]] = {
             "use_text_flow": False,
@@ -562,7 +564,7 @@ class PDFPlumberLoader(BasePDFLoader):
         dedupe: bool = False,
         headers: Optional[dict] = None,
         password: Optional[str] = None,
-        mode: Literal["single", "paged"] = "paged",
+        mode: Literal["single", "page"] = "page",
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         pages_delimitor: str = _default_page_delimitor,
@@ -711,7 +713,7 @@ class MathpixPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         processed_file_format: str = "md",
         max_wait_time_seconds: int = 500,
         should_clean_pdf: bool = False,
@@ -880,7 +882,7 @@ class AmazonTextractPDFLoader(BasePDFLoader):
 
     def __init__(
         self,
-        file_path: Union[str, Path],
+        file_path: Union[str, PurePath],
         textract_features: Optional[Sequence[str]] = None,
         client: Optional[Any] = None,
         credentials_profile_name: Optional[str] = None,
