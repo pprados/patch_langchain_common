@@ -298,7 +298,7 @@ def convert_images_to_description(
         model: BaseChatModel,
         *,
         prompt: BasePromptTemplate = _prompt_images_to_description,
-        format: Literal["text", "markdown", "html"] = "markdown",  # FIXME: text
+        format: Literal["text", "markdown", "html"] = "markdown",
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using a multimodal model.
@@ -862,7 +862,7 @@ class PyMuPDFParser(ImagesPdfParser):
 
         import pymupdf
 
-        with PyMuPDFParser._lock:  # PPR: todo integration images dans PyMuPDFParser
+        with PyMuPDFParser._lock:  # PPR: todo integration images with PyMuPDFParser ?
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
                 if blob.data is None:  # type: ignore[attr-defined]
                     doc = pymupdf.open(file_path)
@@ -1049,7 +1049,7 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         # pypdfium2 is really finicky with respect to closing things,
         # if done incorrectly creates seg faults.
-        with PyPDFium2Parser._lock:  # TODO: images
+        with PyPDFium2Parser._lock:  # TODO: todo integration images with PyPDFium2 ?
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
                 pdf_reader = pypdfium2.PdfDocument(
                     file_path, password=self.password, autoclose=True
@@ -1171,7 +1171,6 @@ class PDFPlumberParser(ImagesPdfParser):
 
         with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
             doc = pdfplumber.open(file_path, password=self.password)  # open document
-            # TODO: avec ou sans tables
             from pdfplumber.utils import geometry  # import WordExctractor, TextMap
 
             contents = []
@@ -1180,9 +1179,7 @@ class PDFPlumberParser(ImagesPdfParser):
                         doc.metadata
                         | {
                             "source": blob.source,
-                            # type: ignore[attr-defined]
                             "file_path": blob.source,
-                            # type: ignore[attr-defined]
                             "total_pages": len(doc.pages),
                         }
                 )
@@ -1225,7 +1222,7 @@ class PDFPlumberParser(ImagesPdfParser):
                     )
                 else:
                     contents.append(all_text)
-                # PPR: add les tables_as_html et les images dans tous les scénarios ?
+                # PPR: add the tables_as_html and  images in all scenario ?
                 # "tables_as_html": [self._convert_table_to_html(table)
                 #                    for
                 #                    table in tables_content],
