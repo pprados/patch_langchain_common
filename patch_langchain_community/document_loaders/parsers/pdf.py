@@ -73,7 +73,7 @@ logger = logging.getLogger(__name__)
 _format_image_str = "\n{image_text}\n"
 _join_images = "\n"
 _join_tables = "\n"
-_default_page_delimitor = "\f"
+_default_page_delimitor = "\n\f"  # FIXME: \f seul est suffisant
 
 
 def purge_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
@@ -99,6 +99,7 @@ def purge_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
         elif k in map_key:
             # Normliaze key with others PDF parser
             new_metadata[map_key[k]] = v
+            new_metadata[k] = v
         elif isinstance(v, str):
             new_metadata[k] = v.strip()
         elif isinstance(v, int):
@@ -694,7 +695,7 @@ class PDFMinerParser(ImagesPdfParser):
                                 render(child)
                         elif isinstance(item, LTText):
                             text_io.write(item.get_text())
-                        elif isinstance(item, LTTextBox):
+                        if isinstance(item, LTTextBox):
                             text_io.write("\n")
                         elif isinstance(item, LTImage):
                             if self.extract_images and self.images_to_text:

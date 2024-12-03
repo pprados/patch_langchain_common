@@ -42,7 +42,7 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
     PyMuPDFParser,
     PyPDFium2Parser,
     PyPDFParser,
-    convert_images_to_text_with_rapidocr,
+    convert_images_to_text_with_rapidocr, _default_page_delimitor,
 )
 
 # %% Meta parameters
@@ -61,12 +61,16 @@ conv_images = convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
 # Function to extract text from images using multimodal model
 EXTRACT_TABLES = "markdown"
 # Format to use for the extracted tables. Either "text", "html" or "markdown"
-_default_page_delimitor = "\f"
-# Delimiter that will be put between pages in 'single' mode
 SUFFIX = "md"
+# If True, compare with the old versions of parsers/loader
 USE_OLD_PARSERS = True
+# If True, force the MODE to be the default old value
+RETRO_COMPATIBLE = True
+# If True, invoke online parser. Must have TOKEN API
 USE_ONLINE_PARSERS = False
+# Number of // workers. Desactivated with USE_OLD_PARSERS
 MAX_WORKERS:Optional[int] = None  # FIXME: MAX_WORKERS=None
+# If True, contine with the next parser if error. Else, stop at the first error.
 CONTINUE_IF_ERROR = True
 
 load_dotenv()
@@ -75,49 +79,49 @@ logging.getLogger("azure").setLevel(logging.WARNING)
 
 set_llm_cache(InMemoryCache())
 
-pdf_parsers_new: dict[str, BaseBlobParser] = {
-    "PDFMinerParser_new": PDFMinerParser(
-        mode=MODE,  # type:ignore
+pdf_parsers_updated: dict[str, BaseBlobParser] = {
+    # "PDFMinerParser_new": PDFMinerParser(
+    #     mode=MODE,  # type:ignore
+    #     pages_delimitor=_default_page_delimitor,
+    #     extract_images=EXTRACT_IMAGES,
+    #     images_to_text=conv_images,
+    # ),
+    # # %%
+    # "PDFPlumberParser_new": PDFPlumberParser(
+    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
+    #     pages_delimitor=_default_page_delimitor,
+    #     extract_images=EXTRACT_IMAGES,
+    #     images_to_text=conv_images,
+    #     extract_tables=EXTRACT_TABLES,  # type:ignore
+    # ),
+    # %%
+    "PyMuPDFParser_new": PyMuPDFParser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore
     ),
-    # # %%
-    # "PDFPlumberParser_new": PDFPlumberParser(
-    #     mode=MODE,  # type:ignore
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore
-    # ),
-    # # %%
-    # "PyMuPDFParser_new": PyMuPDFParser(
-    #     mode=MODE,  # type:ignore
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore
-    # ),
-    # # #%%
+    # #%%
     # "PyPDFium2Parser_new": PyPDFium2Parser(
-    #     mode=MODE,  # type:ignore
+    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
     #     pages_delimitor=_default_page_delimitor,
     #     extract_images=EXTRACT_IMAGES,
     #     images_to_text=conv_images,
     # ),
     # # #%%
     # "PyPDFParser_new": PyPDFParser(
-    #     mode=MODE,  # type:ignore
+    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
     #     pages_delimitor=_default_page_delimitor,
     #     extract_images=EXTRACT_IMAGES,
     #     images_to_text=conv_images,
     # ),
-    # # # %%
-    # # "PyMuPDF4LLMParser_new": PyMuPDF4LLMParser(
-    # #     mode=MODE,  # type:ignore
-    # #     pages_delimitor=_default_page_delimitor,
-    # #     to_markdown_kwargs=None,
-    # # ),
+    # # %%
+    # "PyMuPDF4LLMParser_new": PyMuPDF4LLMParser(
+    #     mode=MODE,  # type:ignore
+    #     pages_delimitor=_default_page_delimitor,
+    #     to_markdown_kwargs=None,
+    # ),
     # # %%
     # "UnstructuredPDFParser_auto_new": UnstructuredPDFParser(
     #     mode=MODE,  # type: ignore
@@ -136,7 +140,7 @@ pdf_parsers_new: dict[str, BaseBlobParser] = {
     #     images_to_text=conv_images,
     #     extract_tables=EXTRACT_TABLES,  # type: ignore
     # ),
-    # # %% BUG avec 11:SIGSEGV
+    # # %%
     # "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
     #     mode=MODE,  # type: ignore
     #     pages_delimitor=_default_page_delimitor,
@@ -154,13 +158,16 @@ pdf_parsers_new: dict[str, BaseBlobParser] = {
     #     images_to_text=conv_images,
     #     extract_tables=EXTRACT_TABLES,  # type: ignore
     # ),
-    # # %%
-    # "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
-    #     mode=MODE,  # type:ignore
-    #     pages_delimitor=_default_page_delimitor,
-    #     to_markdown_kwargs=None,
-    # ),
 }
+pdf_parsers_new: dict[str, BaseBlobParser] = {
+    # %%
+    "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
+        mode=MODE,  # type:ignore
+        pages_delimitor=_default_page_delimitor,
+        to_markdown_kwargs=None,
+    ),
+}
+
 pdf_online_parsers: dict[str, BaseBlobParser] = {
     # %%
     "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
@@ -179,22 +186,22 @@ pdf_online_parsers: dict[str, BaseBlobParser] = {
 }
 
 pdf_parsers_old: dict[str, BaseBlobParser] = {
-    # %%
-    "PDFMinerParser_old": old_PDFMinerParser(
-        extract_images=EXTRACT_IMAGES,
-        concatenate_pages=(MODE == "single"),
-    ),
+    # # %%
+    # "PDFMinerParser_old": old_PDFMinerParser(
+    #     extract_images=EXTRACT_IMAGES,
+    #     concatenate_pages=(MODE == "single"),
+    # ),
     # # %%
     # "PDFPlumberParser_old": old_PDFPlumberParser(
     #     text_kwargs=None,
     #     dedupe=False,
     #     extract_images=EXTRACT_IMAGES,
     # ),
-    # # %%
-    # "PyMuPDFParser_old": old_PyMuPDFParser(
-    #     text_kwargs=None,
-    #     extract_images=EXTRACT_IMAGES,
-    # ),
+    # %%
+    "PyMuPDFParser_old": old_PyMuPDFParser(
+        text_kwargs=None,
+        extract_images=EXTRACT_IMAGES,
+    ),
     # # %%
     # "PyPDFium2Parser_old": old_PyPDFium2Parser(
     #     extract_images=False,
@@ -216,10 +223,10 @@ pdf_loader_old = {
 }
 
 if USE_OLD_PARSERS:
-    pdf_parsers = {**pdf_parsers_old, **pdf_parsers_new}
+    pdf_parsers = {**pdf_parsers_old, **pdf_parsers_updated}
     MAX_WORKERS = 1  # If use Old parser, set to 1
 else:
-    pdf_parsers = pdf_parsers_new
+    pdf_parsers = {**pdf_parsers_updated, **pdf_parsers_new}
 if USE_ONLINE_PARSERS:
     pdf_parsers = {**pdf_parsers, **pdf_online_parsers}
 
@@ -325,8 +332,10 @@ def _save_results(parsers_results, parsings_subdir, pdf_file_relative_path):
             f.write(concatenated_docs)
         with open(str(output_file_path) + "properties", "w",
                   encoding="utf-8") as f:
-            json.dump(parser_name2concatenated_parsed_metadata[parser_name][0],
-                      f, indent=2)
+            metadata=parser_name2concatenated_parsed_metadata[parser_name][0]
+            metadata={k.lower():v for k,v in metadata.items()}  # FIXME: remove
+            json.dump(metadata,
+                      f, indent=2, sort_keys=True)
     return parser_name2concatenated_parsed_docs
 
 
