@@ -570,7 +570,7 @@ class PDFPlumberLoader(BasePDFLoader):
         pages_delimitor: str = _default_page_delimitor,
         extract_tables: Optional[
             Literal["csv", "markdown", "html"]
-        ] = None,  # FIXME: auto ?
+        ] = None,
         extract_tables_settings: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize with a file path."""
@@ -606,7 +606,7 @@ class PDFPlumberLoader(BasePDFLoader):
         yield from self.parser.lazy_parse(blob)
 
 
-# PPR: DedocPDFLoader
+# PPR: DedocPDFLoader dependencies incompatible with others parsers
 class DedocPDFLoader(DedocBaseLoader):
     """
     DedocPDFLoader document loader integration to load PDF files using `dedoc`.

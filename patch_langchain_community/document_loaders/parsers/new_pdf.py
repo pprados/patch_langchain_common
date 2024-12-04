@@ -279,8 +279,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                             page_content=mu_doc["text"],
                             metadata=purge_metadata(mu_doc["metadata"]),
                         )
-                        # PPR TODO: extraire les images. Voir PyMuPDFParser
-                        # PPR TODO: extraire les tableaux ? Voir PyMuPDFParser
+                        # PPR: extraire images ? See PyMuPDFParser
+                        # PPR: extraire array ? See PyMuPDFParser
                 if self.mode == "single":
                     yield Document(
                         page_content=self.pages_delimitor.join(full_text),

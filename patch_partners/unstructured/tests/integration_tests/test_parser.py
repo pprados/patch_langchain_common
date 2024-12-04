@@ -185,7 +185,7 @@ def test_unstructured_standard_parameters(
         isinstance(parser, UnstructuredPDFParser)
         and parser.unstructured_kwargs.get("strategy") == "ocr_only"
     ):
-        return  # FIXME
+        return  # FIXME: ocr_only skip ?
     _assert_with_parser(parser, splits_by_page=(mode == "page"))
     _std_assert_with_parser(parser)
 

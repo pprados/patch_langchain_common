@@ -125,8 +125,8 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
         password: Optional[str] = None,
         mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
-        extract_images: bool = False,  # FIXME
-        extract_tables: Optional[Literal["markdown"]] = None,  # FIXME
+        extract_images: bool = False,  # FIXME: extract_images in PyMuPDF4LLM
+        extract_tables: Optional[Literal["markdown"]] = None,  # FIXME: extract_tables in in PyMuPDF4LLM
         **kwargs: Any,
     ) -> None:
         """Initialize with a file path."""
