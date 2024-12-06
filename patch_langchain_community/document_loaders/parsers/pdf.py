@@ -48,8 +48,6 @@ if TYPE_CHECKING:
     from pypdf import PageObject
     from textractor.data.text_linearization_config import TextLinearizationConfig
 
-PDFMINER_DUPLICATE_BUG_JOIN = True
-PDFMINER_DUPLICATE_BUG_IMAGES = False
 
 _PDF_FILTER_WITH_LOSS = ["DCTDecode", "DCT", "JPXDecode"]
 _PDF_FILTER_WITHOUT_LOSS = [
@@ -70,7 +68,7 @@ _PDF_FILTER_WITHOUT_LOSS = [
 
 logger = logging.getLogger(__name__)
 
-_format_image_str = "\n{image_text}\n"
+_format_image_str = "\n\n{image_text}\n\n"
 _join_images = "\n"
 _join_tables = "\n"
 _default_page_delimitor = "\n\f"  # FIXME: \f seul est théoriquemnt suffisant
@@ -497,7 +495,8 @@ class PyPDFParser(ImagesPdfParser):
             for page_number, page in enumerate(pdf_reader.pages):
                 text_from_page = _extract_text_from_page(page=page)
                 images_from_page = self.extract_images_from_page(page)
-                all_text = _merge_text_and_extras([images_from_page], text_from_page)
+                all_text = _merge_text_and_extras([images_from_page],
+                                                  text_from_page).strip()
                 if self.mode == "page":
                     yield Document(
                         page_content=all_text,
@@ -557,7 +556,7 @@ class PDFMinerParser(ImagesPdfParser):
             password: Optional[str] = None,
             mode: Literal["single", "page"] = "single",
             # FIXME pages_delimitor: str = _default_page_delimitor,
-            pages_delimitor: str = "\f",
+            pages_delimitor: str = "\n\f",
             images_to_text: CONVERT_IMAGE_TO_TEXT = None,
             concatenate_pages: Optional[bool] = None,
     ):
@@ -588,15 +587,6 @@ class PDFMinerParser(ImagesPdfParser):
         self.password = password
         self.extract_images = extract_images
         self.images_to_text = images_to_text
-        self.pages_delimitor = pages_delimitor
-        if PDFMINER_DUPLICATE_BUG_IMAGES:
-            if extract_images:
-                logger.warning(
-                    "To replicate a bug from the previous version, "
-                    "force the mode to 'page'"
-                )
-                self.mode = "page"
-
         if concatenate_pages is not None:
             warnings.warn(
                 "`concatenate_pages` parameter is deprecated. "
@@ -743,30 +733,27 @@ class PDFMinerParser(ImagesPdfParser):
                 text_io.seek(0)
                 visitor_for_all.process_page(page)
 
-                content = text_io.getvalue()
+                all_text = text_io.getvalue()
+                # For legacy compatibility, net strip()
+                all_text = all_text.strip()
                 if self.mode == "page":
                     text_io.truncate(0)
                     text_io.seek(0)
                     yield Document(
-                        page_content=content, metadata=doc_metadata | {"page": i}
+                        page_content=all_text, metadata=doc_metadata | {"page": i}
                     )
                 else:
-                    all_content.append(content)
+                    if all_text.endswith("\f"):
+                        all_text = all_text[:-1]
+                    all_content.append(all_text)
             if self.mode == "single":
-                if PDFMINER_DUPLICATE_BUG_JOIN:
-                    # Add pages_delimitor at the end of each page
-                    yield Document(
-                        page_content="".join(
-                            [content + self.pages_delimitor for content in
-                             all_content]),
-                        metadata=doc_metadata,
-                    )
-                else:
-                    # Add page_delimitor between pages
-                    yield Document(
-                        page_content=self.pages_delimitor.join(all_content),
-                        metadata=doc_metadata,
-                    )
+                # Add page_delimitor between pages
+                document_content=self.pages_delimitor.join(all_content)
+                # document_content+="\f"  # FIXME
+                yield Document(
+                    page_content=document_content,
+                    metadata=doc_metadata,
+                )
 
 
 class PyMuPDFParser(ImagesPdfParser):
@@ -873,7 +860,7 @@ class PyMuPDFParser(ImagesPdfParser):
                 doc_metadata = self._extract_metadata(doc, blob)
                 full_content = []
                 for page in doc:
-                    all_text = self._get_page_content(doc, page, blob)
+                    all_text = self._get_page_content(doc, page, blob).strip()
                     if self.mode == "page":
                         yield Document(
                             page_content=all_text,
@@ -1051,16 +1038,17 @@ class PyPDFium2Parser(ImagesPdfParser):
         # if done incorrectly creates seg faults.
         with PyPDFium2Parser._lock:  # TODO: todo integration images with PyPDFium2 ?
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
-                pdf_reader = pypdfium2.PdfDocument(
-                    file_path, password=self.password, autoclose=True
-                )
-                full_content = []
-
-                doc_metadata = purge_metadata(pdf_reader.get_metadata_dict())
-                doc_metadata["source"] = blob.source
-                doc_metadata["total_pages"] = len(pdf_reader)
-
+                pdf_reader = None
                 try:
+                    pdf_reader = pypdfium2.PdfDocument(
+                        file_path, password=self.password, autoclose=True
+                    )
+                    full_content = []
+
+                    doc_metadata = purge_metadata(pdf_reader.get_metadata_dict())
+                    doc_metadata["source"] = blob.source
+                    doc_metadata["total_pages"] = len(pdf_reader)
+
                     for page_number, page in enumerate(pdf_reader):
                         text_page = page.get_textpage()
                         text_from_page = "\n".join(
@@ -1070,10 +1058,13 @@ class PyPDFium2Parser(ImagesPdfParser):
                         image_from_page = self._extract_images_from_page(page)
                         all_text = _merge_text_and_extras(
                             [image_from_page], text_from_page
-                        )
+                        ).strip()
                         page.close()
 
                         if self.mode == "page":
+                            # For legacy compatibility, add the last '\n'
+                            if not all_text.endswith("\n"):
+                                all_text += "\n"
                             yield Document(
                                 page_content=all_text,
                                 metadata={
@@ -1092,7 +1083,8 @@ class PyPDFium2Parser(ImagesPdfParser):
                             metadata=doc_metadata,
                         )
                 finally:
-                    pdf_reader.close()
+                    if pdf_reader:
+                        pdf_reader.close()
 
     def _extract_images_from_page(self, page: "pypdfium2._helpers.page.PdfPage") -> str:
         """Extract images from page and get the text with RapidOCR."""
@@ -1103,10 +1095,12 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         images = list(page.get_objects(filter=(pdfium_c.FPDF_PAGEOBJ_IMAGE,)))
 
-        images = list(map(lambda x: x.get_bitmap().to_numpy(), images))
+        numpy_images = list(map(lambda x: x.get_bitmap().to_numpy(), images))
+        for image in images:
+            image.close()
         return _format_image_str.format(
             image_text=_join_images.join(
-                [text for text in self.convert_image_to_text(images)]
+                [text for text in self.convert_image_to_text(numpy_images)]
             )
         )
 
@@ -1208,9 +1202,12 @@ class PDFPlumberParser(ImagesPdfParser):
                             _join_images + next(self.convert_image_to_text([content]))
                         )
 
-                all_text = "".join(page_text)
+                all_text = "".join(page_text).strip()
 
                 if self.mode == "page":
+                    # For legacy compatibility, add the last '\n'_
+                    if not all_text.endswith("\n"):
+                        all_text += "\n"
                     yield Document(
                         page_content=all_text,
                         metadata=(
@@ -1265,7 +1262,7 @@ class PDFPlumberParser(ImagesPdfParser):
             {
                 "keep_blank_chars": True,
                 # "use_text_flow": True,
-                # "presorted": True,
+                "presorted": True,
                 "layout_bbox": kwargs.get("layout_bbox")
                                # or geometry.objects_to_bbox(page.chars),
                                or page.cropbox,
