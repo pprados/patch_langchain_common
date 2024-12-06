@@ -133,73 +133,25 @@ else
 
 endif
 
-LANGCHAIN_HOME=../langchain
-TARGET:=core
-SRC_PACKAGE=langchain_rag
-DST_PACKAGE=langchain_core
-SRC_MODULE:=langchain-rag
-DST_MODULE:=core
-
-define _push_sync
-	@$(eval TARGET=$(TARGET))
-	@$(eval SRC_PACKAGE=$(SRC_PACKAGE))
-	@$(eval DST_PACKAGE=$(DST_PACKAGE))
-	@$(eval WORK_DIR=$(shell mktemp -d --suffix ".rsync"))
-	@mkdir -p "${WORK_DIR}/libs/${TARGET}"
-	@mkdir -p "${WORK_DIR}/docs/docs"
-	@echo Copy and patch $(SRC_PACKAGE) to $(DST_PACKAGE) in $(LANGCHAIN_HOME)
-	@( \
-		cd $(SRC_PACKAGE)/ ; \
-		rsync -a \
-		  --exclude ".*" \
-		  --exclude __pycache__ \
-		  --exclude __init__.py \
-		  . "${WORK_DIR}/libs/${TARGET}/$(DST_PACKAGE)" ; \
-	)
-	@( \
-		cd tests/ ; \
-		rsync -a \
-		  --exclude ".*" \
-		  --exclude __pycache__ \
-		  --exclude __init__.py \
-		  . "${WORK_DIR}/libs/${TARGET}/tests" ; \
-	)
-	@( \
-		cd docs/ ; \
-		rsync -a \
-		  --exclude ".*" \
-		  . "${WORK_DIR}/docs/docs" ; \
-	)
-	@find '${WORK_DIR}' -type f -a \
-		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
-		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
-	#@echo "${WORK_DIR}/libs"
-	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
-	@rm -Rf '${WORK_DIR}'
-endef
-
-push-sync:
-	$(call _push_sync)
-
-#pull-sync:
-#	cp -rf $(TARGET)/langchain_experimental/chains/qa_with_references/ \
-#		langchain_qa_with_references/chains/
-#	cp -f $(TARGET)/langchain_experimental/chains/__init__.py \
-#		langchain_qa_with_references/chains/
-#	cp -rf $(TARGET)/langchain_experimental/chains/qa_with_references_and_verbatims/ \
-#		langchain_qa_with_references/chains/
-#	cp -rf $(TARGET)/tests/unit_tests/chains/ \
-#		tests/unit_tests/
-#	cp $(TARGET)/docs/qa_with_reference*.ipynb .
-#	find . -type f \( -name '*.py' -or -name '*.ipynb' \) | xargs sed -i 's/langchain_experimental/langchain_qa_with_references/g'
-#	find . -type f -name '*.ipynb' | xargs sed -i 's/langchain\([_-]\)experimental/langchain\1qa_with_references/g'
-
-
 .venv poetry.lock: pyproject.toml
 	poetry lock
 	git add poetry.lock
 	poetry install $(POETRY_EXTRA) --with $(POETRY_WITH)
 
+
+## docs
+
+.PHONY: docs
+docs/api_reference: $(PYTHON_FILES)
+	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/api_reference ..
+	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/unstructured/api_reference ../patch_partners/unstructured
+
+docs/nb: | $(NB_FILES)
+	jupyter nbconvert --to markdown --output-dir=docs/_build/nb/ docs/docs/**/*.ipynb
+
+docs: docs/api_reference docs/nb
+	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
+	xdg-open docs/_build/html/index.html
 
 ## Refresh lock
 lock: .venv poetry.lock
@@ -221,11 +173,12 @@ init: poetry.lock
 
 # Push to langchain
 LANGCHAIN_HOME=../langchain
-TARGET:=core
-SRC_PACKAGE=langchain_rag
-DST_PACKAGE=langchain_core
-SRC_MODULE:=langchain-rag
-DST_MODULE:=core
+TARGET:=community
+SRC_PACKAGE=patch_langchain_community
+DST_PACKAGE=langchain_community
+SRC_MODULE:=patch_langchain_community
+DST_MODULE:=community
+
 
 define _push_sync
 	@$(eval TARGET=$(TARGET))
@@ -252,17 +205,21 @@ define _push_sync
 		  . "${WORK_DIR}/libs/${TARGET}/tests" ; \
 	)
 	@( \
-		cd docs/ ; \
+		cd docs/docs ; \
 		rsync -a \
 		  --exclude ".*" \
 		  . "${WORK_DIR}/docs/docs" ; \
 	)
+	@find '${WORK_DIR}' -type f -a -name 'conftest.py' -exec rm {} ';'
+	@find '${WORK_DIR}' -type f -a -name 'new_*.*' -exec rm {} ';'
+	@find '${WORK_DIR}' -type f -a -name 'test_new_*.*' -exec rm {} ';'
 	@find '${WORK_DIR}' -type f -a \
 		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
 		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
 	#@echo "${WORK_DIR}/libs"
 	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
 	@rm -Rf '${WORK_DIR}'
+	@echo WORK_DIR=${WORK_DIR}
 endef
 
 push-sync:
@@ -280,19 +237,3 @@ push-sync:
 #	cp $(TARGET)/docs/qa_with_reference*.ipynb .
 #	find . -type f \( -name '*.py' -or -name '*.ipynb' \) | xargs sed -i 's/langchain_experimental/langchain_qa_with_references/g'
 #	find . -type f -name '*.ipynb' | xargs sed -i 's/langchain\([_-]\)experimental/langchain\1qa_with_references/g'
-
-
-
-
-
-.PHONY: docs
-docs/api_reference: $(PYTHON_FILES)
-	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/api_reference ..
-	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/unstructured/api_reference ../patch_partners/unstructured
-
-docs/nb: | $(NB_FILES)
-	jupyter nbconvert --to markdown --output-dir=docs/_build/nb/ docs/docs/**/*.ipynb
-
-docs: docs/api_reference docs/nb
-	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
-	xdg-open docs/_build/html/index.html
