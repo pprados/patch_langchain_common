@@ -1,1 +1,0 @@
-{'source': './example_data/layout-parser-paper.pdf', 'page': 10}

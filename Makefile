@@ -231,3 +231,10 @@ docs/nb: | $(NB_FILES)
 docs: docs/api_reference docs/nb
 	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
 	xdg-open docs/_build/html/index.html
+
+.PHONY: dist run_notebooks
+
+run_notebooks: dist
+	poetry run python parser_comparator/execute_notebooks.py
+
+
