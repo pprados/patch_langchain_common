@@ -294,7 +294,7 @@ requires modifications to both modules and has been submitted in another pull re
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single or page
+- `mode` single (with convertion to markdown) or page
 - `pages_delimitor`
 - `extract_images`
 - `images_to_text`
@@ -303,17 +303,32 @@ For this parser, we introduce the following new features:
 - Moving integration tests to `unstructured/tests`
 - Lock, as the code is not reentrant
 
-## PyMuPDF4LLMLoader
+## New parsers (in future PR)
+### PDFRouterLoader
+This loader relies on PDF file metadata and the content of the first page to select 
+the appropriate PDF parser.
+
+### PDFMultiLoader
+Calls multiple parsers and selects the best result.
+
+### PyMuPDF4LLMLoader
 `Loader` compatible with new specifications, using the 
 [PyMuPDF4LLM](https://pymupdf.readthedocs.io/en/latest/pymupdf4llm/) 
 library. Currently, the implementation does not export images for OCR/LLM processing
 
-## PDFRouterLoader
-This loader relies on PDF file metadata and the content of the first page to select 
-the appropriate PDF parser.
+### DoclingPDFLoader
+`Loader` to integrate docling
 
-## PDFMultiLoader
-Calls multiple parsers and selects the best result.
+### LlamaIndexPDFLoader
+`Loader` to integrate llamaindex
+
+
+
+- PDFRouterLoader / PDFRouterParser
+- PDFMultiLoader / PDFMultiParser
+- PyMuPDF4LLMLoader / PyMuPDF4LLMParser
+- DoclingPDFLoader / DoclingPDFParser
+- LlamaIndexPDFLoader / LlamaIndexPDFParser
 
 ---
 # Install module (temporary)

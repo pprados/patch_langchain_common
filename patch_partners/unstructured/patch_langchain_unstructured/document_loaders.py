@@ -409,6 +409,7 @@ class _SingleDocumentLoader(BaseLoader):
             ),
         )
 
+
     def _convert_elements_to_dicts(
         self, elements: list[Element]
     ) -> list[dict[str, Any]]:
@@ -441,6 +442,29 @@ class _SingleDocumentLoader(BaseLoader):
 
 # %% ---------------------- PDF
 class _SinglePDFDocumentLoader(_SingleDocumentLoader):
+    @property
+    def _elements_via_local(self) -> list[Element]:
+        try:
+            from unstructured.partition.pdf import partition_pdf  # type: ignore
+        except ImportError:
+            raise ImportError(
+                "unstructured package not found, please install it with "
+                "`pip install unstructured`"
+            )
+
+        if self.file and self.unstructured_kwargs.get("metadata_filename") is None:
+            raise ValueError(
+                "If partitioning a fileIO object, metadata_filename must be specified"
+                " as well.",
+            )
+
+        return partition_pdf(
+            file=self.file,
+            filename=self.file_path,
+            password=self.password,
+            **self.unstructured_kwargs,
+        )  # type: ignore
+
     def _get_metadata(self) -> Dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
