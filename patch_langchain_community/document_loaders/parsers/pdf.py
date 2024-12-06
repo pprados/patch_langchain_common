@@ -748,7 +748,6 @@ class PDFMinerParser(ImagesPdfParser):
             if self.mode == "single":
                 # Add page_delimitor between pages
                 document_content=self.pages_delimitor.join(all_content)
-                # document_content+="\f"  # FIXME
                 yield Document(
                     page_content=document_content,
                     metadata=doc_metadata,
