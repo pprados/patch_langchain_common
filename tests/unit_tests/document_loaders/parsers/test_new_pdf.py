@@ -2,7 +2,7 @@ import sys
 import unittest
 from unittest.mock import MagicMock, Mock
 
-if sys.version_info < (3, 11):  # FIXME: (3,11)
+if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
 from patch_langchain_community.document_loaders.parsers.new_pdf import PDFMultiParser
 

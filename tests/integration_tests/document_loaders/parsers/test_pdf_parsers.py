@@ -241,10 +241,9 @@ def test_standard_parameters(
 )
 @pytest.mark.parametrize(
     "parser_factory,params",
-    [  # PPR: reactiver tous les tests
-        # ("PyMuPDFParser", {}),
-        # ("PDFPlumberParser", {}),
-        ("LlamaIndexPDFParser", {}),
+    [
+        ("PyMuPDFParser", {}),
+        ("PDFPlumberParser", {}),
     ],
 )
 # @pytest.mark.skipif(

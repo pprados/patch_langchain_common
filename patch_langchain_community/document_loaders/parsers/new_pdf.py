@@ -70,7 +70,7 @@ class PDFMultiParser(BaseBlobParser):
         {parser_name: (documents, metrics)}"""
         parsers_results = []
         all_exceptions: dict[str, Exception] = {}
-        with ThreadPoolExecutor(max_workers=len(self.parsers)) as executor:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Submit each parser's load method to the executor
             futures = {
                 executor.submit(parser.parse, blob): parser_name
@@ -279,8 +279,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                             page_content=mu_doc["text"],
                             metadata=purge_metadata(mu_doc["metadata"]),
                         )
-                        # PPR TODO: extraire les images. Voir PyMuPDFParser
-                        # PPR TODO: extraire les tableaux ? Voir PyMuPDFParser
+                        # PPR: extraire images ? See PyMuPDFParser
+                        # PPR: extraire array ? See PyMuPDFParser
                 if self.mode == "single":
                     yield Document(
                         page_content=self.pages_delimitor.join(full_text),

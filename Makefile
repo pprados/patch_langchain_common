@@ -1,4 +1,4 @@
-SHELL=/bin/zsh
+SHELL=/bin/bash
 .PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
 POETRY_EXTRA?=--all-extras
 POETRY_WITH?=dev,lint,test,codespell
@@ -133,12 +133,52 @@ else
 
 endif
 
+.venv poetry.lock: pyproject.toml
+	poetry lock
+	git add poetry.lock
+	poetry install $(POETRY_EXTRA) --with $(POETRY_WITH)
+
+
+## docs
+
+.PHONY: docs
+docs/api_reference: $(PYTHON_FILES)
+	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/api_reference ..
+	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/unstructured/api_reference ../patch_partners/unstructured
+
+docs/nb: | $(NB_FILES)
+	jupyter nbconvert --to markdown --output-dir=docs/_build/nb/ docs/docs/**/*.ipynb
+
+docs: docs/api_reference docs/nb
+	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
+	xdg-open docs/_build/html/index.html
+
+## Refresh lock
+lock: .venv poetry.lock
+
+## Validate the code
+validate: poetry.lock format lint spell_check integration_tests
+
+
+init: poetry.lock
+	@poetry self update
+	@poetry self add poetry-dotenv-plugin
+	@poetry self add poetry-plugin-export
+	@poetry self add poetry-git-version-plugin
+	@poetry config warnings.export false
+	@poetry config virtualenvs.in-project true
+	@poetry install --sync $(POETRY_EXTRA) --with $(POETRY_WITH)
+	@pre-commit install
+	@git lfs install
+
+# Push to langchain
 LANGCHAIN_HOME=../langchain
-TARGET:=core
-SRC_PACKAGE=langchain_rag
-DST_PACKAGE=langchain_core
-SRC_MODULE:=langchain-rag
-DST_MODULE:=core
+TARGET:=community
+SRC_PACKAGE=patch_langchain_community
+DST_PACKAGE=langchain_community
+SRC_MODULE:=patch_langchain_community
+DST_MODULE:=community
+
 
 define _push_sync
 	@$(eval TARGET=$(TARGET))
@@ -165,17 +205,21 @@ define _push_sync
 		  . "${WORK_DIR}/libs/${TARGET}/tests" ; \
 	)
 	@( \
-		cd docs/ ; \
+		cd docs/docs ; \
 		rsync -a \
 		  --exclude ".*" \
 		  . "${WORK_DIR}/docs/docs" ; \
 	)
+	@find '${WORK_DIR}' -type f -a -name 'conftest.py' -exec rm {} ';'
+	@find '${WORK_DIR}' -type f -a -name 'new_*.*' -exec rm {} ';'
+	@find '${WORK_DIR}' -type f -a -name 'test_new_*.*' -exec rm {} ';'
 	@find '${WORK_DIR}' -type f -a \
 		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
 		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
 	#@echo "${WORK_DIR}/libs"
 	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
 	@rm -Rf '${WORK_DIR}'
+	@echo WORK_DIR=${WORK_DIR}
 endef
 
 push-sync:
@@ -194,47 +238,7 @@ push-sync:
 #	find . -type f \( -name '*.py' -or -name '*.ipynb' \) | xargs sed -i 's/langchain_experimental/langchain_qa_with_references/g'
 #	find . -type f -name '*.ipynb' | xargs sed -i 's/langchain\([_-]\)experimental/langchain\1qa_with_references/g'
 
-
-.venv poetry.lock: pyproject.toml
-	poetry lock
-	git add poetry.lock
-	poetry install $(POETRY_EXTRA) --with $(POETRY_WITH)
-
-
-## Refresh lock
-lock: .venv poetry.lock
-
-## Validate the code
-validate: poetry.lock format lint spell_check integration_tests
-
-
-init: poetry.lock
-	@poetry self update
-	@poetry self add poetry-dotenv-plugin
-	@poetry self add poetry-plugin-export
-	@poetry self add poetry-git-version-plugin
-	@poetry config warnings.export false
-	@poetry config virtualenvs.in-project true
-	@poetry install --sync $(POETRY_EXTRA) --with $(POETRY_WITH)
-	@pre-commit install
-	@git lfs install
-
-
-.PHONY: docs
-docs/api_reference: $(PYTHON_FILES)
-	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/api_reference ..
-	cd docs && sphinx-apidoc --remove-old -M -f -e -o _build/unstructured/api_reference ../patch_partners/unstructured
-
-docs/nb: | $(NB_FILES)
-	jupyter nbconvert --to markdown --output-dir=docs/_build/nb/ docs/docs/**/*.ipynb
-
-docs: docs/api_reference docs/nb
-	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
-	xdg-open docs/_build/html/index.html
-
 .PHONY: dist run_notebooks
 
 run_notebooks: dist
 	poetry run python parser_comparator/execute_notebooks.py
-
-
