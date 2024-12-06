@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 _format_image_str = "\n\n{image_text}\n\n"
 _join_images = "\n"
 _join_tables = "\n"
-_default_page_delimitor = "\n\f"  # FIXME: \f seul est théoriquemnt suffisant
+_default_page_delimitor = "\n\f"
 
 
 def purge_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
@@ -332,7 +332,7 @@ def convert_images_to_description(
                 "`PIL` package not found, please install it with `pip install pillow`"
             )
         chat = model
-        for image in images:  # FIXME: Add a batch processing
+        for image in images:  # TODO: Add a batch processing?
             image_bytes = io.BytesIO()
             Image.fromarray(image).save(image_bytes, format="PNG")
             img_base64 = base64.b64encode(image_bytes.getvalue()).decode("utf-8")
@@ -555,8 +555,7 @@ class PDFMinerParser(ImagesPdfParser):
             *,
             password: Optional[str] = None,
             mode: Literal["single", "page"] = "single",
-            # FIXME pages_delimitor: str = _default_page_delimitor,
-            pages_delimitor: str = "\n\f",
+            pages_delimitor: str = _default_page_delimitor,
             images_to_text: CONVERT_IMAGE_TO_TEXT = None,
             concatenate_pages: Optional[bool] = None,
     ):
@@ -849,7 +848,7 @@ class PyMuPDFParser(ImagesPdfParser):
 
         import pymupdf
 
-        with PyMuPDFParser._lock:  # PPR: todo integration images with PyMuPDFParser ?
+        with PyMuPDFParser._lock:
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
                 if blob.data is None:  # type: ignore[attr-defined]
                     doc = pymupdf.open(file_path)
@@ -1036,7 +1035,7 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         # pypdfium2 is really finicky with respect to closing things,
         # if done incorrectly creates seg faults.
-        with PyPDFium2Parser._lock:  # TODO: todo integration images with PyPDFium2 ?
+        with PyPDFium2Parser._lock:
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
                 pdf_reader = None
                 try:

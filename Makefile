@@ -207,3 +207,67 @@ init: poetry.lock
 	@poetry install --sync $(POETRY_EXTRA) --with $(POETRY_WITH)
 	@pre-commit install
 	@git lfs install
+
+# Push to langchain
+LANGCHAIN_HOME=../langchain
+TARGET:=core
+SRC_PACKAGE=langchain_rag
+DST_PACKAGE=langchain_core
+SRC_MODULE:=langchain-rag
+DST_MODULE:=core
+
+define _push_sync
+	@$(eval TARGET=$(TARGET))
+	@$(eval SRC_PACKAGE=$(SRC_PACKAGE))
+	@$(eval DST_PACKAGE=$(DST_PACKAGE))
+	@$(eval WORK_DIR=$(shell mktemp -d --suffix ".rsync"))
+	@mkdir -p "${WORK_DIR}/libs/${TARGET}"
+	@mkdir -p "${WORK_DIR}/docs/docs"
+	@echo Copy and patch $(SRC_PACKAGE) to $(DST_PACKAGE) in $(LANGCHAIN_HOME)
+	@( \
+		cd $(SRC_PACKAGE)/ ; \
+		rsync -a \
+		  --exclude ".*" \
+		  --exclude __pycache__ \
+		  --exclude __init__.py \
+		  . "${WORK_DIR}/libs/${TARGET}/$(DST_PACKAGE)" ; \
+	)
+	@( \
+		cd tests/ ; \
+		rsync -a \
+		  --exclude ".*" \
+		  --exclude __pycache__ \
+		  --exclude __init__.py \
+		  . "${WORK_DIR}/libs/${TARGET}/tests" ; \
+	)
+	@( \
+		cd docs/ ; \
+		rsync -a \
+		  --exclude ".*" \
+		  . "${WORK_DIR}/docs/docs" ; \
+	)
+	@find '${WORK_DIR}' -type f -a \
+		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
+		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
+	#@echo "${WORK_DIR}/libs"
+	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
+	@rm -Rf '${WORK_DIR}'
+endef
+
+push-sync:
+	$(call _push_sync)
+
+#pull-sync:
+#	cp -rf $(TARGET)/langchain_experimental/chains/qa_with_references/ \
+#		langchain_qa_with_references/chains/
+#	cp -f $(TARGET)/langchain_experimental/chains/__init__.py \
+#		langchain_qa_with_references/chains/
+#	cp -rf $(TARGET)/langchain_experimental/chains/qa_with_references_and_verbatims/ \
+#		langchain_qa_with_references/chains/
+#	cp -rf $(TARGET)/tests/unit_tests/chains/ \
+#		tests/unit_tests/
+#	cp $(TARGET)/docs/qa_with_reference*.ipynb .
+#	find . -type f \( -name '*.py' -or -name '*.ipynb' \) | xargs sed -i 's/langchain_experimental/langchain_qa_with_references/g'
+#	find . -type f -name '*.ipynb' | xargs sed -i 's/langchain\([_-]\)experimental/langchain\1qa_with_references/g'
+
+
