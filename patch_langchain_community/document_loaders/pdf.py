@@ -537,11 +537,11 @@ class PyPDFDirectoryLoader(BaseLoader):
 
 
 class PDFMinerLoader(BasePDFLoader):
-    """Load and parse a PDF file using 'PDFMiner' library.
+    """Load and parse a PDF file using 'pdfminer.six' library.
 
     This class provides methods to load and parse PDF documents, supporting various configurations such as handling
     password-protected files, extracting images, and defining extraction mode.
-    It integrates the `PDFMiner` library for PDF processing and offers both synchronous and asynchronous document
+    It integrates the `pdfminer.six` library for PDF processing and offers both synchronous and asynchronous document
     loading.
 
     Examples:

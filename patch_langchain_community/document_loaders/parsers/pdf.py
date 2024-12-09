@@ -75,7 +75,15 @@ _default_page_delimitor = "\n\f"
 
 
 def purge_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
-    """Purge metadata from unwanted keys."""
+    """
+    Purge metadata from unwanted keys and normalize key names.
+
+    Args:
+        metadata (dict[str, Any]): The original metadata dictionary.
+
+    Returns:
+        dict[str, Any]: The cleaned and normalized metadata dictionary.
+    """
     new_metadata: dict[str, Any] = {}
     map_key = {
         "page_count": "total_pages",
@@ -112,7 +120,17 @@ def __merge_text_and_extras(
         extras: list[str],
         text_from_page: str, recurs: bool) -> \
         Optional[str]:
-    # insert image/table, if possible, between two paragraphs
+    """
+    Insert extras such as image/table in a text between two paragraphs if possible.
+
+    Args:
+        extras (list[str]): List of extra content (images/tables) to insert.
+        text_from_page (str): The text content from the page.
+        recurs (bool): Flag to indicate if the function should recurse.
+
+    Returns:
+        Optional[str]: The merged text with extras inserted, or None if no insertion point is found.
+    """
     if extras:
         for delim in _delim:
             pos = text_from_page.rfind(delim)
@@ -140,6 +158,16 @@ def __merge_text_and_extras(
 def _merge_text_and_extras(
         extras: list[str],
         text_from_page: str) -> str:
+    """
+    Insert extras such as image/table in a text between two paragraphs if possible, else at the end of the text.
+
+    Args:
+        extras (list[str]): List of extra content (images/tables) to insert.
+        text_from_page (str): The text content from the page.
+
+    Returns:
+        str: The merged text with extras inserted.
+    """
     all_text = __merge_text_and_extras(extras, text_from_page, True)
     if not all_text:
         all_text = text_from_page + "\n\n" + "\n\n".join(extras)
@@ -189,7 +217,9 @@ def convert_images_to_text_with_rapidocr(
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using RapidOCR.
+
     Note: RapidOCR is compatible english and chinese languages.
+
     Args:
         format: Format of the output text. Either "text" or "markdown".
     """
@@ -300,13 +330,15 @@ def convert_images_to_description(
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using a multimodal model.
-        Args:
-            model: Multimodal model to use to describe the images.
-            prompt: Optional prompt to use to describe the images.
-            format: Format of the output text. Either "text" or "markdown".
 
-        Returns:
-            A function to extract text from images using the multimodal model.
+    Args:
+        model: Multimodal model to use to describe the images.
+        prompt: Optional prompt to use to describe the images.
+        format: Format of the output text. Either "text" or "markdown".
+
+
+    Returns:
+        A function to extract text from images using the multimodal model.
     """
 
     def _convert_images_to_description(
@@ -392,7 +424,55 @@ class ImagesPdfParser(BaseBlobParser):
 
 
 class PyPDFParser(ImagesPdfParser):
-    """Load `PDF` using `pypdf`"""
+    """Parse a blob from a PDF using `pypdf` library.
+
+    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
+    password-protected PDFs, extracting images, and defining extraction mode.
+    It integrates the 'pypdf' library for PDF processing and offers synchronous blob parsing.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-core langchain-community pypdf
+
+        Load a blob from a PDF file:
+
+        .. code-block:: python
+
+            from langchain_core.documents.base import Blob
+
+            blob = Blob.from_path("./example_data/layout-parser-paper.pdf")
+
+        Instantiate the parser:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders.parsers import PyPDFParser
+
+            parser = PyPDFParser(
+                # password = None,
+                # extract_images = False,
+                mode = "single",
+                pages_delimitor = "\n\f",
+                # images_to_text = None,
+                # extraction_mode = "plain",
+                # extraction_kwargs = None,
+            )
+
+        Lazily parse the blob:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = parser.lazy_parse(blob)
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
 
     def __init__(
             self,
@@ -408,15 +488,21 @@ class PyPDFParser(ImagesPdfParser):
         """Initialize a parser based on PyPDF.
 
         Args:
-            password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "page".
-            pages_delimitor: Delimiter to use between pages.
-                             May be r'\f', '<!--PAGE BREAK -->', ...
-            extract_images: Whether to extract images from PDF.
-            images_to_text: Function to extract text from images.
+            password: Optional password for opening encrypted PDFs.
+            extract_images: Whether to extract images from the PDF.
+            mode: The extraction mode, either "single" for the entire document or "page" for page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            images_to_text: Function or callable to convert images to text during extraction.
+            extraction_mode: “plain” for legacy functionality, “layout” for experimental layout mode functionality
+            extraction_kwargs: Optional additional parameters for the extraction process.
 
-            extraction_mode: PyPDF extraction mode to use. Either "plain" or "layout".
-            extraction_kwargs: Keyword arguments to pass to the PyPDF extraction method.
+        Returns:
+            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
+            documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pypdf` package is not installed.
+            ValueError: If the `mode` is not "single" or "page".
         """
         try:
             import pypdf  # noqa:F401
@@ -434,15 +520,28 @@ class PyPDFParser(ImagesPdfParser):
         self.extraction_kwargs = extraction_kwargs or {}
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
-        """Lazily parse the blob.
+        """
+        Lazily parse the blob.
         Insert image, if possible, between two paragraphs.
         In this way, a paragraph can be continued on the next page.
+
+        Args:
+            blob: The blob to parse.
+
+        Yield:
+            An iterator over the parsed documents.
         """
         import pypdf
 
         def _extract_text_from_page(page: "PageObject") -> str:
             """
             Extract text from image given the version of pypdf.
+
+            Args:
+                page: The page object to extract text from.
+
+            Returns:
+                str: The extracted text.
             """
 
             def before(
@@ -511,7 +610,14 @@ class PyPDFParser(ImagesPdfParser):
                 )
 
     def extract_images_from_page(self, page: "pypdf._page.PageObject") -> str:
-        """Extract images from page and get the text with RapidOCR."""
+        """Extract images from a PDF page and get the text using RapidOCR.
+
+        Args:
+            page: The page object from which to extract images.
+
+        Returns:
+            str: The extracted text from the images on the page.
+        """
         from PIL import Image
 
         if (
@@ -547,8 +653,54 @@ class PyPDFParser(ImagesPdfParser):
 
 
 class PDFMinerParser(ImagesPdfParser):
-    """Parse `PDF` using `PDFMiner`."""
+    """Parse a blob from a PDF using `pdfminer.six` library.
 
+    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
+    password-protected PDFs, extracting images, and defining extraction mode.
+    It integrates the 'pdfminer.six' library for PDF processing and offers synchronous blob parsing.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-core langchain-community pdfminer.six
+
+        Load a blob from a PDF file:
+
+        .. code-block:: python
+
+            from langchain_core.documents.base import Blob
+
+            blob = Blob.from_path("./example_data/layout-parser-paper.pdf")
+
+        Instantiate the parser:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders.parsers import PDFMinerParser
+
+            parser = PDFMinerParser(
+                # extract_images = False,
+                # password = None,
+                mode = "single",
+                pages_delimitor = "\n\f",
+                # images_to_text = None,
+                # concatenate_pages = None,
+            )
+
+        Lazily parse the blob:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = parser.lazy_parse(blob)
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
     def __init__(
             self,
             extract_images: bool = False,
@@ -562,14 +714,24 @@ class PDFMinerParser(ImagesPdfParser):
         """Initialize a parser based on PDFMiner.
 
         Args:
-            password: Password to open the PDF.
             extract_images: Whether to extract images from PDF.
-            images_to_text: Function to extract text from images.
-            mode: Extraction mode to use. Either "single" or "page".
-            pages_delimitor: Delimiter to use between pages.
-                             May be r'\f', '<!--PAGE BREAK -->', ...
+            password: Optional password for opening encrypted PDFs.
+            mode: Extraction mode to use. Either "single" or "page" for page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            images_to_text: Function or callable to convert images to text during extraction.
             concatenate_pages: Deprecated. If True, concatenate all PDF pages
                 into one a single document. Otherwise, return one document per page.
+
+        Returns:
+            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
+            documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pdfminer.six` package is not installed.
+            ValueError: If the `mode` is not "single" or "page".
+
+        Warnings:
+            `concatenate_pages` parameter is deprecated. Use `mode='single' or 'page' instead.
         """
         try:
             import pdfminer  # noqa:F401
@@ -598,6 +760,12 @@ class PDFMinerParser(ImagesPdfParser):
         """
         Decodes a PDFDocEncoding string to Unicode.
         Adds py3 compatibility to pdfminer's version.
+
+        Args:
+            s: The string to decode.
+
+        Returns:
+            str: The decoded Unicode string.
         """
         from pdfminer.utils import PDFDocEncoding
 
@@ -611,7 +779,15 @@ class PDFMinerParser(ImagesPdfParser):
 
     @staticmethod
     def resolve_and_decode(obj: Any) -> Any:
-        """Recursively resolve the metadata values."""
+        """
+        Recursively resolve the metadata values.
+
+        Args:
+            obj: The object to resolve and decode. It can be of any type.
+
+        Returns:
+            The resolved and decoded object.
+        """
         from pdfminer.psparser import PSLiteral
 
         if hasattr(obj, "resolve"):
@@ -635,6 +811,17 @@ class PDFMinerParser(ImagesPdfParser):
             password: str = "",
             caching: bool = True,
     ) -> dict[str, Any]:
+        """
+        Extract metadata from a PDF file.
+
+        Args:
+            fp: The file pointer to the PDF file.
+            password: The password for the PDF file, if encrypted. Defaults to an empty string.
+            caching: Whether to cache the PDF structure. Defaults to True.
+
+        Returns:
+            Metadata of the PDF file.
+        """
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
         # Create a PDF parser object associated with the file object.
@@ -662,7 +849,15 @@ class PDFMinerParser(ImagesPdfParser):
         return metadata
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
-        """Lazily parse the blob."""
+        """
+        Lazily parse the blob.
+
+        Args:
+            blob: The blob to parse.
+
+        Yield:
+            An iterator over the parsed documents.
+        """
         import io
 
         from pdfminer.converter import PDFLayoutAnalyzer
@@ -755,7 +950,56 @@ class PDFMinerParser(ImagesPdfParser):
 
 
 class PyMuPDFParser(ImagesPdfParser):
-    """Parse `PDF` using `PyMuPDF`."""
+    """Parse a blob from a PDF using `PyMuPDF` library.
+
+    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
+    password-protected PDFs, extracting images, and defining extraction mode.
+    It integrates the 'PyMuPDF' library for PDF processing and offers synchronous blob parsing.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-core langchain-community pymupdf
+
+        Load a blob from a PDF file:
+
+        .. code-block:: python
+
+            from langchain_core.documents.base import Blob
+
+            blob = Blob.from_path("./example_data/layout-parser-paper.pdf")
+
+        Instantiate the parser:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders.parsers import PyMuPDFParser
+
+            parser = PyMuPDFParser(
+                # password=None,
+                mode="page",
+                pages_delimitor="\n\f",
+                # extract_images=False,
+                # images_to_text=None,
+                # extract_tables=None,
+                # extract_tables_settings=None,
+                # text_kwargs=None,
+            )
+
+        Lazily parse the blob:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = parser.lazy_parse(blob)
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
 
     # PyMuPDF is not thread safe.
     # See https://pymupdf.readthedocs.io/en/latest/recipes-multiprocessing.html
@@ -775,17 +1019,26 @@ class PyMuPDFParser(ImagesPdfParser):
             extract_tables_settings: Optional[dict[str, Any]] = None,
             text_kwargs: Optional[Mapping[str, Any]] = None,
     ) -> None:
-        """Initialize the parser.
+        """Initialize a parser based on PyMuPDF.
 
         Args:
-            password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "page".
-            pages_delimitor: Delimiter to use between pages.
-                             May be r'\f', '<!--PAGE BREAK -->', ...
-            extract_images: Whether to extract images from PDF.
-            images_to_text: Function to extract text from images.
-            extract_tables_settings: Whether to extract tables from PDF.
-            text_kwargs: Keyword arguments to pass to ``fitz.Page.get_text()``.
+            password: Optional password for opening encrypted PDFs.
+            mode: Mode of parsing, either "single" for a single document or "page" for individual pages.
+            pages_delimitor: Delimiter to use between pages when mode is "single".
+            extract_images: Whether to extract images from the PDF.
+            images_to_text:  Function or callable to convert images to text during extraction.
+            extract_tables: Whether to extract tables in a specific format, such as "csv", "markdown", or "html".
+            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
+            **kwargs: Additional keyword arguments for customizing text extraction behavior.
+
+        Returns:
+            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
+            documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pymupdf` package is not installed.
+            ValueError: If the mode is not "single" or "page".
+            ValueError: If the extract_tables format is not "markdown", "html", or "csv".
         """
         try:
             import pymupdf  # noqa:F401
@@ -843,8 +1096,15 @@ class PyMuPDFParser(ImagesPdfParser):
             }
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
-        """Lazily parse the blob."""
+        """
+        Lazily parse the blob.
 
+        Args:
+            blob: The blob to parse.
+
+        Yield:
+            An iterator over the parsed documents.
+        """
         import pymupdf
 
         with PyMuPDFParser._lock:
@@ -880,6 +1140,14 @@ class PyMuPDFParser(ImagesPdfParser):
         """
         Get the text of the page using PyMuPDF and RapidOCR and issue a warning
         if it is empty.
+
+        Args:
+            doc: The PyMuPDF document object.
+            page: The PyMuPDF page object.
+            blob: The blob being parsed.
+
+        Returns:
+            str: The text content of the page.
         """
         text_from_page = page.get_text(**self.text_kwargs)
         images_from_page = self._extract_images_from_page(doc, page)
@@ -902,7 +1170,15 @@ class PyMuPDFParser(ImagesPdfParser):
         return all_text
 
     def _extract_metadata(self, doc: "pymupdf.pymupdf.Document", blob: Blob) -> dict:
-        """Extract metadata from the document and page."""
+        """Extract metadata from the document and page.
+
+        Args:
+            doc: The PyMuPDF document object.
+            blob: The blob being parsed.
+
+        Returns:
+            dict: The extracted metadata.
+        """
         return purge_metadata(
             dict(
                 {
@@ -921,7 +1197,15 @@ class PyMuPDFParser(ImagesPdfParser):
     def _extract_images_from_page(
             self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page"
     ) -> str:
-        """Extract images from page and get the text with RapidOCR."""
+        """Extract images from a PDF page and get the text using RapidOCR.
+
+        Args:
+            doc: The PyMuPDF document object.
+            page: The PyMuPDF page object.
+
+        Returns:
+            str: The extracted text from the images on the page.
+        """
         if not self.extract_images:
             return ""
         import pymupdf
@@ -949,7 +1233,14 @@ class PyMuPDFParser(ImagesPdfParser):
         )
 
     def _extract_tables_from_page(self, page: "pymupdf.pymupdf.Page") -> str:
-        """Extract images from page and get the text with RapidOCR."""
+        """Extract tables from a PDF page.
+
+        Args:
+            page: The PyMuPDF page object.
+
+        Returns:
+            str: The extracted tables in the specified format.
+        """
         if self.extract_tables is None:
             return ""
         import pymupdf
@@ -989,7 +1280,53 @@ class PyMuPDFParser(ImagesPdfParser):
 
 
 class PyPDFium2Parser(ImagesPdfParser):
-    """Parse `PDF` with `PyPDFium2`."""
+    """Parse a blob from a PDF using `PyPDFium2` library.
+
+    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
+    password-protected PDFs, extracting images, and defining extraction mode.
+    It integrates the 'PyPDFium2' library for PDF processing and offers synchronous blob parsing.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-core langchain-community pypdfium2
+
+        Load a blob from a PDF file:
+
+        .. code-block:: python
+
+            from langchain_core.documents.base import Blob
+
+            blob = Blob.from_path("./example_data/layout-parser-paper.pdf")
+
+        Instantiate the parser:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders.parsers import PyPDFium2Parser
+
+            parser = PyPDFium2Parser(
+                # password=None,
+                mode="page",
+                pages_delimitor="\n\f",
+                # extract_images=False,
+                # images_to_text=None,
+            )
+
+        Lazily parse the blob:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = parser.lazy_parse(blob)
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
 
     # PyPDFium2 is not thread safe.
     # See https://pypdfium2.readthedocs.io/en/stable/python_api.html#thread-incompatibility
@@ -1007,12 +1344,19 @@ class PyPDFium2Parser(ImagesPdfParser):
         """Initialize a parser based on PyPDFium2.
 
         Args:
-            password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "page".
-            pages_delimitor: Delimiter to use between pages.
-                             May be r'\f', '<!--PAGE BREAK -->', ...
-            extract_images: Whether to extract images from PDF.
-            images_to_text: Function to extract text from images.
+            password: Optional password for opening encrypted PDFs.
+            mode: Mode of parsing, either "single" for a single document or "page" for individual pages.
+            pages_delimitor: Delimiter to use between pages when mode is "single".
+            extract_images: Whether to extract images from the PDF.
+            images_to_text:  Function or callable to convert images to text during extraction.
+
+        Returns:
+            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
+            documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pypdfium2` package is not installed.
+            ValueError: If the mode is not "single" or "page".
         """
         try:
             import pypdfium2  # noqa:F401
@@ -1029,7 +1373,14 @@ class PyPDFium2Parser(ImagesPdfParser):
         self.password = password
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
-        """Lazily parse the blob."""
+        """Lazily parse the blob.
+
+        Args:
+            blob: The blob to parse.
+
+        Yields:
+            An iterator over the parsed documents.
+        """
         import pypdfium2
 
         # pypdfium2 is really finicky with respect to closing things,
@@ -1085,7 +1436,14 @@ class PyPDFium2Parser(ImagesPdfParser):
                         pdf_reader.close()
 
     def _extract_images_from_page(self, page: "pypdfium2._helpers.page.PdfPage") -> str:
-        """Extract images from page and get the text with RapidOCR."""
+        """Extract images from a PDF page and get the text using RapidOCR.
+
+        Args:
+            page: The page object from which to extract images.
+
+        Returns:
+            str: The extracted text from the images on the page.
+        """
         if not self.extract_images:
             return ""
 
@@ -1104,8 +1462,57 @@ class PyPDFium2Parser(ImagesPdfParser):
 
 
 class PDFPlumberParser(ImagesPdfParser):
-    """Parse `PDF` with `PDFPlumber`."""
+    """Parse a blob from a PDF using `pdfplumber` library.
 
+    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
+    password-protected PDFs, extracting images, and defining extraction mode.
+    It integrates the 'pdfplumber' library for PDF processing and offers synchronous blob parsing.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-core langchain-community pdfplumber
+
+        Load a blob from a PDF file:
+
+        .. code-block:: python
+
+            from langchain_core.documents.base import Blob
+
+            blob = Blob.from_path("./example_data/layout-parser-paper.pdf")
+
+        Instantiate the parser:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders.parsers import PDFPlumberParser
+
+            parser = PDFPlumberParser(
+                # text_kwargs=None,
+                # dedupe=False,
+                # extract_images=False,
+                # password=None,
+                mode="page",
+                pages_delimitor="\n\f",
+                # images_to_text=None,
+                # extract_tables=None,
+                # extract_tables_settings=None,
+            )
+
+        Lazily parse the blob:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = parser.lazy_parse(blob)
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
     def __init__(
             self,
             text_kwargs: Optional[Mapping[str, Any]] = None,
@@ -1122,14 +1529,27 @@ class PDFPlumberParser(ImagesPdfParser):
         """Initialize the parser.
 
         Args:
-            password: Password to open the PDF.
-            mode: Extraction mode to use. Either "single" or "page".
-            extract_images: Whether to extract images from PDF.
-            images_to_text: Function to extract text from images.
-            extract_tables: Whether to extract tables from PDF.
-
             text_kwargs: Keyword arguments to pass to ``pdfplumber.Page.extract_text()``
-            dedupe: Avoiding the error of duplicate characters if `dedupe=True`.
+            dedupe:  Avoiding the error of duplicate characters if `dedupe=True`
+            extract_images: Whether to extract images from the PDF
+            password: Optional password for opening encrypted PDFs.
+            mode: The extraction mode, either "single" for extracting the entire document as
+                one chunk or "page" for page-wise extraction.
+            images_to_text: Optional function or callable to convert images to text during extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            extract_tables: Whether to extract images from the PDF in a specific format, such as "csv", "markdown",
+                            or "html".
+            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
+
+        Returns:
+            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
+            documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pdfplumber` package is not installed.
+            ValueError: If the `mode` is not "single" or "page".
+            ValueError: If the `extract_tables` is not "csv", "markdown" or "html".
+
         """
         try:
             import pdfplumber  # noqa:F401
@@ -1158,7 +1578,14 @@ class PDFPlumberParser(ImagesPdfParser):
         }
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
-        """Lazily parse the blob."""
+        """Lazily parse the blob.
+
+        Args:
+            blob: The blob to parse.
+
+        Yields:
+            An iterator over the parsed documents.
+        """
         import pdfplumber
 
         with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
@@ -1232,7 +1659,14 @@ class PDFPlumberParser(ImagesPdfParser):
                 )
 
     def _process_page_content(self, page: "pdfplumber.page.Page") -> str:
-        """Process the page content based on dedupe."""
+        """Process the page content based on dedupe.
+
+        Args:
+            page: The PDF page to process.
+
+        Returns:
+            The extracted text from the page.
+        """
         if self.dedupe:
             return page.dedupe_chars().extract_text(**self.text_kwargs)
         return page.extract_text(**self.text_kwargs)
@@ -1246,7 +1680,19 @@ class PDFPlumberParser(ImagesPdfParser):
             images_content: list[np.ndarray],
             **kwargs: Any,
     ) -> Iterator[Union[str, list[list[str]], np.ndarray]]:
-        """Process the page content based on dedupe."""
+        """Split the page content into text, tables, and images.
+
+        Args:
+            page: The PDF page to process.
+            tables_bbox: Bounding boxes of tables on the page.
+            tables_content: Content of tables on the page.
+            images_bbox: Bounding boxes of images on the page.
+            images_content: Content of images on the page.
+            **kwargs: Additional keyword arguments.
+
+        Yields:
+            An iterator over the split content (text, tables, images).
+        """
         from pdfplumber.utils import (
             geometry,
             text,
@@ -1321,6 +1767,14 @@ class PDFPlumberParser(ImagesPdfParser):
     def _extract_images_from_page(
             self, page: "pdfplumber.page.Page"
     ) -> list[np.ndarray]:
+        """Extract images from a PDF page.
+
+        Args:
+            page: The PDF page to extract images from.
+
+        Returns:
+            A list of extracted images as numpy arrays.
+        """
         from PIL import Image
 
         if not self.extract_images:
@@ -1346,6 +1800,14 @@ class PDFPlumberParser(ImagesPdfParser):
             self,
             page: "pdfplumber.page.Page",
     ) -> list[tuple]:
+        """Extract bounding boxes of tables from a PDF page.
+
+        Args:
+            page: The PDF page to extract table bounding boxes from.
+
+        Returns:
+            A list of bounding boxes for tables on the page.
+        """
         if not self.extract_tables:
             return []
         from pdfplumber.table import TableSettings
@@ -1358,6 +1820,14 @@ class PDFPlumberParser(ImagesPdfParser):
             self,
             page: "pdfplumber.page.Page",
     ) -> list[list[list[Any]]]:
+        """Extract tables from a PDF page.
+
+        Args:
+            page: The PDF page to extract tables from.
+
+        Returns:
+            A list of tables, where each table is a list of rows, and each row is a list of cell values.
+        """
         if not self.extract_tables:
             return []
         table_settings = self.extract_tables_settings
@@ -1365,6 +1835,14 @@ class PDFPlumberParser(ImagesPdfParser):
         return tables_list
 
     def _convert_table(self, table: list[list[str]]) -> str:
+        """Convert a table to the specified format.
+
+        Args:
+            table: The table to convert.
+
+        Returns:
+            The table content as a string in the specified format.
+        """
         format = self.extract_tables
         if format is None:
             return ""
@@ -1378,8 +1856,14 @@ class PDFPlumberParser(ImagesPdfParser):
             raise ValueError(f"Unknown table format: {format}")
 
     def _convert_table_to_csv(self, table: list[list[str]]) -> str:
-        """Output table content as a string in Github-markdown format."""
+        """Convert a table to CSV format.
 
+        Args:
+            table: The table to convert.
+
+        Returns:
+            The table content as a string in CSV format.
+        """
         if not table:
             return ""
 
@@ -1399,9 +1883,16 @@ class PDFPlumberParser(ImagesPdfParser):
         return "\n".join(output) + "\n\n"
 
     def _convert_table_to_html(self, table: list[list[str]]) -> str:
-        """Output table content as a string in HTML format.
+        """
+        Convert table content as a string in HTML format.
+        If clean is true, markdown syntax is removed from cell content.
 
-        If clean is true, markdown syntax is removed from cell content."""
+        Args:
+            table: The table to convert.
+
+        Returns:
+            The table content as a string in HTML format.
+        """
         if not len(table):
             return ""
         output = "<table>\n"
@@ -1421,7 +1912,14 @@ class PDFPlumberParser(ImagesPdfParser):
         return output + "</table>\n"
 
     def _convert_table_to_markdown(self, table: list[list[str]]) -> str:
-        """Output table content as a string in Github-markdown format."""
+        """Convert table content as a string in Github-markdown format.
+
+        Args:
+            table: The table to convert.
+
+        Returns:
+            The table content as a string in Markdown format.
+        """
         clean = False
         if not table:
             return ""
