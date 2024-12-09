@@ -179,66 +179,58 @@ class OnlinePDFLoader(BasePDFLoader):
 
 
 class PyPDFLoader(BasePDFLoader):
-    """
-    PyPDFLoader document loader integration
+    """Load and parse a PDF file using 'pypdf' library.
 
-    Setup:
-        Install ``langchain-community``.
+    This class provides methods to load and parse PDF documents, supporting various configurations such as handling
+    password-protected files, extracting images, and defining extraction mode.
+    It integrates the `pypdf` library for PDF processing and offers both synchronous and asynchronous document loading.
+
+    Examples:
+        Setup:
 
         .. code-block:: bash
 
-            pip install -U langchain-community
+            pip install -U langchain-community pypdf
 
-    Instantiate:
+        Instantiate the loader:
+
         .. code-block:: python
 
             from langchain_community.document_loaders import PyPDFLoader
 
             loader = PyPDFLoader(
                 file_path = "./example_data/layout-parser-paper.pdf",
-                password = "my-pasword",
-                mode = "page",
-                extract_images = True,
+                # password = None,
                 # headers = None
+                mode = "single",
+                pages_delimitor = "\n\f",
+                # extract_images = False,
+                # images_to_text = None,
                 # extraction_mode = "plain",
                 # extraction_kwargs = None,
             )
 
-    Lazy load:
+        Lazy load documents:
+
         .. code-block:: python
 
             docs = []
             docs_lazy = loader.lazy_load()
-
-            # async variant:
-            # docs_lazy = await loader.alazy_load()
 
             for doc in docs_lazy:
                 docs.append(doc)
             print(docs[0].page_content[:100])
             print(docs[0].metadata)
 
-        .. code-block:: python
+        Load documents asynchronously:
 
-            LayoutParser : A Uniﬁed Toolkit for Deep
-            Learning Based Document Image Analysis
-            Zejiang Shen1( ), R
-            {'source': './example_data/layout-parser-paper.pdf', 'page': 0}
-
-    Async load:
         .. code-block:: python
 
             docs = await loader.aload()
-            print(docs[0].page_content[:100])8
+            print(docs[0].page_content[:100])
             print(docs[0].metadata)
-
-        .. code-block:: python
-
-            LayoutParser : A Uniﬁed Toolkit for Deep
-            Learning Based Document Image Analysis
-            Zejiang Shen1( ), R
-            {'source': './example_data/layout-parser-paper.pdf', 'page': 0}
-    """  # noqa: E501
+    """
+ # noqa: E501
 
     def __init__(
         self,
@@ -253,7 +245,26 @@ class PyPDFLoader(BasePDFLoader):
         extraction_mode: Literal["plain", "layout"] = "plain",
         extraction_kwargs: Optional[dict] = None,
     ) -> None:
-        """Initialize with a file path."""
+        """Initialize with a file path.
+
+        Args:
+            file_path: The path to the PDF file to be loaded.
+            password: Optional password for opening encrypted PDFs.
+            headers: Optional headers to use for GET request to download a file from a web path.
+            extract_images: Whether to extract images from the PDF.
+            images_to_text: Function or callable to convert images to text during extraction.
+            mode: The extraction mode, either "single" for the entire document or "page" for page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            extraction_mode: “plain” for legacy functionality, “layout” for experimental layout mode functionality
+            extraction_kwargs: Optional additional parameters for the extraction process.
+
+        Returns:
+            This method does not directly return data. Use the `load`, `lazy_load` or `aload` methods
+            to retrieve parsed documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pypdf` package is not installed.
+        """
         try:
             import pypdf  # noqa:F401
         except ImportError:
@@ -283,7 +294,56 @@ class PyPDFLoader(BasePDFLoader):
 
 
 class PyPDFium2Loader(BasePDFLoader):
-    """Load `PDF` using `pypdfium2` and chunks at character level."""
+    """Load and parse a PDF file using the `pypdfium2` library.
+
+    This class provides methods to load and parse PDF documents, supporting various configurations such as handling
+    password-protected files, extracting images, and defining extraction mode.
+    It integrates the `pypdfium2` library for PDF processing and offers both synchronous and asynchronous
+    document loading.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-community pypdfium2
+
+        Instantiate the loader:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders import PyPDFium2Loader
+
+            loader = PyPDFium2Loader(
+                file_path = "./example_data/layout-parser-paper.pdf",
+                mode = "single",
+                pages_delimitor = "\n\f",
+                # password = None,
+                # extract_images = False,
+                # images_to_text = None,
+                # headers = None,
+            )
+
+        Lazy load documents:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = loader.lazy_load()
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        Load documents asynchronously:
+
+        .. code-block:: python
+
+            docs = await loader.aload()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
 
     def __init__(
         self,
@@ -296,7 +356,25 @@ class PyPDFium2Loader(BasePDFLoader):
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         headers: Optional[dict] = None,
     ):
-        """Initialize with a file path."""
+        """Initialize with a file path.
+
+        Args:
+            file_path: The path to the PDF file to be loaded.
+            mode: The extraction mode, either "single" for extracting the entire document as one chunk or "page" for
+                page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages when using single-document extraction mode.
+            password: Optional password for opening encrypted PDFs.
+            extract_images: Whether to extract images from the PDF.
+            images_to_text: Function or callable to convert images to text during extraction.
+            headers: Optional headers to use for GET request to download a file from a web path.
+
+        Returns:
+            This class does not directly return data. Use the `load`, `lazy_load` or `aload` methods
+            to retrieve parsed documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pypdfium2` package is not installed.
+        """
         super().__init__(file_path, headers=headers)
         self.parser = PyPDFium2Parser(
             mode=mode,
@@ -323,9 +401,55 @@ class PyPDFium2Loader(BasePDFLoader):
     alternative="langchain_community.document_loaders.generic.GenericLoader",
 )
 class PyPDFDirectoryLoader(BaseLoader):
-    """Load a directory with `PDF` files using `pypdf` and chunks at character level.
+    """Load and parse a directory of PDF files using 'pypdf' library.
 
-    Loader also stores page numbers in metadata.
+    This class provides methods to load and parse multiple PDF documents in a directory, supporting options for
+    recursive search, handling password-protected files, extracting images, and defining extraction modes.
+    It integrates the `pypdf` library for PDF processing and offers synchronous document loading.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-community pypdf
+
+        Instantiate the loader:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders import PyPDFDirectoryLoader
+
+            loader = PyPDFDirectoryLoader(
+                path = "./example_data/",
+                glob = "**/[!.]*.pdf",
+                silent_errors = False,
+                load_hidden = False,
+                recursive = False,
+                extract_images = False,
+                password = None,
+                mode = "page",
+                images_to_text = None,
+                headers = None,
+                extraction_mode = "plain",
+                # extraction_kwargs = None,
+            )
+
+        Load documents:
+
+        .. code-block:: python
+
+            docs = loader.load()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        Load documents asynchronously:
+
+        .. code-block:: python
+
+            docs = await loader.aload()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
     """
 
     def __init__(
@@ -344,6 +468,27 @@ class PyPDFDirectoryLoader(BaseLoader):
         extraction_mode: Literal["plain", "layout"] = "plain",
         extraction_kwargs: Optional[dict] = None,
     ):
+        """Initialize with a directory path.
+
+        Args:
+            path: The path to the directory containing PDF files to be loaded.
+            glob: The glob pattern to match files in the directory.
+            silent_errors: Whether to log errors instead of raising them.
+            load_hidden: Whether to include hidden files in the search.
+            recursive: Whether to search subdirectories recursively.
+            extract_images: Whether to extract images from PDFs.
+            password: Optional password for opening encrypted PDFs.
+            mode: The extraction mode, either "single" for extracting the entire document or "page" for page-wise
+                    extraction.
+            images_to_text: Function or callable to convert images to text during extraction.
+            headers: Optional headers to use for GET request to download a file from a web path.
+            extraction_mode: “plain” for legacy functionality, “layout” for experimental layout mode functionality
+            extraction_kwargs: Optional additional parameters for the extraction process.
+
+        Returns:
+            This method does not directly return data. Use the `load` method to retrieve parsed documents with
+            content and metadata.
+        """
         self.password = password
         self.mode = mode
         self.path = path
@@ -392,7 +537,57 @@ class PyPDFDirectoryLoader(BaseLoader):
 
 
 class PDFMinerLoader(BasePDFLoader):
-    """Load `PDF` files using `PDFMiner`."""
+    """Load and parse a PDF file using 'PDFMiner' library.
+
+    This class provides methods to load and parse PDF documents, supporting various configurations such as handling
+    password-protected files, extracting images, and defining extraction mode.
+    It integrates the `PDFMiner` library for PDF processing and offers both synchronous and asynchronous document
+    loading.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-community pdfminer.six
+
+        Instantiate the loader:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders import PDFMinerLoader
+
+            loader = PDFMinerLoader(
+                file_path = "./example_data/layout-parser-paper.pdf",
+                # password = None,
+                mode = "single",
+                pages_delimitor = "\n\f",
+                # extract_images = False,
+                # images_to_text = None,
+                # headers = None,
+                # concatenate_pages = None,
+            )
+
+        Lazy load documents:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = loader.lazy_load()
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        Load documents asynchronously:
+
+        .. code-block:: python
+
+            docs = await loader.aload()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
 
     def __init__(
         self,
@@ -406,12 +601,25 @@ class PDFMinerLoader(BasePDFLoader):
         headers: Optional[dict] = None,
         concatenate_pages: Optional[bool] = None,
     ) -> None:
-        """Initialize with file path.
+        """Initialize with a file path.
 
         Args:
-            extract_images: Whether to extract images from PDF.
-            concatenate_pages: If True, concatenate all PDF pages into one a single
+            file_path: The path to the PDF file to be loaded. Accepts both string and `PurePath`.
+            password: Optional password for opening encrypted PDFs.
+            mode: The extraction mode, either "single" for the entire document or "page" for page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            headers: Optional headers to use for GET request to download a file from a web path.
+            extract_images: Whether to extract images from the PDF. Defaults to `False`.
+            images_to_text: Function or callable to convert images to text during extraction.
+            concatenate_pages: Deprecated. If True, concatenate all PDF pages into one a single
                                document. Otherwise, return one document per page.
+
+        Returns:
+            This method does not directly return data. Use the `load`, `lazy_load` or `aload` methods
+            to retrieve parsed documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pdfminer.six` package is not installed.
         """
         try:
             from pdfminer.high_level import extract_text  # noqa:F401
@@ -490,7 +698,58 @@ class PDFMinerPDFasHTMLLoader(BasePDFLoader):
 
 
 class PyMuPDFLoader(BasePDFLoader):
-    """Load `PDF` files using `PyMuPDF`."""
+    """Load and parse a PDF file using 'PyMuPDF' library.
+
+    This class provides methods to load and parse PDF documents, supporting various configurations such as handling
+    password-protected files, extracting tables, extracting images, and defining extraction mode.
+    It integrates the `PyMuPDF` library for PDF processing and offers both synchronous and asynchronous document
+    loading.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-community pymupdf
+
+        Instantiate the loader:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders import PyMuPDFLoader
+
+            loader = PyMuPDFLoader(
+                file_path = "./example_data/layout-parser-paper.pdf",
+                # password = None,
+                mode = "page",
+                pages_delimitor = "\n\f",
+                # extract_images = False,
+                # images_to_text = None,
+                # extract_tables = None,
+                # headers = None,
+                # extract_tables_settings = None,
+            )
+
+        Lazy load documents:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = loader.lazy_load()
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        Load documents asynchronously:
+
+        .. code-block:: python
+
+            docs = await loader.aload()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
 
     def __init__(
         self,
@@ -508,7 +767,28 @@ class PyMuPDFLoader(BasePDFLoader):
         extract_tables_settings: Optional[dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
-        """Initialize with a file path."""
+        """Initialize with a file path.
+
+        Args:
+            file_path: The path to the PDF file to be loaded.
+            password: Optional password for opening encrypted PDFs.
+            mode: The extraction mode, either "single" for the entire document or "page" for page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            extract_images: Whether to extract images from the PDF.
+            images_to_text: Function or callable to convert images to text during extraction.
+            extract_tables: Whether to extract tables in a specific format, such as "csv", "markdown", or "html".
+            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
+            headers: Optional headers to use for GET request to download a file from a web path.
+            **kwargs: Additional keyword arguments for customizing text extraction behavior.
+
+        Returns:
+            This method does not directly return data. Use the `load`, `lazy_load`, or `aload` methods
+            to retrieve parsed documents with content and metadata.
+
+        Raises:
+            ImportError: If the `PyMuPDF` package is not installed.
+            ValueError: If the `mode` argument is not one of "single" or "page".
+        """
         try:
             import pymupdf  # noqa:F401
         except ImportError:
@@ -531,6 +811,7 @@ class PyMuPDFLoader(BasePDFLoader):
         )
 
     def lazy_load(self, **kwargs: Any) -> Iterator[Document]:
+        """Lazily load documents."""
         parser = self.parser
         if kwargs:
             warn_deprecated(
@@ -551,8 +832,60 @@ class PyMuPDFLoader(BasePDFLoader):
 
 
 class PDFPlumberLoader(BasePDFLoader):
-    """Load `PDF` files using `pdfplumber`."""
+    """Load and parse a PDF file using 'pdfplumber' library.
 
+    This class provides methods to load and parse PDF documents, supporting various configurations such as handling
+    password-protected files, extracting tables, extracting images, and defining extraction mode.
+    It integrates the `pdfplumber` library for PDF processing and offers both synchronous and asynchronous document
+    loading.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-community pdfplumber
+
+        Instantiate the loader:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders import PDFPlumberLoader
+
+            loader = PDFPlumberLoader(
+                file_path = "./example_data/layout-parser-paper.pdf",
+                # text_kwargs = {"use_text_flow": False, "keep_blank_chars": False},
+                # dedupe = False,
+                # headers = None,
+                # password = None,
+                mode = "page",
+                # extract_images = False,
+                # images_to_text = None,
+                pages_delimitor = "\n\f",
+                # extract_tables = None,
+                # extract_tables_settings = None,
+            )
+
+        Lazy load documents:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = loader.lazy_load()
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        Load documents asynchronously:
+
+        .. code-block:: python
+
+            docs = await loader.aload()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
     def __init__(
         self,
         file_path: Union[str, PurePath],
@@ -573,7 +906,30 @@ class PDFPlumberLoader(BasePDFLoader):
         ] = None,
         extract_tables_settings: Optional[dict[str, Any]] = None,
     ) -> None:
-        """Initialize with a file path."""
+        """Initialize with a file path.
+
+        Args:
+            file_path: The path to the PDF file to be loaded.
+            text_kwargs: Keyword arguments to pass to ``pdfplumber.Page.extract_text()``
+            dedupe:  Avoiding the error of duplicate characters if `dedupe=True`
+            headers: Optional headers to use for GET request to download a file from a web path.
+            password: Optional password for opening encrypted PDFs.
+            mode: The extraction mode, either "single" for extracting the entire document as
+                one chunk or "page" for page-wise extraction.
+            extract_images: Whether to extract images from the PDF
+            images_to_text: Optional function or callable to convert images to text during extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            extract_tables: Whether to extract images from the PDF in a specific format, such as "csv", "markdown",
+                            or "html".
+            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
+
+        Returns:
+            This method does not directly return data. Use the `load`, `lazy_load`, or `aload` methods
+            to retrieve parsed documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pdfplumber` package is not installed.
+        """
         try:
             import pdfplumber  # noqa:F401
         except ImportError:
