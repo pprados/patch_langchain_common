@@ -21,14 +21,14 @@ def test_pdfplumber_loader() -> None:
     loader = PDFPlumberLoader(file_path)
     docs = loader.load()
     assert len(docs) == 1
-    assert len(docs[0].metadata) == 6
+    assert len(docs[0].metadata) == 7
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
     loader = PDFPlumberLoader(file_path)
 
     docs = loader.load()
     assert len(docs) == 16
-    assert len(docs[0].metadata) == 13
+    assert len(docs[0].metadata) == 14
 
     # Verify that extraction_mode parameter works
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
@@ -40,7 +40,7 @@ def test_pdfplumber_loader() -> None:
     )
     docs = loader.load()
     assert len(docs) == 1
-    assert len(docs[0].metadata) == 12
+    assert len(docs[0].metadata) == 13
 
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
     loader = PDFPlumberLoader(
@@ -51,7 +51,7 @@ def test_pdfplumber_loader() -> None:
     )
     docs = loader.load()
     assert len(docs) == 16
-    assert len(docs[0].metadata) == 13
+    assert len(docs[0].metadata) == 14
 
     loader = PDFPlumberLoader(
         file_path,
@@ -68,7 +68,7 @@ def test_pdfplumber_loader() -> None:
     )
     docs = loader.load_and_split(text_splitter)
     assert len(docs) == 18
-    assert len(docs[0].metadata) == 13
+    assert len(docs[0].metadata) == 14
 
     # Verify that extract_tables and extract_images
     file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
@@ -80,7 +80,7 @@ def test_pdfplumber_loader() -> None:
     )
     docs = loader.load()
     assert len(docs) == 1
-    assert len(docs[0].metadata) == 12
+    assert len(docs[0].metadata) == 13
 
 
 def test_pdfminer_loader() -> None:

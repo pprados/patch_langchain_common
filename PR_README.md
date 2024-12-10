@@ -294,7 +294,7 @@ requires modifications to both modules and has been submitted in another pull re
 
 For this parser, we introduce the following new features:
 - `password`
-- `mode` single (with convertion to markdown) or page
+- `mode` single (with conversion to markdown) or page
 - `pages_delimitor`
 - `extract_images`
 - `images_to_text`

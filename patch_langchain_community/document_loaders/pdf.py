@@ -568,9 +568,7 @@ class PDFPlumberLoader(BasePDFLoader):
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         pages_delimitor: str = _default_page_delimitor,
-        extract_tables: Optional[
-            Literal["csv", "markdown", "html"]
-        ] = None,
+        extract_tables: Optional[Literal["csv", "markdown", "html"]] = None,
         extract_tables_settings: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize with a file path."""

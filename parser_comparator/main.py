@@ -1,4 +1,4 @@
-# ruff: disable=T201
+# runn noqa: E401
 import argparse
 import json
 import logging  # Set the logging level to WARNING to reduce verbosity
@@ -6,29 +6,35 @@ import os
 import sys
 from glob import glob
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import pandas as pd
 from dotenv import load_dotenv
-from langchain_core.documents.base import Blob
-from langchain_unstructured.document_loaders import UnstructuredLoader
 from langchain.globals import set_llm_cache
 from langchain_community.cache import InMemoryCache
 from langchain_community.document_loaders.base import BaseBlobParser
-from langchain_community.document_loaders.pdf import (
-    UnstructuredPDFLoader as old_UnstructuredPDFLoader,
-)
-
-from langchain_community.document_loaders.parsers.pdf import (
-    PDFMinerParser as old_PDFMinerParser,
-    PDFPlumberParser as old_PDFPlumberParser,
-    PyMuPDFParser as old_PyMuPDFParser,
-    PyPDFium2Parser as old_PyPDFium2Parser,
-    PyPDFParser as old_PyPDFParser,
-)
 from langchain_community.document_loaders.parsers import (
     AzureAIDocumentIntelligenceParser,
 )
+from langchain_community.document_loaders.parsers.pdf import (
+    PDFMinerParser as old_PDFMinerParser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PDFPlumberParser as old_PDFPlumberParser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PyMuPDFParser as old_PyMuPDFParser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PyPDFium2Parser as old_PyPDFium2Parser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PyPDFParser as old_PyPDFParser,
+)
+from langchain_community.document_loaders.pdf import (
+    UnstructuredPDFLoader as old_UnstructuredPDFLoader,
+)
+from langchain_core.documents.base import Blob, Document
 from patch_langchain_unstructured.document_loaders import UnstructuredPDFParser
 
 # %% Import patch
@@ -43,7 +49,8 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
     PyMuPDFParser,
     PyPDFium2Parser,
     PyPDFParser,
-    convert_images_to_text_with_rapidocr, _default_page_delimitor,
+    _default_page_delimitor,
+    convert_images_to_text_with_rapidocr,
 )
 
 # %% Meta parameters
@@ -54,7 +61,7 @@ EXTRACT_IMAGES = False
 # Whether to extract images from the PDF. True/False
 IMAGE_FORMAT = "text"  # FIXME "markdown"
 # Format to use for the extracted images. Either "text", "html" or "markdown"
-conv_images = convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)
+conv_images = convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)  # type:ignore
 # Function to extract text from images using rapid OCR
 # conv_images=convert_images_to_text_with_tesseract(langs=['eng'], format=IMAGE_FORMAT)
 # Function to extract text from images using tesseract
@@ -70,7 +77,7 @@ RETRO_COMPATIBLE = True
 # If True, invoke online parser. Must have TOKEN API
 USE_ONLINE_PARSERS = False
 # Number of // workers. Desactivated with USE_OLD_PARSERS
-MAX_WORKERS:Optional[int] = None
+MAX_WORKERS: Optional[int] = None
 # If True, continue with the next parser if error. Else, stop at the first error.
 CONTINUE_IF_ERROR = True
 
@@ -81,6 +88,11 @@ logging.getLogger("azure").setLevel(logging.WARNING)
 set_llm_cache(InMemoryCache())
 
 pdf_parsers_updated: dict[str, BaseBlobParser] = {
+    "PDFMinerParser_new": PDFMinerParser(
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
     "PDFMinerParser_single_new": PDFMinerParser(
         mode="single",  # type:ignore
         pages_delimitor=_default_page_delimitor,
@@ -109,22 +121,22 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
         images_to_text=conv_images,
         extract_tables=EXTRACT_TABLES,  # type:ignore
     ),
-    #%%
+    # %%
     "PyPDFium2Parser_new": PyPDFium2Parser(
         mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
-    #%%
+    # %%
     "PyPDFParser_plain_new": PyPDFParser(
         mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extraction_mode = "plain",
+        extraction_mode="plain",
     ),
-    #%%
+    # %%
     "PyPDFParser_layout_new": PyPDFParser(
         mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
         pages_delimitor=_default_page_delimitor,
@@ -242,11 +254,26 @@ pdf_parsers_old: dict[str, BaseBlobParser] = {
     ),
 }
 pdf_loader_old = {
-    "UnstructuredPDFParser_fast_old": (old_UnstructuredPDFLoader, {"mode":MODE, "strategy": "fast"}),
-    "UnstructuredPDFParser_auto_old": (old_UnstructuredPDFLoader, {"mode":MODE,"strategy": "auto"}),
-    "UnstructuredPDFParser_ocr_only_old": (old_UnstructuredPDFLoader,{"mode":"single", "strategy": "ocr_only"},),
-    "UnstructuredPDFParser_hi_res_old": (old_UnstructuredPDFLoader, {"mode":MODE, "strategy": "hi_res"}),
-    "UnstructuredPDFParser_elements_old": (old_UnstructuredPDFLoader, {"mode":"elements","strategy": "hi_res"}),
+    "UnstructuredPDFParser_fast_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": MODE, "strategy": "fast"},
+    ),
+    "UnstructuredPDFParser_auto_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": MODE, "strategy": "auto"},
+    ),
+    "UnstructuredPDFParser_ocr_only_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": "single", "strategy": "ocr_only"},
+    ),
+    "UnstructuredPDFParser_hi_res_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": MODE, "strategy": "hi_res"},
+    ),
+    "UnstructuredPDFParser_elements_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": "elements", "strategy": "hi_res"},
+    ),
 }
 
 if USE_OLD_PARSERS:
@@ -265,6 +292,7 @@ def compare_parsing(experiment_name: str) -> None:
     sources_dir_path = base_dir / "sources_pdf"
     results_dir_path = base_dir / "multi_parsing_results"
 
+    parsers_results: list[tuple[str, list[Document], dict[str, Any]]]
     # Iterating over the directories in the sources directory
     # for root, dirs, files in os.walk(sources_dir_path):
     for pdf_filename in glob("**/*.pdf", root_dir=sources_dir_path, recursive=True):
@@ -290,16 +318,16 @@ def compare_parsing(experiment_name: str) -> None:
         try:
             parsers_results = pdf_multi_parser.parse_and_evaluate(blob)
 
-            parser_name2concatenated_parsed_docs = _save_results(parsers_results,
-                                                                 parsings_subdir,
-                                                                 pdf_file_relative_path)
+            # parser_name2concatenated_parsed_docs = _save_results(
+            #     parsers_results, parsings_subdir, pdf_file_relative_path
+            # )
 
             # get the best parser name and its concatenated parsed docs
-            best_parser_name = parsers_results[0][0]
-            best_parser_concatenated_docs = parser_name2concatenated_parsed_docs[
-                best_parser_name
-            ]
+            # best_parser_name = parsers_results[0][0]
 
+            # best_parser_concatenated_docs = parser_name2concatenated_parsed_docs[
+            #     best_parser_name
+            # ]
             # save the best parsing. Not implemented
             # best_parsing_file_path = (
             #     experiment_dir / f"best_parsing_{best_parser_name}.{SUFFIX}"
@@ -320,23 +348,25 @@ def compare_parsing(experiment_name: str) -> None:
 
         # To inject older loaders, without parsers
         if USE_OLD_PARSERS:
-            parsers_results=[]
+            parsers_results = []
             for name, (clazz, kwargs) in pdf_loader_old.items():
                 pdf_loader = clazz(
                     file_path=str(sources_dir_path / pdf_filename), **kwargs
                 )
-                documents=pdf_loader.load()
+                documents = pdf_loader.load()
                 if "Unstructured" in name:
                     for doc in documents:
-                        doc.page_content=doc.page_content.replace("\n\n","\n")
-                parsers_results.append((name,documents,{}))
-            _save_results(parsers_results,
-                          parsings_subdir,
-                          pdf_file_relative_path)
+                        doc.page_content = doc.page_content.replace("\n\n", "\n")
+                parsers_results.append((name, documents, {}))
+            _save_results(parsers_results, parsings_subdir, pdf_file_relative_path)
         print(f"processing {pdf_filename} done.")  # noqa: T201
 
 
-def _save_results(parsers_results, parsings_subdir, pdf_file_relative_path):
+def _save_results(
+    parsers_results: list[tuple[str, list[Document], dict[str, Any]]],
+    parsings_subdir: Path,
+    pdf_file_relative_path: Path,
+) -> dict[str, str]:
     # store parsed documents
     parser_name2concatenated_parsed_docs = {
         parser_data[0]: _default_page_delimitor.join(
@@ -350,27 +380,32 @@ def _save_results(parsers_results, parsings_subdir, pdf_file_relative_path):
     }
     # save concatenated docs parsings as text files
     for (
-            parser_name,
-            concatenated_docs,
+        parser_name,
+        concatenated_docs,
     ) in parser_name2concatenated_parsed_docs.items():
         output_file_path = (
-                parsings_subdir
-                / f"{pdf_file_relative_path.name}_parsed_{parser_name}."
+            parsings_subdir / f"{pdf_file_relative_path.name}_parsed_{parser_name}."
         )
         output_file_path.parent.mkdir(exist_ok=True)
-        with open(str(output_file_path) + SUFFIX, "w",
-                  encoding="utf-8") as f:
+        with open(str(output_file_path) + SUFFIX, "w", encoding="utf-8") as f:
             f.write(concatenated_docs)
-        with open(str(output_file_path) + "properties", "w",
-                  encoding="utf-8") as f:
-            metadata=parser_name2concatenated_parsed_metadata[parser_name][0]
-            metadata={k.lower():v for k,v in metadata.items()}  # FIXME: remove
-            json.dump(metadata,
-                      f, indent=2, sort_keys=True)
+        with open(str(output_file_path) + "properties", "w", encoding="utf-8") as f:
+            metadata = parser_name2concatenated_parsed_metadata[parser_name][0]
+            metadata = {k.lower(): v for k, v in metadata.items()}  # FIXME: remove
+            json.dump(metadata, f, indent=2, sort_keys=True)
     return parser_name2concatenated_parsed_docs
 
 
 if __name__ == "__main__":
+    from patch_langchain_community.document_loaders.pdf import PyMuPDFLoader
+
+    next(
+        PyMuPDFLoader(
+            file_path="/home/pprados/workspace.bda/patch_langchain_common/tests/integration_tests/examples/hello.pdf",
+            mode="single",
+            strategy="fast",
+        ).lazy_load(toto="toto")
+    )
     if len(sys.argv) > 1:
         parser = argparse.ArgumentParser(description="Compare PDF parsing results.")
         parser.add_argument("experiment_name", type=str, help="Name of the experiment")

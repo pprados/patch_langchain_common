@@ -127,7 +127,7 @@ def _assert_with_duplicate_parser(parser: BaseBlobParser, dedupe: bool = False) 
 def test_unstructured_standard_parameters(
     parser_factory: str, params: dict, mode: str, extract_images: bool
 ) -> None:
-    def _std_assert_with_parser(parser: BaseBlobParser,images:bool) -> None:
+    def _std_assert_with_parser(parser: BaseBlobParser, images: bool) -> None:
         """Standard tests to verify that the given parser works.
 
         Args:
@@ -185,9 +185,9 @@ def test_unstructured_standard_parameters(
         isinstance(parser, UnstructuredPDFParser)
         and parser.unstructured_kwargs.get("strategy") == "ocr_only"
     ):
-        extract_images=False
+        extract_images = False
     _assert_with_parser(parser, splits_by_page=(mode == "page"))
-    _std_assert_with_parser(parser,extract_images)
+    _std_assert_with_parser(parser, extract_images)
 
 
 @pytest.mark.parametrize(

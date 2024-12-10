@@ -28,7 +28,7 @@ from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 from PIL import Image
-from typing_extensions import List, TypeAlias
+from typing_extensions import TypeAlias
 
 from patch_langchain_community.document_loaders.parsers.pdf import (
     CONVERT_IMAGE_TO_TEXT,
@@ -408,7 +408,6 @@ class _SingleDocumentLoader(BaseLoader):
                 **self.unstructured_kwargs,
             ),
         )
-
 
     def _convert_elements_to_dicts(
         self, elements: list[Element]
@@ -859,7 +858,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
 class UnstructuredPDFLoader(BasePDFLoader):
     def __init__(
         self,
-        file_path: Union[str, List[str], PurePath, List[Path]],
+        file_path: Union[str, PurePath],
         *,
         headers: Optional[Dict] = None,
         mode: Literal["single", "page", "elements"] = "single",
