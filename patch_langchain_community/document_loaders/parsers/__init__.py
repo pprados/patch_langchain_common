@@ -8,9 +8,6 @@ if TYPE_CHECKING:
         PyMuPDFParser,
         PyPDFium2Parser,
         PyPDFParser,
-        convert_images_to_description,
-        convert_images_to_text_with_rapidocr,
-        convert_images_to_text_with_tesseract
     )
 from patch_langchain_community.document_loaders.parsers.new_pdf import (
     LlamaIndexPDFParser,

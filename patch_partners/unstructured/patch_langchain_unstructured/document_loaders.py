@@ -41,7 +41,7 @@ from patch_langchain_community.document_loaders.pdf import BasePDFLoader
 
 if TYPE_CHECKING:
     from unstructured_client import UnstructuredClient
-    from unstructured_client.models import operations  # type: ignore
+    from unstructured_client.models import operations
 
 Element: TypeAlias = Any
 
@@ -101,16 +101,15 @@ def convert_table(
         table_tr = table_tr[1:]
 
     for tr in table_tr:
-        td_list = []
-        for td in tr.find_all("td"):
-            td_list.append(
-                " "
-                + _transform_cell_content(
-                    td.renderContents().decode("utf-8"),
-                    conversion_ind=content_conversion_ind,
-                )
-                + " "
+        td_list = [
+            " "
+            + _transform_cell_content(
+                td.renderContents().decode("utf-8"),
+                conversion_ind=content_conversion_ind,
             )
+            + " "
+            for td in tr.find_all("td")
+        ]
         table_body.append(td_list)
 
     table += table_body
@@ -334,7 +333,7 @@ class _SingleDocumentLoader(BaseLoader):
                 metadata = file_metadata.copy()
                 element_metadata = element.get("metadata") or {}
                 element_metadata.pop("filename", None)
-                metadata.update(element_metadata)  # type: ignore
+                metadata.update(element_metadata)
                 metadata.update(
                     {"category": element.get("category") or element.get("type")}
                 )
@@ -354,7 +353,7 @@ class _SingleDocumentLoader(BaseLoader):
     @property
     def _elements_via_local(self) -> list[Element]:
         try:
-            from unstructured.partition.auto import partition  # type: ignore
+            from unstructured.partition.auto import partition
         except ImportError:
             raise ImportError(
                 "unstructured package not found, please install it with "
@@ -372,14 +371,14 @@ class _SingleDocumentLoader(BaseLoader):
             filename=self.file_path,
             password=self.password,
             **self.unstructured_kwargs,
-        )  # type: ignore
+        )
 
     @property
     def _elements_via_api(self) -> list[dict[str, Any]]:
         """Retrieve a list of element dicts from the API using the SDK client."""
         client = self.client
         req = self._sdk_partition_request
-        response = client.general.partition(request=req)  # type: ignore
+        response = client.general.partition(request=req)
         if response.status_code == 200:
             return json.loads(response.raw_response.text)
         raise ValueError(
@@ -398,7 +397,7 @@ class _SingleDocumentLoader(BaseLoader):
 
     @property
     def _sdk_partition_request(self) -> operations.PartitionRequest:
-        from unstructured_client.models import operations, shared  # type: ignore
+        from unstructured_client.models import operations, shared
 
         return operations.PartitionRequest(
             partition_parameters=shared.PartitionParameters(
@@ -444,7 +443,7 @@ class _SinglePDFDocumentLoader(_SingleDocumentLoader):
     @property
     def _elements_via_local(self) -> list[Element]:
         try:
-            from unstructured.partition.pdf import partition_pdf  # type: ignore
+            from unstructured.partition.pdf import partition_pdf
         except ImportError:
             raise ImportError(
                 "unstructured package not found, please install it with "
@@ -462,7 +461,7 @@ class _SinglePDFDocumentLoader(_SingleDocumentLoader):
             filename=self.file_path,
             password=self.password,
             **self.unstructured_kwargs,
-        )  # type: ignore
+        )
 
     def _get_metadata(self) -> Dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
@@ -474,7 +473,7 @@ class _SinglePDFDocumentLoader(_SingleDocumentLoader):
             parser = PDFParser(cast(BinaryIO, file))
 
             # Create a PDF document object that stores the document structure.
-            doc = PDFDocument(parser, password=self.password or "")  # type: ignore
+            doc = PDFDocument(parser, password=self.password or "")
             metadata: dict[str, Any] = (
                 {"source": self.file_path} if self.file_path else {}
             )
@@ -491,8 +490,10 @@ class _SinglePDFDocumentLoader(_SingleDocumentLoader):
                     # the PDF read, treat it as a warning only if
                     # `strict_metadata=False`.
                     logger.warning(
-                        f'[WARNING] Metadata key "{k}" could not be parsed due to '
-                        f"exception: {str(e)}"
+                        '[WARNING] Metadata key "%s" could not be parsed due to '
+                        "exception: %s",
+                        k,
+                        str(e),
                     )
 
             # Count number of pages.
@@ -810,7 +811,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
                             "EmailAddress",
                         ]:
                             logger.warning(
-                                f"Unknown category {doc.metadata.get('category')}"
+                                "Unknown category %s", doc.metadata.get("category")
                             )
                         page_content.append(doc.page_content)
                 if self.mode == "single":
@@ -848,7 +849,6 @@ class UnstructuredPDFParser(ImagesPdfParser):
                     "markdownify package not found, please install it with "
                     "`pip install markdownify`"
                 )
-            pass
         elif self.extract_tables == "csv":
             return pd.read_html(html_table)[0].to_csv()
         else:

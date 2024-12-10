@@ -61,7 +61,9 @@ EXTRACT_IMAGES = False
 # Whether to extract images from the PDF. True/False
 IMAGE_FORMAT = "text"  # FIXME "markdown"
 # Format to use for the extracted images. Either "text", "html" or "markdown"
-conv_images = convert_images_to_text_with_rapidocr(format=IMAGE_FORMAT)  # type:ignore
+conv_images = convert_images_to_text_with_rapidocr(
+    format=IMAGE_FORMAT  # type:ignore[arg-type]
+)
 # Function to extract text from images using rapid OCR
 # conv_images=convert_images_to_text_with_tesseract(langs=['eng'], format=IMAGE_FORMAT)
 # Function to extract text from images using tesseract
@@ -94,43 +96,43 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
         images_to_text=conv_images,
     ),
     "PDFMinerParser_single_new": PDFMinerParser(
-        mode="single",  # type:ignore
+        mode="single",
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
     "PDFMinerParser_page_new": PDFMinerParser(
-        mode="page",  # type:ignore
+        mode="page",
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
     # %%
     "PDFPlumberParser_new": PDFPlumberParser(
-        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type:ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     ),
     # %%
     "PyMuPDFParser_new": PyMuPDFParser(
-        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type:ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     ),
     # %%
     "PyPDFium2Parser_new": PyPDFium2Parser(
-        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
     # %%
     "PyPDFParser_plain_new": PyPDFParser(
-        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
@@ -138,7 +140,7 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
     ),
     # %%
     "PyPDFParser_layout_new": PyPDFParser(
-        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
@@ -146,54 +148,54 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
     ),
     # %%
     "UnstructuredPDFParser_auto_new": UnstructuredPDFParser(
-        mode=MODE,  # type: ignore
+        mode=MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         strategy="auto",
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type: ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     ),
     # %%
     "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
-        mode=MODE,  # type: ignore
+        mode=MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         strategy="fast",
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type: ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     ),
     # %%
     "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
-        mode=MODE,  # type: ignore
+        mode=MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         strategy="ocr_only",
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type: ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     ),
     # %%
     "UnstructuredPDFParser_hi_res_new": UnstructuredPDFParser(
-        mode=MODE,  # type: ignore
+        mode=MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         strategy="hi_res",
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type: ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     ),
     # %%
     "UnstructuredPDFParser_elements_new": UnstructuredPDFParser(
-        mode="elements",  # type: ignore
+        mode="elements",
         pages_delimitor=_default_page_delimitor,
         strategy="hi_res",
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type: ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     ),
 }
 pdf_parsers_new: dict[str, BaseBlobParser] = {
     # %%
     "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
-        mode=MODE,  # type:ignore
+        mode=MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
         to_markdown_kwargs=None,
     ),
@@ -207,9 +209,9 @@ pdf_online_parsers: dict[str, BaseBlobParser] = {
     ),
     # %%
     "LlamaIndexPDFParser": LlamaIndexPDFParser(
-        mode=MODE,  # type: ignore
+        mode=MODE,  # type:ignore[arg-type]
         pages_delimitor=_default_page_delimitor,
-        extract_tables=EXTRACT_TABLES,  # type:ignore
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
         language="en",
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
@@ -286,8 +288,6 @@ if USE_ONLINE_PARSERS:
 
 
 def compare_parsing(experiment_name: str) -> None:
-    global pdf_parsers
-    global debug
     base_dir = Path(__file__).parent
     sources_dir_path = base_dir / "sources_pdf"
     results_dir_path = base_dir / "multi_parsing_results"
@@ -299,7 +299,7 @@ def compare_parsing(experiment_name: str) -> None:
         pdf_file_relative_path = Path(pdf_filename)
         experiment_dir = results_dir_path / pdf_filename / experiment_name
 
-        print(f"processing {pdf_filename}... ")  # noqa: T201
+        print(f"processing {pdf_filename}... ")
 
         pdf_multi_parser = PDFMultiParser(
             parsers=pdf_parsers,
@@ -343,7 +343,7 @@ def compare_parsing(experiment_name: str) -> None:
             styled_df = df.style.background_gradient()
             styled_df.to_excel(f"{parsings_subdir}/parsers_metrics_results.xlsx")
         except Exception as e:
-            print(f"Error processing {pdf_file_relative_path}: {e}")  # noqa: T201
+            print(f"Error processing {pdf_file_relative_path}: {e}")
             raise e
 
         # To inject older loaders, without parsers
@@ -359,7 +359,7 @@ def compare_parsing(experiment_name: str) -> None:
                         doc.page_content = doc.page_content.replace("\n\n", "\n")
                 parsers_results.append((name, documents, {}))
             _save_results(parsers_results, parsings_subdir, pdf_file_relative_path)
-        print(f"processing {pdf_filename} done.")  # noqa: T201
+        print(f"processing {pdf_filename} done.")
 
 
 def _save_results(

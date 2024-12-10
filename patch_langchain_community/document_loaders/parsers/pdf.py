@@ -5,7 +5,6 @@ import html
 import io
 import logging
 import threading
-import warnings
 from datetime import datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -117,9 +116,8 @@ _delim = ["\n\n\n", "\n\n"]  # To insert images or table in the middle of the pa
 
 
 def __merge_text_and_extras(
-        extras: list[str],
-        text_from_page: str, recurs: bool) -> \
-        Optional[str]:
+    extras: list[str], text_from_page: str, recurs: bool
+) -> Optional[str]:
     """
     Insert extras such as image/table in a text between two paragraphs if possible.
 
@@ -129,7 +127,8 @@ def __merge_text_and_extras(
         recurs (bool): Flag to indicate if the function should recurse.
 
     Returns:
-        Optional[str]: The merged text with extras inserted, or None if no insertion point is found.
+        Optional[str]: The merged text with extras inserted, or None if no insertion
+        point is found.
     """
     if extras:
         for delim in _delim:
@@ -158,11 +157,10 @@ def __merge_text_and_extras(
     return all_text
 
 
-def _merge_text_and_extras(
-        extras: list[str],
-        text_from_page: str) -> str:
+def _merge_text_and_extras(extras: list[str], text_from_page: str) -> str:
     """
-    Insert extras such as image/table in a text between two paragraphs if possible, else at the end of the text.
+    Insert extras such as image/table in a text between two paragraphs if possible,
+    else at the end of the text.
 
     Args:
         extras (list[str]): List of extra content (images/tables) to insert.
@@ -260,7 +258,7 @@ def convert_images_to_text_with_rapidocr(
                         result = f"![{result}](.)"
                     elif format == "html":
                         result = f'<img alt="{html.escape(result, quote=True)}" />'
-                logger.debug("RapidOCR text: " + result.replace("\n", "\\n"))
+                logger.debug("RapidOCR text: %s", result.replace("\n", "\\n"))
                 yield result
             else:
                 yield ""
@@ -269,10 +267,10 @@ def convert_images_to_text_with_rapidocr(
 
 
 def convert_images_to_text_with_tesseract(
-        # Default to text format to be compatible with previous versions.
-        *,
-        format: Literal["text", "markdown", "html"] = "text",
-        langs: list[str] = ["eng"],
+    # Default to text format to be compatible with previous versions.
+    *,
+    format: Literal["text", "markdown", "html"] = "text",
+    langs: list[str] = ["eng"],
 ) -> CONVERT_IMAGE_TO_TEXT:
     """
     Return a function to convert images to text using RapidOCR.
@@ -311,7 +309,7 @@ def convert_images_to_text_with_tesseract(
                     result = f"![{result}](.)"
                 elif format == "html":
                     result = f'<img alt="{html.escape(result, quote=True)}" />'
-            logger.debug("Tesseract text: " + result.replace("\n", "\\n"))
+            logger.debug("Tesseract text: %s", result.replace("\n", "\\n"))
             yield result
 
     return _convert_images_to_text
@@ -345,7 +343,7 @@ def convert_images_to_description(
     """
 
     def _convert_images_to_description(
-            images: Iterable[np.ndarray],
+        images: Iterable[np.ndarray],
     ) -> Iterator[str]:
         """Describe an image and extract text.
         Use a multimodal model to describe the images.
@@ -398,7 +396,7 @@ def convert_images_to_description(
                     pass
                 else:
                     raise ValueError(f"Unknown format: {format}")
-            logger.debug("LLM description: " + result.replace("\n", "\\n"))
+            logger.debug("LLM description: %s", result.replace("\n", "\\n"))
             yield result
 
     return _convert_images_to_description
@@ -408,9 +406,9 @@ class ImagesPdfParser(BaseBlobParser):
     """Abstract interface for blob parsers with OCR."""
 
     def __init__(
-            self,
-            extract_images: bool,
-            images_to_text: CONVERT_IMAGE_TO_TEXT,
+        self,
+        extract_images: bool,
+        images_to_text: CONVERT_IMAGE_TO_TEXT,
     ):
         """Extract text from images.
 
@@ -429,9 +427,11 @@ class ImagesPdfParser(BaseBlobParser):
 class PyPDFParser(ImagesPdfParser):
     """Parse a blob from a PDF using `pypdf` library.
 
-    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
-    password-protected PDFs, extracting images, and defining extraction mode.
-    It integrates the 'pypdf' library for PDF processing and offers synchronous blob parsing.
+    This class provides methods to parse a blob from a PDF document, supporting various
+    configurations such as handling password-protected PDFs, extracting images, and
+    defining extraction mode.
+    It integrates the 'pypdf' library for PDF processing and offers synchronous blob
+    parsing.
 
     Examples:
         Setup:
@@ -493,26 +493,25 @@ class PyPDFParser(ImagesPdfParser):
         Args:
             password: Optional password for opening encrypted PDFs.
             extract_images: Whether to extract images from the PDF.
-            mode: The extraction mode, either "single" for the entire document or "page" for page-wise extraction.
-            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
-            images_to_text: Function or callable to convert images to text during extraction.
-            extraction_mode: “plain” for legacy functionality, “layout” for experimental layout mode functionality
-            extraction_kwargs: Optional additional parameters for the extraction process.
+            mode: The extraction mode, either "single" for the entire document or "page"
+                for page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode
+                extraction.
+            images_to_text: Function or callable to convert images to text during
+                extraction.
+            extraction_mode: “plain” for legacy functionality, “layout” for experimental
+                layout mode functionality
+            extraction_kwargs: Optional additional parameters for the extraction
+                process.
 
         Returns:
-            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
-            documents with content and metadata.
+            This method does not directly return data. Use the `parse` or `lazy_parse`
+            methods to retrieve parsed documents with content and metadata.
 
         Raises:
             ImportError: If the `pypdf` package is not installed.
             ValueError: If the `mode` is not "single" or "page".
         """
-        try:
-            import pypdf  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pypdf package not found, please install it with `pip install pypdf`"
-            )
         super().__init__(extract_images, images_to_text)
         if mode not in ["single", "page"]:
             raise ValueError("mode must be single or page")
@@ -534,7 +533,12 @@ class PyPDFParser(ImagesPdfParser):
         Yield:
             An iterator over the parsed documents.
         """
-        import pypdf
+        try:
+            import pypdf
+        except ImportError:
+            raise ImportError(
+                "pypdf package not found, please install it with `pip install pypdf`"
+            )
 
         def _extract_text_from_page(page: "PageObject") -> str:
             """
@@ -630,7 +634,7 @@ class PyPDFParser(ImagesPdfParser):
         ):
             return ""
 
-        xObject = page["/Resources"]["/XObject"].get_object()  # type: ignore
+        xObject = page["/Resources"]["/XObject"].get_object()  # type: ignore[index]
         images = []
         for obj in xObject:
             if xObject[obj]["/Subtype"] == "/Image":
@@ -648,20 +652,20 @@ class PyPDFParser(ImagesPdfParser):
                     )
 
                 else:
-                    warnings.warn("Unknown PDF Filter!")
+                    logger.warning("Unknown PDF Filter!")
         return _format_image_str.format(
-            image_text=_join_images.join(
-                [text for text in self.convert_image_to_text(images)]
-            )
+            image_text=_join_images.join(self.convert_image_to_text(images))
         )
 
 
 class PDFMinerParser(ImagesPdfParser):
     """Parse a blob from a PDF using `pdfminer.six` library.
 
-    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
-    password-protected PDFs, extracting images, and defining extraction mode.
-    It integrates the 'pdfminer.six' library for PDF processing and offers synchronous blob parsing.
+    This class provides methods to parse a blob from a PDF document, supporting various
+    configurations such as handling password-protected PDFs, extracting images, and
+    defining extraction mode.
+    It integrates the 'pdfminer.six' library for PDF processing and offers synchronous
+    blob parsing.
 
     Examples:
         Setup:
@@ -705,12 +709,13 @@ class PDFMinerParser(ImagesPdfParser):
             print(docs[0].page_content[:100])
             print(docs[0].metadata)
     """
+
     def __init__(
         self,
         extract_images: bool = False,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "page"] = "single",  # FIXME: ne pas toucher
+        mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         concatenate_pages: Optional[bool] = None,
@@ -720,30 +725,27 @@ class PDFMinerParser(ImagesPdfParser):
         Args:
             extract_images: Whether to extract images from PDF.
             password: Optional password for opening encrypted PDFs.
-            mode: Extraction mode to use. Either "single" or "page" for page-wise extraction.
-            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
-            images_to_text: Function or callable to convert images to text during extraction.
+            mode: Extraction mode to use. Either "single" or "page" for page-wise
+                extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode
+                extraction.
+            images_to_text: Function or callable to convert images to text during
+                extraction.
             concatenate_pages: Deprecated. If True, concatenate all PDF pages
                 into one a single document. Otherwise, return one document per page.
 
         Returns:
-            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
-            documents with content and metadata.
+            This method does not directly return data. Use the `parse` or `lazy_parse`
+            methods to retrieve parsed documents with content and metadata.
 
         Raises:
             ImportError: If the `pdfminer.six` package is not installed.
             ValueError: If the `mode` is not "single" or "page".
 
         Warnings:
-            `concatenate_pages` parameter is deprecated. Use `mode='single' or 'page' instead.
+            `concatenate_pages` parameter is deprecated. Use `mode='single' or 'page'
+            instead.
         """
-        try:
-            import pdfminer  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pdfminer package not found, please install it "
-                "with `pip install pdfminer`"
-            )
         super().__init__(extract_images, images_to_text)
         if mode not in ["single", "page"]:
             raise ValueError("mode must be single or page")
@@ -753,7 +755,7 @@ class PDFMinerParser(ImagesPdfParser):
         self.extract_images = extract_images
         self.images_to_text = images_to_text
         if concatenate_pages is not None:
-            warnings.warn(
+            logger.warning(
                 "`concatenate_pages` parameter is deprecated. "
                 "Use `mode='single' or 'page'` instead."
             )
@@ -820,7 +822,8 @@ class PDFMinerParser(ImagesPdfParser):
 
         Args:
             fp: The file pointer to the PDF file.
-            password: The password for the PDF file, if encrypted. Defaults to an empty string.
+            password: The password for the PDF file, if encrypted. Defaults to an empty
+                string.
             caching: Whether to cache the PDF structure. Defaults to True.
 
         Returns:
@@ -843,8 +846,10 @@ class PDFMinerParser(ImagesPdfParser):
                 # This metadata value could not be parsed. Instead of failing the PDF
                 # read, treat it as a warning only if `strict_metadata=False`.
                 logger.warning(
-                    f'[WARNING] Metadata key "{k}" could not be parsed due to '
-                    f"exception: {str(e)}"
+                    '[WARNING] Metadata key "%s" could not be parsed due to '
+                    "exception: %s",
+                    k,
+                    str(e),
                 )
 
         # Count number of pages.
@@ -862,21 +867,31 @@ class PDFMinerParser(ImagesPdfParser):
         Yield:
             An iterator over the parsed documents.
         """
-        import io
-
-        from pdfminer.converter import PDFLayoutAnalyzer
-        from pdfminer.layout import (
-            LAParams,
-            LTContainer,
-            LTImage,
-            LTItem,
-            LTPage,
-            LTText,
-            LTTextBox,
-        )
-        from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
-        from pdfminer.pdfpage import PDFPage
-        from PIL import Image
+        try:
+            from pdfminer.converter import PDFLayoutAnalyzer
+            from pdfminer.layout import (
+                LAParams,
+                LTContainer,
+                LTImage,
+                LTItem,
+                LTPage,
+                LTText,
+                LTTextBox,
+            )
+            from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
+            from pdfminer.pdfpage import PDFPage
+        except ImportError:
+            raise ImportError(
+                "pdfminer package not found, please install it "
+                "with `pip install pdfminer`"
+            )
+        try:
+            from PIL import Image
+        except ImportError:
+            raise ImportError(
+                "pdfminer package not found, please install it "
+                "with `pip install pillow`"
+            )
 
         with blob.as_bytes_io() as pdf_file_obj, TemporaryDirectory() as tempdir:
             pages = PDFPage.get_pages(pdf_file_obj, password=self.password or "")
@@ -956,9 +971,11 @@ class PDFMinerParser(ImagesPdfParser):
 class PyMuPDFParser(ImagesPdfParser):
     """Parse a blob from a PDF using `PyMuPDF` library.
 
-    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
-    password-protected PDFs, extracting images, and defining extraction mode.
-    It integrates the 'PyMuPDF' library for PDF processing and offers synchronous blob parsing.
+    This class provides methods to parse a blob from a PDF document, supporting various
+    configurations such as handling password-protected PDFs, extracting images, and
+    defining extraction mode.
+    It integrates the 'PyMuPDF' library for PDF processing and offers synchronous blob
+    parsing.
 
     Examples:
         Setup:
@@ -1010,39 +1027,43 @@ class PyMuPDFParser(ImagesPdfParser):
     _lock = threading.Lock()
 
     def __init__(
-            self,
-            *,
-            password: Optional[str] = None,
-            mode: Literal["single", "page"] = "page",
-            pages_delimitor: str = _default_page_delimitor,
-            extract_images: bool = False,
-            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-            extract_tables: Union[
-                Literal["csv"], Literal["markdown"], Literal["html"], None
-            ] = None,
-            extract_tables_settings: Optional[dict[str, Any]] = None,
-            text_kwargs: Optional[dict[str, Any]] = None,
+        self,
+        *,
+        password: Optional[str] = None,
+        mode: Literal["single", "page"] = "page",
+        pages_delimitor: str = _default_page_delimitor,
+        extract_images: bool = False,
+        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+        extract_tables: Union[Literal["csv", "markdown", "html"], None] = None,
+        extract_tables_settings: Optional[dict[str, Any]] = None,
+        text_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize a parser based on PyMuPDF.
 
         Args:
             password: Optional password for opening encrypted PDFs.
-            mode: Mode of parsing, either "single" for a single document or "page" for individual pages.
+            mode: Mode of parsing, either "single" for a single document or "page" for
+                individual pages.
             pages_delimitor: Delimiter to use between pages when mode is "single".
             extract_images: Whether to extract images from the PDF.
-            images_to_text:  Function or callable to convert images to text during extraction.
-            extract_tables: Whether to extract tables in a specific format, such as "csv", "markdown", or "html".
-            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
-            **kwargs: Additional keyword arguments for customizing text extraction behavior.
+            images_to_text:  Function or callable to convert images to text during
+                extraction.
+            extract_tables: Whether to extract tables in a specific format, such as
+                "csv", "markdown", or "html".
+            extract_tables_settings: Optional dictionary of settings for customizing
+                table extraction.
+            **kwargs: Additional keyword arguments for customizing text extraction
+                behavior.
 
         Returns:
-            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
-            documents with content and metadata.
+            This method does not directly return data. Use the `parse` or `lazy_parse`
+            methods to retrieve parsed documents with content and metadata.
 
         Raises:
             ImportError: If the `pymupdf` package is not installed.
             ValueError: If the mode is not "single" or "page".
-            ValueError: If the extract_tables format is not "markdown", "html", or "csv".
+            ValueError: If the extract_tables format is not "markdown", "html",
+            or "csv".
         """
         super().__init__(extract_images, images_to_text)
         if mode not in ["single", "page"]:
@@ -1069,7 +1090,8 @@ class PyMuPDFParser(ImagesPdfParser):
             An iterator over the parsed documents.
         """
         try:
-            import pymupdf  # noqa:F401
+            import pymupdf
+
             if not self.extract_tables_settings:
                 from pymupdf.table import (
                     DEFAULT_JOIN_TOLERANCE,
@@ -1135,8 +1157,7 @@ class PyMuPDFParser(ImagesPdfParser):
                     )
 
     def _get_page_content(
-            self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page",
-            blob: Blob
+        self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page", blob: Blob
     ) -> str:
         """
         Get the text of the page using PyMuPDF and RapidOCR and issue a warning
@@ -1161,9 +1182,10 @@ class PyMuPDFParser(ImagesPdfParser):
         all_text = _merge_text_and_extras(extras, text_from_page)
 
         if not all_text:
-            warnings.warn(
-                f"Warning: Empty content on page "
-                f"{page.number} of document {blob.source}"
+            logger.warning(
+                "Warning: Empty content on page %s of document %s",
+                page.number,
+                blob.source,
             )
 
         return all_text
@@ -1194,7 +1216,7 @@ class PyMuPDFParser(ImagesPdfParser):
         )
 
     def _extract_images_from_page(
-            self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page"
+        self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page"
     ) -> str:
         """Extract images from a PDF page and get the text using RapidOCR.
 
@@ -1220,15 +1242,11 @@ class PyMuPDFParser(ImagesPdfParser):
                 )
             )
             _format_image_str.format(
-                image_text=_join_images.join(
-                    [text for text in self.convert_image_to_text(images)]
-                )
+                image_text=_join_images.join(self.convert_image_to_text(images))
             )
 
         return _format_image_str.format(
-            image_text=_join_images.join(
-                [text for text in self.convert_image_to_text(images)]
-            )
+            image_text=_join_images.join(self.convert_image_to_text(images))
         )
 
     def _extract_tables_from_page(self, page: "pymupdf.pymupdf.Page") -> str:
@@ -1281,9 +1299,11 @@ class PyMuPDFParser(ImagesPdfParser):
 class PyPDFium2Parser(ImagesPdfParser):
     """Parse a blob from a PDF using `PyPDFium2` library.
 
-    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
-    password-protected PDFs, extracting images, and defining extraction mode.
-    It integrates the 'PyPDFium2' library for PDF processing and offers synchronous blob parsing.
+    This class provides methods to parse a blob from a PDF document, supporting various
+    configurations such as handling password-protected PDFs, extracting images, and
+    defining extraction mode.
+    It integrates the 'PyPDFium2' library for PDF processing and offers synchronous
+    blob parsing.
 
     Examples:
         Setup:
@@ -1344,26 +1364,21 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         Args:
             password: Optional password for opening encrypted PDFs.
-            mode: Mode of parsing, either "single" for a single document or "page" for individual pages.
+            mode: Mode of parsing, either "single" for a single document or "page" for
+                individual pages.
             pages_delimitor: Delimiter to use between pages when mode is "single".
             extract_images: Whether to extract images from the PDF.
-            images_to_text:  Function or callable to convert images to text during extraction.
+            images_to_text:  Function or callable to convert images to text during
+                extraction.
 
         Returns:
-            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
-            documents with content and metadata.
+            This method does not directly return data. Use the `parse` or `lazy_parse`
+            methods to retrieve parsed documents with content and metadata.
 
         Raises:
             ImportError: If the `pypdfium2` package is not installed.
             ValueError: If the mode is not "single" or "page".
         """
-        try:
-            import pypdfium2  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pypdfium2 package not found, please install it with"
-                " `pip install pypdfium2`"
-            )
         super().__init__(extract_images, images_to_text)
         if mode not in ["single", "page"]:
             raise ValueError("mode must be single or page")
@@ -1380,7 +1395,13 @@ class PyPDFium2Parser(ImagesPdfParser):
         Yields:
             An iterator over the parsed documents.
         """
-        import pypdfium2
+        try:
+            import pypdfium2
+        except ImportError:
+            raise ImportError(
+                "pypdfium2 package not found, please install it with"
+                " `pip install pypdfium2`"
+            )
 
         # pypdfium2 is really finicky with respect to closing things,
         # if done incorrectly creates seg faults.
@@ -1417,9 +1438,7 @@ class PyPDFium2Parser(ImagesPdfParser):
                                 page_content=all_text,
                                 metadata={
                                     **doc_metadata,
-                                    **{
-                                        "page": page_number,
-                                    },
+                                    "page": page_number,
                                 },
                             )
                         else:
@@ -1450,22 +1469,22 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         images = list(page.get_objects(filter=(pdfium_c.FPDF_PAGEOBJ_IMAGE,)))
 
-        numpy_images = list(map(lambda x: x.get_bitmap().to_numpy(), images))
+        numpy_images = [x.get_bitmap().to_numpy() for x in images]
         for image in images:
             image.close()
         return _format_image_str.format(
-            image_text=_join_images.join(
-                [text for text in self.convert_image_to_text(numpy_images)]
-            )
+            image_text=_join_images.join(self.convert_image_to_text(numpy_images))
         )
 
 
 class PDFPlumberParser(ImagesPdfParser):
     """Parse a blob from a PDF using `pdfplumber` library.
 
-    This class provides methods to parse a blob from a PDF document, supporting various configurations such as handling
-    password-protected PDFs, extracting images, and defining extraction mode.
-    It integrates the 'pdfplumber' library for PDF processing and offers synchronous blob parsing.
+    This class provides methods to parse a blob from a PDF document, supporting various
+    configurations such as handling password-protected PDFs, extracting images, and
+    defining extraction mode.
+    It integrates the 'pdfplumber' library for PDF processing and offers synchronous
+    blob parsing.
 
     Examples:
         Setup:
@@ -1512,6 +1531,7 @@ class PDFPlumberParser(ImagesPdfParser):
             print(docs[0].page_content[:100])
             print(docs[0].metadata)
     """
+
     def __init__(
         self,
         text_kwargs: Optional[Mapping[str, Any]] = None,
@@ -1532,17 +1552,20 @@ class PDFPlumberParser(ImagesPdfParser):
             dedupe:  Avoiding the error of duplicate characters if `dedupe=True`
             extract_images: Whether to extract images from the PDF
             password: Optional password for opening encrypted PDFs.
-            mode: The extraction mode, either "single" for extracting the entire document as
-                one chunk or "page" for page-wise extraction.
-            images_to_text: Optional function or callable to convert images to text during extraction.
-            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
-            extract_tables: Whether to extract images from the PDF in a specific format, such as "csv", "markdown",
-                            or "html".
-            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
+            mode: The extraction mode, either "single" for extracting the entire
+                document as one chunk or "page" for page-wise extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode
+                extraction.
+            extract_tables: Whether to extract images from the PDF in a specific
+                format, such as "csv", "markdown", or "html".
+            extract_tables_settings: Optional dictionary of settings for customizing
+            table extraction.
 
         Returns:
-            This method does not directly return data. Use the `parse` or `lazy_parse` methods to retrieve parsed
-            documents with content and metadata.
+            This method does not directly return data. Use the `parse` or `lazy_parse`
+            methods to retrieve parsed documents with content and metadata.
 
         Raises:
             ImportError: If the `pdfplumber` package is not installed.
@@ -1550,14 +1573,6 @@ class PDFPlumberParser(ImagesPdfParser):
             ValueError: If the `extract_tables` is not "csv", "markdown" or "html".
 
         """
-        try:
-            import pdfplumber  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pdfplumber package not found, please install it "
-                "with `pip install pdfplumber`"
-            )
-
         super().__init__(extract_images, images_to_text)
         self.password = password
         if mode not in ["single", "page"]:
@@ -1585,7 +1600,13 @@ class PDFPlumberParser(ImagesPdfParser):
         Yields:
             An iterator over the parsed documents.
         """
-        import pdfplumber
+        try:
+            import pdfplumber
+        except ImportError:
+            raise ImportError(
+                "pdfplumber package not found, please install it "
+                "with `pip install pdfplumber`"
+            )
 
         with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
             doc = pdfplumber.open(file_path, password=self.password)  # open document
@@ -1791,7 +1812,7 @@ class PDFPlumberParser(ImagesPdfParser):
                 buf = np.frombuffer(img["stream"].get_data(), dtype=np.uint8)
                 images.append(np.array(Image.open(io.BytesIO(buf.tobytes()))))
             else:
-                warnings.warn("Unknown PDF Filter!")
+                logger.warning("Unknown PDF Filter!")
 
         return images
 
@@ -1825,7 +1846,8 @@ class PDFPlumberParser(ImagesPdfParser):
             page: The PDF page to extract tables from.
 
         Returns:
-            A list of tables, where each table is a list of rows, and each row is a list of cell values.
+            A list of tables, where each table is a list of rows, and each row is a
+            list of cell values.
         """
         if not self.extract_tables:
             return []
@@ -2098,7 +2120,7 @@ class DocumentIntelligenceParser(BaseBlobParser):
     (formerly Form Recognizer) and chunks at character level."""
 
     def __init__(self, client: Any, model: str):
-        warnings.warn(
+        logger.warning(
             "langchain_community.document_loaders.parsers.pdf.DocumentIntelligenceParser"
             "and langchain_community.document_loaders.pdf.DocumentIntelligenceLoader"
             " are deprecated. Please upgrade to "

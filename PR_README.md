@@ -1,5 +1,18 @@
-Langchain-patch-loader
-======================
+- [ ] **Refactoring all PDF loader and parser**: "community"
+
+- **Description:** refactoring of PDF parsers and loaders. See below
+- **Issue:** missing lock, parameter inconsistency, missing lazy approch
+- **Twitter handle:** pprados
+
+- [X] **Add tests and docs**: 
+  - Add tests to check the consistency of different implementations
+  - Add tests to check the array and imagesextraction
+  - Update or add notebooks in `docs/docs/integrations` directory
+
+- [X] **Lint and test**: done
+
+ # Langchain-patch-loader
+=========================
 
 I propose a substantial PR to improve the different PDF parser integrations.
 All my clients struggle with PDFs. I took the initiative to address this issue at its 
@@ -253,6 +266,8 @@ For this parser, we introduce the following new features:
 - `images_to_text`
 - Integration of image texts between two paragraphs
 - `concatenate_pages` is deprecated
+- use really `lazy_load`
+- Apply the parameter `concatenate_pages` even if `extract_images` is set to `true`
 
 ## PyMuPDFLoader / PyMuPDFParser
 
@@ -273,6 +288,7 @@ For this parser, we introduce the following new features:
 - `pages_delimitor`
 - `images_to_text`
 - `extract_tables` to `csv`, `markdown` or `html` (with `colspan`) in the stream
+- Use `lazy_load`
 - Add one TU
 
 ## PagedPDFSplitter
