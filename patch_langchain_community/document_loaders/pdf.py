@@ -23,13 +23,13 @@ from typing import (
 from urllib.parse import urlparse
 
 import requests
+from langchain_core._api.deprecation import deprecated, warn_deprecated
+from langchain_core.documents import Document
+from langchain_core.utils import get_from_dict_or_env
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_community.document_loaders.dedoc import DedocBaseLoader
 from langchain_community.document_loaders.unstructured import UnstructuredFileLoader
-from langchain_core._api.deprecation import deprecated, warn_deprecated
-from langchain_core.documents import Document
-from langchain_core.utils import get_from_dict_or_env
 
 from patch_langchain_community.document_loaders.parsers.pdf import (
     CONVERT_IMAGE_TO_TEXT,
@@ -831,237 +831,6 @@ class PyMuPDFLoader(BasePDFLoader):
         yield from parser.lazy_parse(blob)
 
 
-class PDFPlumberLoader(BasePDFLoader):
-    """Load and parse a PDF file using 'pdfplumber' library.
-
-    This class provides methods to load and parse PDF documents, supporting various configurations such as handling
-    password-protected files, extracting tables, extracting images, and defining extraction mode.
-    It integrates the `pdfplumber` library for PDF processing and offers both synchronous and asynchronous document
-    loading.
-
-    Examples:
-        Setup:
-
-        .. code-block:: bash
-
-            pip install -U langchain-community pdfplumber
-
-        Instantiate the loader:
-
-        .. code-block:: python
-
-            from langchain_community.document_loaders import PDFPlumberLoader
-
-            loader = PDFPlumberLoader(
-                file_path = "./example_data/layout-parser-paper.pdf",
-                # text_kwargs = {"use_text_flow": False, "keep_blank_chars": False},
-                # dedupe = False,
-                # headers = None,
-                # password = None,
-                mode = "page",
-                # extract_images = False,
-                # images_to_text = None,
-                pages_delimitor = "\n\f",
-                # extract_tables = None,
-                # extract_tables_settings = None,
-            )
-
-        Lazy load documents:
-
-        .. code-block:: python
-
-            docs = []
-            docs_lazy = loader.lazy_load()
-
-            for doc in docs_lazy:
-                docs.append(doc)
-            print(docs[0].page_content[:100])
-            print(docs[0].metadata)
-
-        Load documents asynchronously:
-
-        .. code-block:: python
-
-            docs = await loader.aload()
-            print(docs[0].page_content[:100])
-            print(docs[0].metadata)
-    """
-    def __init__(
-        self,
-        file_path: Union[str, PurePath],
-        *,
-        text_kwargs: Optional[Mapping[str, Any]] = {
-            "use_text_flow": False,
-            "keep_blank_chars": False,
-        },
-        dedupe: bool = False,
-        headers: Optional[dict] = None,
-        password: Optional[str] = None,
-        mode: Literal["single", "page"] = "page",
-        extract_images: bool = False,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-        pages_delimitor: str = _default_page_delimitor,
-        extract_tables: Optional[
-            Literal["csv", "markdown", "html"]
-        ] = None,
-        extract_tables_settings: Optional[dict[str, Any]] = None,
-    ) -> None:
-        """Initialize with a file path.
-
-        Args:
-            file_path: The path to the PDF file to be loaded.
-            text_kwargs: Keyword arguments to pass to ``pdfplumber.Page.extract_text()``
-            dedupe:  Avoiding the error of duplicate characters if `dedupe=True`
-            headers: Optional headers to use for GET request to download a file from a web path.
-            password: Optional password for opening encrypted PDFs.
-            mode: The extraction mode, either "single" for extracting the entire document as
-                one chunk or "page" for page-wise extraction.
-            extract_images: Whether to extract images from the PDF
-            images_to_text: Optional function or callable to convert images to text during extraction.
-            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
-            extract_tables: Whether to extract images from the PDF in a specific format, such as "csv", "markdown",
-                            or "html".
-            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
-
-        Returns:
-            This method does not directly return data. Use the `load`, `lazy_load`, or `aload` methods
-            to retrieve parsed documents with content and metadata.
-
-        Raises:
-            ImportError: If the `pdfplumber` package is not installed.
-        """
-        try:
-            import pdfplumber  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pdfplumber package not found, please install it with "
-                "`pip install pdfplumber`"
-            )
-
-        super().__init__(file_path, headers=headers)
-        self.parser = PDFPlumberParser(
-            password=password,
-            mode=mode,
-            pages_delimitor=pages_delimitor,
-            extract_images=extract_images,
-            images_to_text=images_to_text,
-            extract_tables=extract_tables,
-            text_kwargs=text_kwargs,
-            extract_tables_settings=extract_tables_settings,
-            dedupe=dedupe,
-        )
-
-    def lazy_load(
-        self,
-    ) -> Iterator[Document]:
-        """Lazy load given path as pages."""
-        if self.web_path:
-            blob = Blob.from_data(open(self.file_path, "rb").read(), path=self.web_path)  # type: ignore[attr-defined]
-        else:
-            blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
-        yield from self.parser.lazy_parse(blob)
-
-
-# PPR: DedocPDFLoader dependencies incompatible with others parsers
-class DedocPDFLoader(DedocBaseLoader):
-    """
-    DedocPDFLoader document loader integration to load PDF files using `dedoc`.
-    The file loader can automatically detect the correctness of a textual layer in the
-        PDF document.
-    Note that `__init__` method supports parameters that differ from ones of
-        DedocBaseLoader.
-
-    Setup:
-        Install ``dedoc`` package.
-
-        .. code-block:: bash
-
-            pip install -U dedoc
-
-    Instantiate:
-        .. code-block:: python
-
-            from langchain_community.document_loaders import DedocPDFLoader
-
-            loader = DedocPDFLoader(
-                file_path="example.pdf",
-                # split=...,
-                # with_tables=...,
-                # pdf_with_text_layer=...,
-                # pages=...,
-                # ...
-            )
-
-    Load:
-        .. code-block:: python
-
-            docs = loader.load()
-            print(docs[0].page_content[:100])
-            print(docs[0].metadata)
-
-        .. code-block:: python
-
-            Some text
-            {
-                'file_name': 'example.pdf',
-                'file_type': 'application/pdf',
-                # ...
-            }
-
-    Lazy load:
-        .. code-block:: python
-
-            docs = []
-            docs_lazy = loader.lazy_load()
-
-            for doc in docs_lazy:
-                docs.append(doc)
-            print(docs[0].page_content[:100])
-            print(docs[0].metadata)
-
-        .. code-block:: python
-
-            Some text
-            {
-                'file_name': 'example.pdf',
-                'file_type': 'application/pdf',
-                # ...
-            }
-
-    Parameters used for document parsing via `dedoc`
-        (https://dedoc.readthedocs.io/en/latest/parameters/pdf_handling.html):
-
-        with_attachments: enable attached files extraction
-        recursion_deep_attachments: recursion level for attached files extraction,
-            works only when with_attachments==True
-        pdf_with_text_layer: type of handler for parsing, available options
-            ["true", "false", "tabby", "auto", "auto_tabby" (default)]
-        language: language of the document for PDF without a textual layer,
-            available options ["eng", "rus", "rus+eng" (default)], the list of
-            languages can be extended, please see
-            https://dedoc.readthedocs.io/en/latest/tutorials/add_new_language.html
-        pages: page slice to define the reading range for parsing
-        is_one_column_document: detect number of columns for PDF without a textual
-            layer, available options ["true", "false", "auto" (default)]
-        document_orientation: fix document orientation (90, 180, 270 degrees) for PDF
-            without a textual layer, available options ["auto" (default), "no_change"]
-        need_header_footer_analysis: remove headers and footers from the output result
-        need_binarization: clean pages background (binarize) for PDF without a textual
-            layer
-        need_pdf_table_analysis: parse tables for PDF without a textual layer
-    """
-
-    def _make_config(self) -> dict:
-        from dedoc.utils.langchain import make_manager_pdf_config
-
-        return make_manager_pdf_config(
-            file_path=self.file_path,
-            parsing_params=self.parsing_parameters,
-            split=self.split,
-        )
-
-
-# %% --------- Online pdf loader ---------
 # MathpixPDFLoader implementation taken largely from Daniel Gross's:
 # https://gist.github.com/danielgross/3ab4104e14faccc12b49200843adab21
 class MathpixPDFLoader(BasePDFLoader):
@@ -1214,6 +983,139 @@ class MathpixPDFLoader(BasePDFLoader):
         return [Document(page_content=contents, metadata=metadata)]
 
 
+class PDFPlumberLoader(BasePDFLoader):
+    """Load and parse a PDF file using 'pdfplumber' library.
+
+    This class provides methods to load and parse PDF documents, supporting various configurations such as handling
+    password-protected files, extracting tables, extracting images, and defining extraction mode.
+    It integrates the `pdfplumber` library for PDF processing and offers both synchronous and asynchronous document
+    loading.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-community pdfplumber
+
+        Instantiate the loader:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders import PDFPlumberLoader
+
+            loader = PDFPlumberLoader(
+                file_path = "./example_data/layout-parser-paper.pdf",
+                # text_kwargs = {"use_text_flow": False, "keep_blank_chars": False},
+                # dedupe = False,
+                # headers = None,
+                # password = None,
+                mode = "page",
+                # extract_images = False,
+                # images_to_text = None,
+                pages_delimitor = "\n\f",
+                # extract_tables = None,
+                # extract_tables_settings = None,
+            )
+
+        Lazy load documents:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = loader.lazy_load()
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        Load documents asynchronously:
+
+        .. code-block:: python
+
+            docs = await loader.aload()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
+
+    def __init__(
+        self,
+        file_path: Union[str, PurePath],
+        text_kwargs: Optional[Mapping[str, Any]] = None,
+        dedupe: bool = False,
+        headers: Optional[dict] = None,
+        extract_images: bool = False,
+        *,
+        password: Optional[str] = None,
+        mode: Literal["single", "page"] = "page",
+        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+        pages_delimitor: str = _default_page_delimitor,
+        extract_tables: Optional[Literal["csv", "markdown", "html"]] = None,
+        extract_tables_settings: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """Initialize with a file path.
+
+        Args:
+            file_path: The path to the PDF file to be loaded.
+            text_kwargs: Keyword arguments to pass to ``pdfplumber.Page.extract_text()``
+            dedupe:  Avoiding the error of duplicate characters if `dedupe=True`
+            headers: Optional headers to use for GET request to download a file from a web path.
+            password: Optional password for opening encrypted PDFs.
+            mode: The extraction mode, either "single" for extracting the entire document as
+                one chunk or "page" for page-wise extraction.
+            extract_images: Whether to extract images from the PDF
+            images_to_text: Optional function or callable to convert images to text during extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode extraction.
+            extract_tables: Whether to extract images from the PDF in a specific format, such as "csv", "markdown",
+                            or "html".
+            extract_tables_settings: Optional dictionary of settings for customizing table extraction.
+
+        Returns:
+            This method does not directly return data. Use the `load`, `lazy_load`, or `aload` methods
+            to retrieve parsed documents with content and metadata.
+
+        Raises:
+            ImportError: If the `pdfplumber` package is not installed.
+        """
+        try:
+            import pdfplumber  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "pdfplumber package not found, please install it with "
+                "`pip install pdfplumber`"
+            )
+
+        super().__init__(file_path, headers=headers)
+        if text_kwargs == None:
+            # text_kwargs = {  # FIXME
+            #     "use_text_flow": False,
+            #     "keep_blank_chars": False,
+            # }
+            pass
+        self.parser = PDFPlumberParser(
+            password=password,
+            mode=mode,
+            pages_delimitor=pages_delimitor,
+            extract_images=extract_images,
+            images_to_text=images_to_text,
+            extract_tables=extract_tables,
+            text_kwargs=text_kwargs,
+            extract_tables_settings=extract_tables_settings,
+            dedupe=dedupe,
+        )
+
+    def lazy_load(
+        self,
+    ) -> Iterator[Document]:
+        """Lazy load given path as pages."""
+        if self.web_path:
+            blob = Blob.from_data(open(self.file_path, "rb").read(), path=self.web_path)  # type: ignore[attr-defined]
+        else:
+            blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        yield from self.parser.lazy_parse(blob)
+
+
 class AmazonTextractPDFLoader(BasePDFLoader):
     """Load `PDF` files from a local file system, HTTP or S3.
 
@@ -1364,6 +1266,104 @@ class AmazonTextractPDFLoader(BasePDFLoader):
             raise ValueError(f"unsupported mime type: {blob.mimetype}")  # type: ignore[attr-defined]
 
 
+class DedocPDFLoader(DedocBaseLoader):
+    """
+    DedocPDFLoader document loader integration to load PDF files using `dedoc`.
+    The file loader can automatically detect the correctness of a textual layer in the
+        PDF document.
+    Note that `__init__` method supports parameters that differ from ones of
+        DedocBaseLoader.
+
+    Setup:
+        Install ``dedoc`` package.
+
+        .. code-block:: bash
+
+            pip install -U dedoc
+
+    Instantiate:
+        .. code-block:: python
+
+            from langchain_community.document_loaders import DedocPDFLoader
+
+            loader = DedocPDFLoader(
+                file_path="example.pdf",
+                # split=...,
+                # with_tables=...,
+                # pdf_with_text_layer=...,
+                # pages=...,
+                # ...
+            )
+
+    Load:
+        .. code-block:: python
+
+            docs = loader.load()
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        .. code-block:: python
+
+            Some text
+            {
+                'file_name': 'example.pdf',
+                'file_type': 'application/pdf',
+                # ...
+            }
+
+    Lazy load:
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = loader.lazy_load()
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+
+        .. code-block:: python
+
+            Some text
+            {
+                'file_name': 'example.pdf',
+                'file_type': 'application/pdf',
+                # ...
+            }
+
+    Parameters used for document parsing via `dedoc`
+        (https://dedoc.readthedocs.io/en/latest/parameters/pdf_handling.html):
+
+        with_attachments: enable attached files extraction
+        recursion_deep_attachments: recursion level for attached files extraction,
+            works only when with_attachments==True
+        pdf_with_text_layer: type of handler for parsing, available options
+            ["true", "false", "tabby", "auto", "auto_tabby" (default)]
+        language: language of the document for PDF without a textual layer,
+            available options ["eng", "rus", "rus+eng" (default)], the list of
+            languages can be extended, please see
+            https://dedoc.readthedocs.io/en/latest/tutorials/add_new_language.html
+        pages: page slice to define the reading range for parsing
+        is_one_column_document: detect number of columns for PDF without a textual
+            layer, available options ["true", "false", "auto" (default)]
+        document_orientation: fix document orientation (90, 180, 270 degrees) for PDF
+            without a textual layer, available options ["auto" (default), "no_change"]
+        need_header_footer_analysis: remove headers and footers from the output result
+        need_binarization: clean pages background (binarize) for PDF without a textual
+            layer
+        need_pdf_table_analysis: parse tables for PDF without a textual layer
+    """
+
+    def _make_config(self) -> dict:
+        from dedoc.utils.langchain import make_manager_pdf_config
+
+        return make_manager_pdf_config(
+            file_path=self.file_path,
+            parsing_params=self.parsing_parameters,
+            split=self.split,
+        )
+
+
 class DocumentIntelligenceLoader(BasePDFLoader):
     """Load a PDF with Azure Document Intelligence"""
 
@@ -1414,6 +1414,83 @@ class DocumentIntelligenceLoader(BasePDFLoader):
         """Lazy load given path as pages."""
         blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
         yield from self.parser.parse(blob)
+
+
+class ZeroxPDFLoader(BasePDFLoader):
+    """
+    Document loader utilizing Zerox library:
+    https://github.com/getomni-ai/zerox
+
+    Zerox converts PDF document to serties of images (page-wise) and
+    uses vision-capable LLM model to generate Markdown representation.
+
+    Zerox utilizes anyc operations. Therefore when using this loader
+    inside Jupyter Notebook (or any environment running async)
+    you will need to:
+    ```python
+        import nest_asyncio
+        nest_asyncio.apply()
+    ```
+    """
+
+    def __init__(
+        self,
+        file_path: Union[str, Path],
+        model: str = "gpt-4o-mini",
+        **zerox_kwargs: Any,
+    ) -> None:
+        super().__init__(file_path=file_path)
+        """
+        Initialize the parser with arguments to be passed to the zerox function.
+        Make sure to set necessary environmnet variables such as API key, endpoint, etc.
+        Check zerox documentation for list of necessary environment variables for
+        any given model.
+
+        Args:
+            file_path:
+                Path or url of the pdf file
+            model:
+                Vision capable model to use. Defaults to "gpt-4o-mini".
+                Hosted models are passed in format "<provider>/<model>"
+                Examples: "azure/gpt-4o-mini", "vertex_ai/gemini-1.5-flash-001"
+                          See more details in zerox documentation.
+            **zerox_kwargs: 
+                Arguments specific to the zerox function.
+                see datailed list of arguments here in zerox repository:
+                https://github.com/getomni-ai/zerox/blob/main/py_zerox/pyzerox/core/zerox.py#L25
+        """  # noqa: E501
+        self.zerox_kwargs = zerox_kwargs
+        self.model = model
+
+    def lazy_load(self) -> Iterator[Document]:
+        """
+        Loads documnts from pdf utilizing zerox library:
+        https://github.com/getomni-ai/zerox
+
+        Returns:
+            Iterator[Document]: An iterator over parsed Document instances.
+        """
+        import asyncio
+
+        from pyzerox import zerox
+
+        # Directly call asyncio.run to execute zerox synchronously
+        zerox_output = asyncio.run(
+            zerox(file_path=self.file_path, model=self.model, **self.zerox_kwargs)
+        )
+
+        # Convert zerox output to Document instances and yield them
+        if len(zerox_output.pages) > 0:
+            num_pages = zerox_output.pages[-1].page
+            for page in zerox_output.pages:
+                yield Document(
+                    page_content=page.content,
+                    metadata={
+                        "source": self.source,
+                        "page": page.page,
+                        "num_pages": num_pages,
+                    },
+                )
 
 
 # Legacy: only for backwards compatibility. Use PyPDFLoader instead

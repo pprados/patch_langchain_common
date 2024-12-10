@@ -70,6 +70,7 @@ parser-comparator = [
 optional = true
 
 [tool.poetry.group.dev.dependencies]
+pillow = "*"
 playwright = "*"
 setuptools = "*"
 ipython = "*"

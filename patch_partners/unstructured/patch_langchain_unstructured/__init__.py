@@ -5,6 +5,7 @@ from .document_loaders import (
     UnstructuredPDFLoader,
     UnstructuredPDFParser,
 )
+
 """ Documentation du module unstructured patch"""
 try:
     __version__ = metadata.version(__package__)
