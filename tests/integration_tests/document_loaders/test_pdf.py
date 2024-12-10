@@ -11,8 +11,72 @@ from patch_langchain_community.document_loaders import (
     PDFMinerPDFasHTMLLoader,
     PDFPlumberLoader,
     PyMuPDFLoader,
-    PyPDFium2Loader,
+    PyPDFium2Loader, PyPDFLoader,
 )
+
+def test_pypdf_loader() -> None:
+    """Test PDFMiner loader."""
+    file_path = Path(__file__).parent.parent / "examples/hello.pdf"
+    loader = PyPDFLoader(file_path)
+    docs = loader.load()
+    assert len(docs) == 1
+    assert len(docs[0].metadata) == 6
+
+    file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
+    loader = PyPDFLoader(file_path)
+
+    docs = loader.load()
+    assert len(docs) == 16
+    assert len(docs[0].metadata) == 13
+
+    # Verify that extraction_mode parameter works
+    file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
+    loader = PyPDFLoader(
+        file_path,
+        mode="single",
+        extract_images=False,
+    )
+    docs = loader.load()
+    assert len(docs) == 1
+    assert len(docs[0].metadata) == 12
+
+    file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
+    loader = PyPDFLoader(
+        file_path,
+        mode="page",
+        extract_images=False,
+    )
+    docs = loader.load()
+    assert len(docs) == 16
+    assert len(docs[0].metadata) == 13
+
+    loader = PyPDFLoader(
+        file_path,
+        extract_images=False,
+    )
+    from langchain_text_splitters import CharacterTextSplitter
+
+    text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
+        encoding_name="cl100k_base",
+        chunk_size=1000,
+        chunk_overlap=0,
+        separator="\n",
+    )
+    docs = loader.load_and_split(text_splitter)
+    assert len(docs) == 18
+    assert len(docs[0].metadata) == 13
+
+    # Verify that extract_images
+    file_path = Path(__file__).parent.parent / "examples/layout-parser-paper.pdf"
+    loader = PyPDFLoader(
+        file_path,
+        mode="single",
+        extract_images=True,
+    )
+    docs = loader.load()
+    assert len(docs) == 1
+    assert len(docs[0].metadata) == 12
+
 
 
 def test_pdfplumber_loader() -> None:
@@ -273,3 +337,6 @@ def test_amazontextract_loader_failures() -> None:
     loader = AmazonTextractPDFLoader(two_page_pdf)
     with pytest.raises(ValueError):
         loader.load()
+
+
+# TODO pypdf loader et vérifier tous les loaders PDF s'ils ont leurs tests

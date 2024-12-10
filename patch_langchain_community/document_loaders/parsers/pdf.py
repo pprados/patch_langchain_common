@@ -763,18 +763,18 @@ class PyMuPDFParser(ImagesPdfParser):
     _lock = threading.Lock()
 
     def __init__(
-        self,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "page"] = "page",
-        pages_delimitor: str = _default_page_delimitor,
-        extract_images: bool = False,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
-        extract_tables: Union[
-            Literal["csv"], Literal["markdown"], Literal["html"], None
-        ] = None,
-        extract_tables_settings: Optional[dict[str, Any]] = None,
-        text_kwargs: Optional[dict[str, Any]] = None,
+            self,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "page"] = "page",
+            pages_delimitor: str = _default_page_delimitor,
+            extract_images: bool = False,
+            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+            extract_tables: Union[
+                Literal["csv"], Literal["markdown"], Literal["html"], None
+            ] = None,
+            extract_tables_settings: Optional[dict[str, Any]] = None,
+            text_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize the parser.
 
@@ -788,14 +788,6 @@ class PyMuPDFParser(ImagesPdfParser):
             extract_tables_settings: Whether to extract tables from PDF.
             text_kwargs: Keyword arguments to pass to ``fitz.Page.get_text()``.
         """
-        try:
-            import pymupdf  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pymupdf package not found, please install it "
-                "with `pip install pymupdf`"
-            )
-
         super().__init__(extract_images, images_to_text)
         if mode not in ["single", "page"]:
             raise ValueError("mode must be single or page")
@@ -808,45 +800,50 @@ class PyMuPDFParser(ImagesPdfParser):
         self.text_kwargs = text_kwargs or {}
         self.extract_images = extract_images
         self.extract_tables = extract_tables
-        if extract_tables_settings:
-            self.extract_tables_settings = extract_tables_settings
-        else:
-            from pymupdf.table import (
-                DEFAULT_JOIN_TOLERANCE,
-                DEFAULT_MIN_WORDS_HORIZONTAL,
-                DEFAULT_MIN_WORDS_VERTICAL,
-                DEFAULT_SNAP_TOLERANCE,
-            )
-
-            self.extract_tables_settings = {
-                "clip": None,
-                "vertical_strategy": "lines",
-                "horizontal_strategy": "lines",
-                "vertical_lines": None,
-                "horizontal_lines": None,
-                "snap_tolerance": DEFAULT_SNAP_TOLERANCE,
-                "snap_x_tolerance": None,
-                "snap_y_tolerance": None,
-                "join_tolerance": DEFAULT_JOIN_TOLERANCE,
-                "join_x_tolerance": None,
-                "join_y_tolerance": None,
-                "edge_min_length": 3,
-                "min_words_vertical": DEFAULT_MIN_WORDS_VERTICAL,
-                "min_words_horizontal": DEFAULT_MIN_WORDS_HORIZONTAL,
-                "intersection_tolerance": 3,
-                "intersection_x_tolerance": None,
-                "intersection_y_tolerance": None,
-                "text_tolerance": 3,
-                "text_x_tolerance": 3,
-                "text_y_tolerance": 3,
-                "strategy": None,  # offer abbreviation
-                "add_lines": None,  # optional user-specified lines
-            }
+        self.extract_tables_settings = extract_tables_settings
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
 
-        import pymupdf
+        try:
+            import pymupdf  # noqa:F401
+            if not self.extract_tables_settings:
+                from pymupdf.table import (
+                    DEFAULT_JOIN_TOLERANCE,
+                    DEFAULT_MIN_WORDS_HORIZONTAL,
+                    DEFAULT_MIN_WORDS_VERTICAL,
+                    DEFAULT_SNAP_TOLERANCE,
+                )
+
+                self.extract_tables_settings = {
+                    "clip": None,
+                    "vertical_strategy": "lines",
+                    "horizontal_strategy": "lines",
+                    "vertical_lines": None,
+                    "horizontal_lines": None,
+                    "snap_tolerance": DEFAULT_SNAP_TOLERANCE,
+                    "snap_x_tolerance": None,
+                    "snap_y_tolerance": None,
+                    "join_tolerance": DEFAULT_JOIN_TOLERANCE,
+                    "join_x_tolerance": None,
+                    "join_y_tolerance": None,
+                    "edge_min_length": 3,
+                    "min_words_vertical": DEFAULT_MIN_WORDS_VERTICAL,
+                    "min_words_horizontal": DEFAULT_MIN_WORDS_HORIZONTAL,
+                    "intersection_tolerance": 3,
+                    "intersection_x_tolerance": None,
+                    "intersection_y_tolerance": None,
+                    "text_tolerance": 3,
+                    "text_x_tolerance": 3,
+                    "text_y_tolerance": 3,
+                    "strategy": None,  # offer abbreviation
+                    "add_lines": None,  # optional user-specified lines
+                }
+        except ImportError:
+            raise ImportError(
+                "pymupdf package not found, please install it "
+                "with `pip install pymupdf`"
+            )
 
         with PyMuPDFParser._lock:
             with blob.as_bytes_io() as file_path:  # type: ignore[attr-defined]
@@ -875,7 +872,8 @@ class PyMuPDFParser(ImagesPdfParser):
                     )
 
     def _get_page_content(
-        self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page", blob: Blob
+            self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page",
+            blob: Blob
     ) -> str:
         """
         Get the text of the page using PyMuPDF and RapidOCR and issue a warning
@@ -917,7 +915,7 @@ class PyMuPDFParser(ImagesPdfParser):
         )
 
     def _extract_images_from_page(
-        self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page"
+            self, doc: "pymupdf.pymupdf.Document", page: "pymupdf.pymupdf.Page"
     ) -> str:
         """Extract images from page and get the text with RapidOCR."""
         if not self.extract_images:

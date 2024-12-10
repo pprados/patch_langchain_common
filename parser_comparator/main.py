@@ -397,15 +397,6 @@ def _save_results(
 
 
 if __name__ == "__main__":
-    from patch_langchain_community.document_loaders.pdf import PyMuPDFLoader
-
-    next(
-        PyMuPDFLoader(
-            file_path="/home/pprados/workspace.bda/patch_langchain_common/tests/integration_tests/examples/hello.pdf",
-            mode="single",
-            strategy="fast",
-        ).lazy_load(toto="toto")
-    )
     if len(sys.argv) > 1:
         parser = argparse.ArgumentParser(description="Compare PDF parsing results.")
         parser.add_argument("experiment_name", type=str, help="Name of the experiment")

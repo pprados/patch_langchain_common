@@ -217,10 +217,9 @@ define _push_sync
 	@find '${WORK_DIR}' -type f -a \
 		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
 		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
-	#@echo "${WORK_DIR}/libs"
 	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
 	@rm -Rf '${WORK_DIR}'
-	@echo WORK_DIR=${WORK_DIR}
+	@echo done
 endef
 
 push-sync:
