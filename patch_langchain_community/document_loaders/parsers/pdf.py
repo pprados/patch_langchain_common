@@ -710,7 +710,7 @@ class PDFMinerParser(ImagesPdfParser):
         extract_images: bool = False,
         *,
         password: Optional[str] = None,
-        mode: Literal["single", "page"] = "single",
+        mode: Literal["single", "page"] = "single",  # FIXME: ne pas toucher
         pages_delimitor: str = _default_page_delimitor,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
         concatenate_pages: Optional[bool] = None,

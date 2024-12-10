@@ -60,9 +60,6 @@ def _assert_with_parser(parser: BaseBlobParser, splits_by_page: bool = True) -> 
     assert isinstance(doc_generator, Iterator)
     docs = list(doc_generator)
 
-    if isinstance(parser, PDFMinerParser):  # Replicate a bug
-        if parser.extract_images:
-            splits_by_page = True
     if splits_by_page:
         assert len(docs) == 16
     else:
@@ -135,7 +132,7 @@ def test_extract_images_text_from_pdf_pypdfparser() -> None:
 
 def test_extract_images_text_from_pdf_pdfminerparser() -> None:
     """Test extract image from pdf and recognize text with rapid ocr - PDFMinerParser"""
-    _assert_with_parser(PDFMinerParser(extract_images=True))
+    _assert_with_parser(PDFMinerParser(extract_images=True),splits_by_page=False)
 
 
 def test_extract_images_text_from_pdf_pymupdfparser() -> None:
