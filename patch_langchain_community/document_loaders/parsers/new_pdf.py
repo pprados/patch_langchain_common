@@ -70,6 +70,7 @@ class PDFMultiParser(BaseBlobParser):
         {parser_name: (documents, metrics)}"""
         parsers_results = []
         all_exceptions: dict[str, Exception] = {}
+        # TODO: faire un cache du threadpoolexecutor
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Submit each parser's load method to the executor
             futures = {

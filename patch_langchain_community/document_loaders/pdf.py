@@ -606,7 +606,7 @@ class PDFPlumberLoader(BasePDFLoader):
         yield from self.parser.lazy_parse(blob)
 
 
-# PPR: DedocPDFLoader dependencies incompatible with others parsers
+# FIXME: DedocPDFLoader dependencies incompatible with others parsers
 class DedocPDFLoader(DedocBaseLoader):
     """
     DedocPDFLoader document loader integration to load PDF files using `dedoc`.
