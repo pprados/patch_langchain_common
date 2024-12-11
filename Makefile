@@ -69,8 +69,7 @@ format format_diff:
 	poetry run ruff --select I --fix $(PYTHON_FILES)
 
 spell_check:
-	# FIXME poetry run codespell --toml pyproject.toml
-	echo "Ignore spell_check for now"
+	poetry run codespell --toml pyproject.toml --skip="compare_old_new,PPR*"
 
 spell_fix:
 	poetry run codespell --toml pyproject.toml -w
@@ -234,6 +233,7 @@ define _push_sync
 	@echo done
 endef
 
+## Duplicate and patch files to ../langchain project
 push-sync: format
 	$(call _push_sync)
 

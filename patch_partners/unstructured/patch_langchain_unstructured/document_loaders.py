@@ -41,7 +41,7 @@ from patch_langchain_community.document_loaders.pdf import BasePDFLoader
 
 if TYPE_CHECKING:
     from unstructured_client import UnstructuredClient
-    from unstructured_client.models import operations
+    from unstructured_client.models import operations  # type:ignore[attr-defined]
 
 Element: TypeAlias = Any
 
@@ -322,7 +322,7 @@ class _SingleDocumentLoader(BaseLoader):
 
     def lazy_load(self) -> Iterator[Document]:
         """Load file."""
-        with _SingleDocumentLoader._lock:
+        with _SingleDocumentLoader._lock:  # FIXME: necessary ?
             elements_json = (
                 self._post_process_elements_json(self._elements_json)
                 if self.post_processors
@@ -397,7 +397,10 @@ class _SingleDocumentLoader(BaseLoader):
 
     @property
     def _sdk_partition_request(self) -> operations.PartitionRequest:
-        from unstructured_client.models import operations, shared
+        from unstructured_client.models import (  # type:ignore[attr-defined]
+            operations,
+            shared,
+        )
 
         return operations.PartitionRequest(
             partition_parameters=shared.PartitionParameters(
@@ -631,7 +634,6 @@ class UnstructuredPDFParser(ImagesPdfParser):
         self,
         *,
         password: Optional[str] = None,
-        # FIXME https://github.com/Unstructured-IO/unstructured/pull/3721
         mode: Literal["single", "page", "elements"] = "single",
         pages_delimitor: str = "\n\n",
         extract_images: bool = False,
@@ -724,6 +726,8 @@ class UnstructuredPDFParser(ImagesPdfParser):
             unstructured_kwargs["metadata_filename"] = blob.path or blob.metadata.get(
                 "source"
             )
+        if self.extract_tables:
+            unstructured_kwargs["infer_table_structure"] = True
         if self.mode != "elements":
             unstructured_kwargs["include_page_breaks"] = True
         page_number = 0

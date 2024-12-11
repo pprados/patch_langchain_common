@@ -1076,7 +1076,7 @@ class PyMuPDFParser(ImagesPdfParser):
 
         self.mode = mode
         self.pages_delimitor = pages_delimitor
-        self.password = password  # PPR: https://github.com/pymupdf/RAG/pull/170
+        self.password = password
         self.text_kwargs = text_kwargs or {}
         self.extract_images = extract_images
         self.extract_tables = extract_tables

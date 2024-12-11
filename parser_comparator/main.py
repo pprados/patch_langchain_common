@@ -1,4 +1,3 @@
-# runn noqa: E401
 import argparse
 import json
 import logging  # Set the logging level to WARNING to reduce verbosity
@@ -54,12 +53,14 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
 )
 
 # %% Meta parameters
+RETRO_COMPATIBLE = True
+
 # Under each parameter you can read a description of it and its possible values
 MODE = "single"
 # Extraction mode to use. Either "single" or "paged"
 EXTRACT_IMAGES = False
 # Whether to extract images from the PDF. True/False
-IMAGE_FORMAT = "text"  # FIXME "markdown"
+IMAGE_FORMAT = "text" if RETRO_COMPATIBLE else "markdown"
 # Format to use for the extracted images. Either "text", "html" or "markdown"
 conv_images = convert_images_to_text_with_rapidocr(
     format=IMAGE_FORMAT  # type:ignore[arg-type]
@@ -70,15 +71,13 @@ conv_images = convert_images_to_text_with_rapidocr(
 # conv_images=convert_images_to_description(model=ChatOpenAI(model='gpt-4o'))
 # Function to extract text from images using multimodal model
 EXTRACT_TABLES = "html"
-# Format to use for the extracted tables. Either "text", "html" or "markdown"
+# Format to use for the extracted tables. Either "text", "html", "markdown" or None
 SUFFIX = "md"
 # If True, compare with the old versions of parsers/loader
-USE_OLD_PARSERS = True
+USE_OLD_PARSERS = RETRO_COMPATIBLE or True
 # If True, force the MODE to be the default old value
-RETRO_COMPATIBLE = True
-# If True, invoke online parser. Must have TOKEN API
 USE_ONLINE_PARSERS = False
-# Number of // workers. Desactivated with USE_OLD_PARSERS
+# Number of // workers. Deactivated with USE_OLD_PARSERS
 MAX_WORKERS: Optional[int] = None
 # If True, continue with the next parser if error. Else, stop at the first error.
 CONTINUE_IF_ERROR = True
@@ -90,11 +89,6 @@ logging.getLogger("azure").setLevel(logging.WARNING)
 set_llm_cache(InMemoryCache())
 
 pdf_parsers_updated: dict[str, BaseBlobParser] = {
-    "PDFMinerParser_new": PDFMinerParser(
-        pages_delimitor=_default_page_delimitor,
-        extract_images=EXTRACT_IMAGES,
-        images_to_text=conv_images,
-    ),
     "PDFMinerParser_single_new": PDFMinerParser(
         mode="single",
         pages_delimitor=_default_page_delimitor,
@@ -391,7 +385,8 @@ def _save_results(
             f.write(concatenated_docs)
         with open(str(output_file_path) + "properties", "w", encoding="utf-8") as f:
             metadata = parser_name2concatenated_parsed_metadata[parser_name][0]
-            metadata = {k.lower(): v for k, v in metadata.items()}  # FIXME: remove
+            if RETRO_COMPATIBLE:  # FIXME: remove or docs
+                metadata = {k.lower(): v for k, v in metadata.items()}
             json.dump(metadata, f, indent=2, sort_keys=True)
     return parser_name2concatenated_parsed_docs
 

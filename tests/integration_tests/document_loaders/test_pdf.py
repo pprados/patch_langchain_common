@@ -335,6 +335,3 @@ def test_amazontextract_loader_failures() -> None:
     loader = AmazonTextractPDFLoader(two_page_pdf)
     with pytest.raises(ValueError):
         loader.load()
-
-
-# TODO pypdf loader et vérifier tous les loaders PDF s'ils ont leurs tests

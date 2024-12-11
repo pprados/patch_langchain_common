@@ -228,26 +228,19 @@ def test_standard_parameters(
 
 @pytest.mark.parametrize(
     "mode",
-    ["page"],
-    # ["single", "page"],
+    ["single", "page"],
 )
 @pytest.mark.parametrize(
     "extract_tables",
-    [
-        "markdown",
-    ],
-    # ["markdown", "html", "csv", None],
+    ["markdown", "html", "csv", None],
 )
 @pytest.mark.parametrize(
     "parser_factory,params",
     [
         ("PyMuPDFParser", {}),
-        # ("PDFPlumberParser", {}),
+        ("PDFPlumberParser", {}),
     ],
 )
-# @pytest.mark.skipif(
-#     not os.environ.get("LLAMA_CLOUD_API_KEY"), reason="Llama cloud API key not found"
-# )
 def test_parser_with_table(
     parser_factory: str,
     params: dict,

@@ -683,7 +683,7 @@ class PDFMinerPDFasHTMLLoader(BasePDFLoader):
     def lazy_load(self) -> Iterator[Document]:
         """Load file."""
         try:
-            from pdfminer.high_level import extract_text_to_fp  # noqa:F401
+            from pdfminer.high_level import extract_text_to_fp
         except ImportError:
             raise ImportError(
                 "`pdfminer` package not found, please install it with "
@@ -1451,7 +1451,7 @@ class ZeroxPDFLoader(BasePDFLoader):
         super().__init__(file_path=file_path)
         """
         Initialize the parser with arguments to be passed to the zerox function.
-        Make sure to set necessary environmnet variables such as API key, endpoint, etc.
+        Make sure to set necessary environment variables such as API key, endpoint, etc.
         Check zerox documentation for list of necessary environment variables for
         any given model.
 
@@ -1473,7 +1473,7 @@ class ZeroxPDFLoader(BasePDFLoader):
 
     def lazy_load(self) -> Iterator[Document]:
         """
-        Loads documnts from pdf utilizing zerox library:
+        Loads documents from pdf utilizing zerox library:
         https://github.com/getomni-ai/zerox
 
         Returns:

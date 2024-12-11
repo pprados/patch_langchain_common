@@ -55,9 +55,8 @@ def remove_virtualenv(venv_path: Union[str, Path] = VENV_NAME) -> None:
 
 
 def create_virtualenv(venv_path: Union[str, Path] = VENV_NAME) -> None:
-    """Crée un nouvel environnement virtuel pour l'exécution des notebooks."""
     venv_path = Path(venv_path)
-    logging.info("Création de l'environnement virtuel : %s", venv_path)
+    logging.info("Creat new virtual environment: %s", venv_path)
     run_command([sys.executable, "-m", "venv", str(venv_path)])
     run_command([str(venv_path / "bin" / "pip"), "install", "-q", "--upgrade", "pip"])
     run_command(
