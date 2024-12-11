@@ -59,6 +59,11 @@ lint lint_diff:
 	poetry run black $(PYTHON_FILES) --check
 	poetry run ruff .
 
+lint_tests:
+	poetry run mypy  tests
+	poetry run black tests --check
+	poetry run ruff tests
+
 format format_diff:
 	poetry run black $(PYTHON_FILES)
 	poetry run ruff --select I --fix $(PYTHON_FILES)
@@ -198,6 +203,7 @@ define _push_sync
 		  --exclude ".*" \
 		  --exclude __pycache__ \
 		  --exclude __init__.py \
+		  --exclude "new_*.py" \
 		  . "${WORK_DIR}/libs/${TARGET}/$(DST_PACKAGE)" ; \
 	)
 	@( \
@@ -206,17 +212,19 @@ define _push_sync
 		  --exclude ".*" \
 		  --exclude __pycache__ \
 		  --exclude __init__.py \
+		  --exclude test_pdf.py \
+		  --exclude "test_new_*.py" \
+		  --exclude pdf-test-for-parsing.pdf \
 		  . "${WORK_DIR}/libs/${TARGET}/tests" ; \
 	)
 	@( \
 		cd docs/docs ; \
 		rsync -a \
 		  --exclude ".*" \
+		  --exclude "pdfminer_fasthtml.ipynb" \
 		  . "${WORK_DIR}/docs/docs" ; \
 	)
 	@find '${WORK_DIR}' -type f -a -name 'conftest.py' -exec rm {} ';'
-	@find '${WORK_DIR}' -type f -a -name 'new_*.*' -exec rm {} ';'
-	@find '${WORK_DIR}' -type f -a -name 'test_new_*.*' -exec rm {} ';'
 	@find '${WORK_DIR}' -type f -a \
 		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
 		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
