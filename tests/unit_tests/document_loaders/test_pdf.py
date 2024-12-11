@@ -44,6 +44,7 @@ def test_pypdf_loader() -> None:
 def test_pypdf_loader_with_layout() -> None:
     """Test PyPDFLoader with layout mode."""
     from langchain_community.document_loaders import PyPDFLoader as Old_PyPDFLoader
+
     # loader = Old_PyPDFLoader(str(path_to_layout_pdf), extraction_mode="layout")
 
     loader = PyPDFLoader(str(path_to_layout_pdf), extraction_mode="layout")
