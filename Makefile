@@ -193,7 +193,7 @@ define _push_sync
 	@$(eval TARGET=$(TARGET))
 	@$(eval SRC_PACKAGE=$(SRC_PACKAGE))
 	@$(eval DST_PACKAGE=$(DST_PACKAGE))
-	@$(eval WORK_DIR=$(shell mktemp -d --suffix ".rsync"))
+	#@$(eval WORK_DIR=$(shell mktemp -d --suffix ".rsync"))
 	@mkdir -p "${WORK_DIR}/libs/${TARGET}"
 	@mkdir -p "${WORK_DIR}/docs/docs"
 	@echo Copy and patch $(SRC_PACKAGE) to $(DST_PACKAGE) in $(LANGCHAIN_HOME)
@@ -212,7 +212,6 @@ define _push_sync
 		  --exclude ".*" \
 		  --exclude __pycache__ \
 		  --exclude __init__.py \
-		  --exclude test_pdf.py \
 		  --exclude "test_new_*.py" \
 		  --exclude pdf-test-for-parsing.pdf \
 		  . "${WORK_DIR}/libs/${TARGET}/tests" ; \
@@ -229,9 +228,15 @@ define _push_sync
 		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
 		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
 	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
+	@echo '${WORK_DIR}'
 	@rm -Rf '${WORK_DIR}'
+	@make format_lc
 	@echo done
 endef
+
+format_lc:
+	@(deactivate ; cd $(LANGCHAIN_HOME)/libs/${TARGET} && poetry run make format)
+	@(deactivate ; cd $(LANGCHAIN_HOME) && poetry run make format)
 
 push-sync: format
 	$(call _push_sync)
