@@ -229,6 +229,7 @@ define _push_sync
 		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
 	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
 	@rm -Rf '${WORK_DIR}'
+	find docs/docs -name '.ipynb' -exec sed -i 's|%pip install -qq ../../../../dist/patch_langchain_pdf_loader\.whl| |g' {} \;
 	@echo done
 endef
 
