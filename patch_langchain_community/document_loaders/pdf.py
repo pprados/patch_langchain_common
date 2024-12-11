@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import json
 import logging
@@ -271,12 +272,6 @@ class PyPDFLoader(BasePDFLoader):
         Raises:
             ImportError: If the `pypdf` package is not installed.
         """
-        try:
-            import pypdf  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pypdf package not found, please install it with `pip install pypdf`"
-            )
         super().__init__(file_path, headers=headers)
         self.parser = PyPDFParser(
             password=password,
@@ -292,6 +287,12 @@ class PyPDFLoader(BasePDFLoader):
         self,
     ) -> Iterator[Document]:
         """Lazy load given path as pages."""
+        try:
+            import pypdf  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "pypdf package not found, please install it with `pip install pypdf`"
+            )
         if self.web_path:
             blob = Blob.from_data(
                 open(self.file_path, "rb").read(), path=self.web_path
@@ -400,6 +401,13 @@ class PyPDFium2Loader(BasePDFLoader):
         self,
     ) -> Iterator[Document]:
         """Lazy load given path as pages."""
+        try:
+            import pypdfium2
+        except ImportError:
+            raise ImportError(
+                "pypdfium2 package not found, please install it with"
+                " `pip install pypdfium2`"
+            )
         if self.web_path:
             blob = Blob.from_data(
                 open(self.file_path, "rb").read(), path=self.web_path
@@ -645,14 +653,6 @@ class PDFMinerLoader(BasePDFLoader):
         Raises:
             ImportError: If the `pdfminer.six` package is not installed.
         """
-        try:
-            from pdfminer.high_level import extract_text  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "`pdfminer` package not found, please install it with "
-                "`pip install pdfminer.six`"
-            )
-
         super().__init__(file_path, headers=headers)
         self.parser = PDFMinerParser(
             password=password,
@@ -667,6 +667,14 @@ class PDFMinerLoader(BasePDFLoader):
         self,
     ) -> Iterator[Document]:
         """Lazily load documents."""
+        try:
+            from pdfminer.high_level import extract_text  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "`pdfminer` package not found, please install it with "
+                "`pip install pdfminer.six`"
+            )
+
         if self.web_path:
             blob = Blob.from_data(
                 open(self.file_path, "rb").read(), path=self.web_path
@@ -690,6 +698,11 @@ class PDFMinerPDFasHTMLLoader(BasePDFLoader):
         headers: Optional[dict] = None,
     ):
         """Initialize with a file path."""
+        super().__init__(file_path, headers=headers)
+        self.password = password
+
+    def lazy_load(self) -> Iterator[Document]:
+        """Load file."""
         try:
             from pdfminer.high_level import extract_text_to_fp  # noqa:F401
         except ImportError:
@@ -698,11 +711,6 @@ class PDFMinerPDFasHTMLLoader(BasePDFLoader):
                 "`pip install pdfminer.six`"
             )
 
-        super().__init__(file_path, headers=headers)
-        self.password = password
-
-    def lazy_load(self) -> Iterator[Document]:
-        """Load file."""
         from pdfminer.high_level import extract_text_to_fp
         from pdfminer.layout import LAParams
         from pdfminer.utils import open_filename
@@ -821,13 +829,6 @@ class PyMuPDFLoader(BasePDFLoader):
             ImportError: If the `PyMuPDF` package is not installed.
             ValueError: If the `mode` argument is not one of "single" or "page".
         """
-        try:
-            import pymupdf  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "`PyMuPDF` package not found, please install it with "
-                "`pip install pymupdf`"
-            )
         if mode not in ["single", "page"]:
             raise ValueError("mode must be single or page")
         super().__init__(file_path, headers=headers)
@@ -844,6 +845,13 @@ class PyMuPDFLoader(BasePDFLoader):
 
     def lazy_load(self, **kwargs: Any) -> Iterator[Document]:
         """Lazily load documents."""
+        try:
+            import pymupdf  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "`PyMuPDF` package not found, please install it with "
+                "`pip install pymupdf`"
+            )
         parser = self.parser
         if kwargs:
             warn_deprecated(
@@ -1117,14 +1125,6 @@ class PDFPlumberLoader(BasePDFLoader):
         Raises:
             ImportError: If the `pdfplumber` package is not installed.
         """
-        try:
-            import pdfplumber  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pdfplumber package not found, please install it with "
-                "`pip install pdfplumber`"
-            )
-
         super().__init__(file_path, headers=headers)
         self.parser = PDFPlumberParser(
             password=password,
@@ -1142,6 +1142,14 @@ class PDFPlumberLoader(BasePDFLoader):
         self,
     ) -> Iterator[Document]:
         """Lazy load given path as pages."""
+        try:
+            import pdfplumber  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "pdfplumber package not found, please install it with "
+                "`pip install pdfplumber`"
+            )
+
         if self.web_path:
             blob = Blob.from_data(
                 open(self.file_path, "rb").read(), path=self.web_path
@@ -1202,13 +1210,6 @@ class AmazonTextractPDFLoader(BasePDFLoader):
         """
         super().__init__(file_path, headers=headers)
 
-        try:
-            import textractcaller as tc
-        except ImportError:
-            raise ImportError(
-                "Could not import amazon-textract-caller python package. "
-                "Please install it with `pip install amazon-textract-caller`."
-            )
         if textract_features:
             features = [tc.Textract_Features[x] for x in textract_features]
         else:
@@ -1260,6 +1261,13 @@ class AmazonTextractPDFLoader(BasePDFLoader):
         # the self.file_path is local, but the blob has to include
         # the S3 location if the file originated from S3 for multi-page documents
         # raises ValueError when multi-page and not on S3"""
+        try:
+            import textractcaller as tc
+        except ImportError:
+            raise ImportError(
+                "Could not import amazon-textract-caller python package. "
+                "Please install it with `pip install amazon-textract-caller`."
+            )
 
         if self.web_path and self._is_s3_url(self.web_path):
             blob = Blob(path=self.web_path)
@@ -1507,9 +1515,14 @@ class ZeroxPDFLoader(BasePDFLoader):
         Returns:
             Iterator[Document]: An iterator over parsed Document instances.
         """
-        import asyncio
 
-        from pyzerox import zerox
+        try:
+            from pyzerox import zerox
+        except ImportError:
+            raise ImportError(
+                "Could not import pyzerox python package. "
+                "Please install it with `pip install pyzerox`."
+            )
 
         # Directly call asyncio.run to execute zerox synchronously
         zerox_output = asyncio.run(

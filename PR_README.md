@@ -139,8 +139,8 @@ We took advantage of this refactoring to add new parsers:
 - DoclingPDFLoader / DoclingPDFParser
 - LlamaIndexPDFLoader / LlamaIndexPDFParser
 
-We describe them in detail further on. They will be included in a second PR, 
-after this one is approved.
+We describe them in detail further on. They will be included in a anothers PR, 
+after this one is approved. One PR for each new parser.
 
 # Normalisation
 
@@ -153,7 +153,7 @@ parsers, with the value `single`, `page`, and `markdown`.
 `paged` is declared depreciated.
 
 The different `Loader` and `BlobParser` classes now offer the following parameters:
-- `file_path` str or Path with the file name.
+- `file_path` `str` or `PurePath` with the file name.
 - `password` str with the file password, if needed.
 - `mode` to return a single document per file or one document per page 
 (extended with `elements` in the case of Unstructured or other specific parser).
