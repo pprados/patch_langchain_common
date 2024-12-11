@@ -220,7 +220,6 @@ define _push_sync
 		cd docs/docs ; \
 		rsync -a \
 		  --exclude ".*" \
-		  --exclude "pdfminer_fasthtml.ipynb" \
 		  . "${WORK_DIR}/docs/docs" ; \
 	)
 	@find '${WORK_DIR}' -type f -a -name 'conftest.py' -exec rm {} ';'

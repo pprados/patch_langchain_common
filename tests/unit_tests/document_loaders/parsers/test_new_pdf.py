@@ -41,8 +41,8 @@ class TestPDFMultiParser(unittest.TestCase):
         logger_output = lo.output
         assert len(logger_output) == 2
         concatenated_log = " ".join(list(logger_output))
-        assert str(exception_example_1) == concatenated_log
-        assert str(exception_example_2) == concatenated_log
+        assert str(exception_example_1) in concatenated_log
+        assert str(exception_example_2) in concatenated_log
 
     def test_all_failures_raise_one_exception_containing_parsers_exceptions(
         self,
@@ -58,8 +58,8 @@ class TestPDFMultiParser(unittest.TestCase):
             list(self.multi_parser.lazy_parse(self.blob))
         except ExceptionGroup as eg:
             exceptions = eg.exceptions
-            assert exception_example_3 == exceptions
-            assert exception_example_4 == exceptions
-            assert exception_example_5 == exceptions
+            assert exception_example_3 in exceptions
+            assert exception_example_4 in exceptions
+            assert exception_example_5 in exceptions
         else:
             self.fail("An exception was expected, but none was raised.")
