@@ -971,7 +971,7 @@ class MathpixPDFLoader(BasePDFLoader):
                 # This indicates an error with the PDF processing
                 raise ValueError("Unable to retrieve PDF from Mathpix")
             else:
-                print(f"Status: {status}, waiting for processing to complete")
+                logger.info("Status: %s, waiting for processing to complete", status)
                 time.sleep(5)
         raise TimeoutError
 

@@ -154,11 +154,14 @@ docs: docs/api_reference docs/nb
 	cd docs && cp -r conf.py _static index.rst _build && sphinx-build -a -E -b html _build _build/html
 	xdg-open docs/_build/html/index.html
 
+check_docs:
+	python docs/scripts/check_templates.py docs/docs/integrations/document_loaders/*.ipynb
+
 ## Refresh lock
 lock: .venv poetry.lock
 
 ## Validate the code
-validate: poetry.lock format lint spell_check integration_tests
+validate: poetry.lock format lint spell_check check_docs test integration_tests
 
 
 init: poetry.lock
@@ -222,7 +225,7 @@ define _push_sync
 	@echo done
 endef
 
-push-sync:
+push-sync: format
 	$(call _push_sync)
 
 #pull-sync:

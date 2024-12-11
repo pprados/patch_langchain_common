@@ -1,6 +1,8 @@
 import importlib
 from typing import TYPE_CHECKING, Any
 
+# ruff: noqa: TCH004
+
 if TYPE_CHECKING:
     from patch_langchain_community.document_loaders.parsers.pdf import (
         PDFMinerParser,
