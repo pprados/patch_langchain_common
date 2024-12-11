@@ -60,10 +60,11 @@ def _check_docs_content(docs: List[Document]) -> None:
         else:
             assert doc.metadata.get("category") == "PageBreak"
 
-    page_numbers = []
-    for doc in docs:
-        if page_number := doc.metadata.get("page_number"):
-            page_numbers.append(page_number)
+    page_numbers = [
+        doc.metadata.get("page_number")
+        for doc in docs
+        if doc.metadata.get("page_number")
+    ]
 
     assert set(page_numbers) == set(range(1, 17))
     assert len(docs) >= 32  # (16 pages * (>=1 element per page) + 16 page breaks)
@@ -77,7 +78,7 @@ def _check_docs_content(docs: List[Document]) -> None:
         "Based Document Image Analysis"
     ) in page_1_content
 
-    categories = set(doc.metadata.get("category") for doc in docs)
+    categories = {doc.metadata.get("category") for doc in docs}
     assert "NarrativeText" in categories
     assert "Title" in categories
 
@@ -109,9 +110,7 @@ async def test_loader_partitions_locally_async_lazy() -> None:
         strategy="fast",
         include_page_breaks=True,
     )
-    docs = []
-    async for doc in loader.alazy_load():
-        docs.append(doc)
+    docs = [doc async for doc in loader.alazy_load()]
 
     _check_docs_content(docs)
 
@@ -198,9 +197,7 @@ async def test_loader_partitions_via_api_async_lazy() -> None:
         coordinates=True,
     )
 
-    docs = []
-    async for doc in loader.alazy_load():
-        docs.append(doc)
+    docs = [doc async for doc in loader.alazy_load()]
 
     _check_docs_content(docs)
 
@@ -262,7 +259,7 @@ def test_loader_partitions_via_api_hi_res() -> None:
 
     docs = loader.load()
 
-    categories = set(doc.metadata.get("category") for doc in docs)
+    categories = {doc.metadata.get("category") for doc in docs}
     assert "Table" in categories
     assert "Image" in categories
 

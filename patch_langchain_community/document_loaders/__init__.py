@@ -18,6 +18,8 @@
 import importlib
 from typing import TYPE_CHECKING, Any
 
+# ruff: noqa
+
 if TYPE_CHECKING:
     from .new_pdf import (
         LlamaIndexPDFLoader,

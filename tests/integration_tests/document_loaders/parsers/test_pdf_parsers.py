@@ -60,9 +60,6 @@ def _assert_with_parser(parser: BaseBlobParser, splits_by_page: bool = True) -> 
     assert isinstance(doc_generator, Iterator)
     docs = list(doc_generator)
 
-    if isinstance(parser, PDFMinerParser):  # Replicate a bug
-        if parser.extract_images:
-            splits_by_page = True
     if splits_by_page:
         assert len(docs) == 16
     else:
@@ -135,7 +132,7 @@ def test_extract_images_text_from_pdf_pypdfparser() -> None:
 
 def test_extract_images_text_from_pdf_pdfminerparser() -> None:
     """Test extract image from pdf and recognize text with rapid ocr - PDFMinerParser"""
-    _assert_with_parser(PDFMinerParser(extract_images=True))
+    _assert_with_parser(PDFMinerParser(extract_images=True), splits_by_page=False)
 
 
 def test_extract_images_text_from_pdf_pymupdfparser() -> None:
@@ -203,13 +200,13 @@ def test_standard_parameters(
             assert len(images) >= 1
 
         if hasattr(parser, "password"):
-            old_password = parser.password  # type: ignore
-            parser.password = "password"  # type: ignore
+            old_password = parser.password
+            parser.password = "password"
             blob = Blob.from_path(LAYOUT_PARSER_PAPER_PASSWORD_PDF)
             doc_generator = parser.lazy_parse(blob)
             docs = list(doc_generator)
             assert len(docs)
-            parser.password = old_password  # type: ignore
+            parser.password = old_password
 
     os.environ["SCARF_NO_ANALYTICS"] = "false"
     os.environ["DO_NOT_TRACK"] = "true"
@@ -236,7 +233,9 @@ def test_standard_parameters(
 )
 @pytest.mark.parametrize(
     "extract_tables",
-    ["markdown",],
+    [
+        "markdown",
+    ],
     # ["markdown", "html", "csv", None],
 )
 @pytest.mark.parametrize(

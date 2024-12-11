@@ -249,7 +249,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
         """Lazily parse the blob."""
         try:
             import pymupdf
-            import pymupdf4llm  # noqa:F401
+            import pymupdf4llm
         except ImportError:
             raise ImportError(
                 "pymupdf4llm package not found, please install it "
@@ -447,8 +447,10 @@ class LlamaIndexPDFParser(BaseBlobParser):
                 # This metadata value could not be parsed. Instead of failing the PDF
                 # read, treat it as a warning only if `strict_metadata=False`.
                 logger.warning(
-                    f'[WARNING] Metadata key "{k}" could not be parsed due to '
-                    f"exception: {str(e)}"
+                    '[WARNING] Metadata key "%s" could not be parsed due to '
+                    "exception: %s",
+                    k,
+                    str(e),
                 )
 
         # Count number of pages.

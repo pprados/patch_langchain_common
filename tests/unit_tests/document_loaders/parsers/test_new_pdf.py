@@ -37,7 +37,7 @@ class TestPDFMultiParser(unittest.TestCase):
 
         logger_output = lo.output
         assert len(logger_output) == 2
-        concatenated_log = " ".join([log for log in logger_output])
+        concatenated_log = " ".join(list(logger_output))
         assert str(exception_example_1) == concatenated_log
         assert str(exception_example_2) == concatenated_log
 

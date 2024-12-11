@@ -115,7 +115,7 @@ ruff = "^0.1.9"
 types-toml = "^0.10.8.1"
 types-redis = "^4.3.21.6"
 types-pytz = "^2023.3.0.0"
-black = { version = "^23.1.0", extras = ["jupiter"] }
+black = { version = "23.11.0", extras = ["jupiter"] }
 types-chardet = "^5.0.4.6"
 mypy-protobuf = "^3.0.0"
 types-google-cloud-ndb = "^2.0"
@@ -149,17 +149,6 @@ ignore-regex = '.*(Stati Uniti|Tense=Pres).*'
 # unsecure - typo but part of API, decided to not bother for now
 ignore-words-list = 'momento,collison,ned,foor,reworkd,parth,whats,aapply,mysogyny,unsecure,damon,crate'
 
-[tool.ruff]
-select = [
-  "E",  # pycodestyle
-  "F",  # pyflakes
-  "I",  # isort
-  "T201", # print
-]
-exclude = [
-  "tests/integration_tests/examples/non-utf8-encoding.py",
-]
-
 
 [tool.mypy]
 ignore_missing_imports = "True"
@@ -185,8 +174,284 @@ filterwarnings = [
 ]
 
 
+[tool.pylint.messages_control]
+max-line-length = 88
+disable = [
+ # intentionally turned off
+  "bad-mcs-classmethod-argument",
+  "broad-except",
+  "c-extension-no-member",
+  "comparison-with-itself",
+  "consider-using-enumerate",
+  "import-error",
+  "import-outside-toplevel",
+  "invalid-name",
+  "invalid-unary-operand-type",
+  "line-too-long",
+  "no-else-continue",
+  "no-else-raise",
+  "no-else-return",
+  "no-member",
+  "no-name-in-module",
+  "not-an-iterable",
+  "overridden-final-method",
+  "pointless-statement",
+  "redundant-keyword-arg",
+  "singleton-comparison",
+  "too-many-ancestors",
+  "too-many-arguments",
+  "too-many-boolean-expressions",
+  "too-many-branches",
+  "too-many-function-args",
+  "too-many-instance-attributes",
+  "too-many-locals",
+  "too-many-nested-blocks",
+  "too-many-public-methods",
+  "too-many-return-statements",
+  "too-many-statements",
+  "unexpected-keyword-arg",
+  "ungrouped-imports",
+  "unsubscriptable-object",
+  "unsupported-assignment-operation",
+  "unsupported-membership-test",
+  "unused-import",
+  "use-dict-literal",
+  "use-implicit-booleaness-not-comparison",
+  "use-implicit-booleaness-not-len",
+  "wrong-import-order",
+  "wrong-import-position",
+  "redefined-loop-name",
+
+ # misc
+  "abstract-class-instantiated",
+  "no-value-for-parameter",
+  "undefined-variable",
+  "unpacking-non-sequence",
+  "used-before-assignment",
+
+ # pylint type "C": convention, for programming standard violation
+  "missing-class-docstring",
+  "missing-function-docstring",
+  "missing-module-docstring",
+  "superfluous-parens",
+  "too-many-lines",
+  "unidiomatic-typecheck",
+  "unnecessary-dunder-call",
+  "unnecessary-lambda-assignment",
+
+  # pylint type "R": refactor, for bad code smell
+  "consider-using-with",
+  "cyclic-import",
+  "duplicate-code",
+  "inconsistent-return-statements",
+  "redefined-argument-from-local",
+  "too-few-public-methods",
+
+  # pylint type "W": warning, for python specific problems
+  "abstract-method",
+  "arguments-differ",
+  "arguments-out-of-order",
+  "arguments-renamed",
+  "attribute-defined-outside-init",
+  "broad-exception-raised",
+  "comparison-with-callable",
+  "dangerous-default-value",
+  "deprecated-module",
+  "eval-used",
+  "expression-not-assigned",
+  "fixme",
+  "global-statement",
+  "invalid-overridden-method",
+  "keyword-arg-before-vararg",
+  "possibly-unused-variable",
+  "protected-access",
+  "raise-missing-from",
+  "redefined-builtin",
+  "redefined-outer-name",
+  "self-cls-assignment",
+  "signature-differs",
+  "super-init-not-called",
+  "try-except-raise",
+  "unnecessary-lambda",
+  "unused-argument",
+  "unused-variable",
+  "using-constant-test"
+]
 
 
 [tool.poetry-git-version-plugin]
 make_alpha_version = true
 alpha_version_format = '{version}a{distance}+{commit_hash}'
+
+[tool.black]
+target-version = ['py39', 'py310']
+required-version = '23.11.0'
+exclude = '''
+(
+    asv_bench/env
+  | \.egg
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.nox
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | setup.py
+)
+'''
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+fix = true
+unfixable = []
+typing-modules = ["pandas._typing"]
+
+select = [
+  # pyflakes
+  "F",
+  # pycodestyle
+  "E", "W",
+  # flake8-2020
+  "YTT",
+  # flake8-bugbear
+  "B",
+  # flake8-quotes
+  "Q",
+  # flake8-debugger
+  "T10",
+  # flake8-gettext
+  "INT",
+  # pylint
+  "PL",
+  # misc lints
+  "PIE",
+  # flake8-pyi
+  "PYI",
+  # tidy imports
+  "TID",
+  # implicit string concatenation
+  "ISC",
+  # type-checking imports
+  "TCH",
+  # comprehensions
+  "C4",
+  # pygrep-hooks
+  "PGH",
+  # Ruff-specific rules
+  "RUF",
+  # flake8-bandit: exec-builtin
+  "S102",
+  # numpy-legacy-random
+  "NPY002",
+  # Perflint
+  "PERF",
+  # flynt
+  "FLY",
+  # flake8-logging-format
+  "G",
+  # flake8-future-annotations
+  "FA",
+]
+
+ignore = [
+  ### Intentionally disabled
+  # space before : (needed for how black formats slicing)
+  "E203",
+  # module level import not at top of file
+  "E402",
+  # do not assign a lambda expression, use a def
+  "E731",
+  # line break before binary operator
+  # "W503",  # not yet implemented
+  # line break after binary operator
+  # "W504",  # not yet implemented
+  # controversial
+  "B006",
+  # controversial
+  "B007",
+  # controversial
+  "B008",
+  # setattr is used to side-step mypy
+  "B009",
+  # getattr is used to side-step mypy
+  "B010",
+  # tests use assert False
+  "B011",
+  # tests use comparisons but not their returned value
+  "B015",
+  # false positives
+  "B019",
+  # Loop control variable overrides iterable it iterates
+  "B020",
+  # Function definition does not bind loop variable
+  "B023",
+  # Functions defined inside a loop must not use variables redefined in the loop
+  # "B301",  # not yet implemented
+  # Only works with python >=3.10
+  "B905",
+  # Too many arguments to function call
+  "PLR0913",
+  # Too many returns
+  "PLR0911",
+  # Too many branches
+  "PLR0912",
+  # Too many statements
+  "PLR0915",
+  # Redefined loop name
+  "PLW2901",
+  # Global statements are discouraged
+  "PLW0603",
+  # Docstrings should not be included in stubs
+  "PYI021",
+  # Use `typing.NamedTuple` instead of `collections.namedtuple`
+  "PYI024",
+  # No builtin `eval()` allowed
+  "PGH001",
+  # compare-to-empty-string
+  "PLC1901",
+  # while int | float can be shortened to float, the former is more explicit
+  "PYI041",
+  # incorrect-dict-iterator, flags valid Series.items usage
+  "PERF102",
+  # try-except-in-loop, becomes useless in Python 3.11
+  "PERF203",
+
+
+  ### TODO: Enable gradually
+  # Useless statement
+  "B018",
+  # Within an except clause, raise exceptions with ...
+  "B904",
+  # Magic number
+  "PLR2004",
+  # comparison-with-itself
+  "PLR0124",
+  # Consider `elif` instead of `else` then `if` to remove indentation level
+  "PLR5501",
+  # collection-literal-concatenation
+  "RUF005",
+  # pairwise-over-zipped (>=PY310 only)
+  "RUF007",
+  # explicit-f-string-type-conversion
+  "RUF010",
+  # mutable-class-default
+  "RUF012"
+]
+
+exclude = [
+  "doc/sphinxext/*.py",
+  "doc/build/*.py",
+  "doc/temp/*.py",
+  ".eggs/*.py",
+  # vendored files
+  "pandas/util/version/*",
+  "pandas/io/clipboard/__init__.py",
+  # exclude asv benchmark environments from linting
+  "env",
+]
+
