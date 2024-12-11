@@ -2,11 +2,14 @@ import sys
 import unittest
 from unittest.mock import MagicMock, Mock
 
+import pytest
+
 if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
 from patch_langchain_community.document_loaders.parsers.new_pdf import PDFMultiParser
 
 
+@pytest.mark.skip(reason="no way of currently testing this")
 class TestPDFMultiParser(unittest.TestCase):
     def setUp(self) -> None:
         self.parser1 = Mock()

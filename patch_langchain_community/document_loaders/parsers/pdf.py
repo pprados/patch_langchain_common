@@ -47,7 +47,6 @@ if TYPE_CHECKING:
     from pypdf import PageObject
     from textractor.data.text_linearization_config import TextLinearizationConfig
 
-
 _PDF_FILTER_WITH_LOSS = ["DCTDecode", "DCT", "JPXDecode"]
 _PDF_FILTER_WITHOUT_LOSS = [
     "LZWDecode",
@@ -143,12 +142,11 @@ def __merge_text_and_extras(
                 if previous_text:
                     all_text = previous_text + text_from_page[pos:]
                 else:
-                    all_text = (
-                        text_from_page[:pos]
-                        + delim
-                        + "\n\n".join(extras)
-                        + text_from_page[pos:]
-                    )
+                    all_extras = ""
+                    str_extras = "\n\n".join(filter(lambda x: x, extras))
+                    if str_extras:
+                        all_extras = delim + str_extras
+                    all_text = text_from_page[:pos] + all_extras + text_from_page[pos:]
                 break
         else:
             all_text = None
@@ -171,7 +169,12 @@ def _merge_text_and_extras(extras: list[str], text_from_page: str) -> str:
     """
     all_text = __merge_text_and_extras(extras, text_from_page, True)
     if not all_text:
-        all_text = text_from_page + "\n\n" + "\n\n".join(extras)
+        all_extras = ""
+        str_extras = "\n\n".join(filter(lambda x: x, extras))
+        if str_extras:
+            all_extras = _delim[-1] + str_extras
+        all_text = text_from_page + all_extras
+
     return all_text
 
 
