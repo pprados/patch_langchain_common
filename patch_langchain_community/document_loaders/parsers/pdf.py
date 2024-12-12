@@ -712,6 +712,7 @@ class PDFMinerParser(ImagesPdfParser):
             print(docs[0].page_content[:100])
             print(docs[0].metadata)
     """
+    _warn_concatenate_pages=False
 
     def __init__(
         self,
@@ -758,10 +759,12 @@ class PDFMinerParser(ImagesPdfParser):
         self.extract_images = extract_images
         self.images_to_text = images_to_text
         if concatenate_pages is not None:
-            logger.warning(
-                "`concatenate_pages` parameter is deprecated. "
-                "Use `mode='single' or 'page'` instead."
-            )
+            if not PDFMinerParser._warn_concatenate_pages:
+                PDFMinerParser._warn_concatenate_pages=True
+                logger.warning(
+                    "`concatenate_pages` parameter is deprecated. "
+                    "Use `mode='single' or 'page'` instead."
+                )
             self.mode = "single" if concatenate_pages else "page"
 
     @staticmethod
@@ -2163,6 +2166,19 @@ class AmazonTextractPDFParser(BaseBlobParser):
             )
 
 
+@deprecated(
+    since="0.0.7",
+    removal="0.4.0",
+    message=
+    "langchain_community.document_loaders.parsers.pdf.DocumentIntelligenceParser"
+    "and langchain_community.document_loaders.pdf.DocumentIntelligenceLoader"
+    " are deprecated. Please upgrade to "
+    "langchain_community.document_loaders.DocumentIntelligenceLoader "
+    "for any file parsing purpose using Azure Document Intelligence "
+    "service.",
+    alternative_import=
+    "langchain_community.document_loaders.DocumentIntelligenceLoader"
+)
 class DocumentIntelligenceParser(BaseBlobParser):
     """Loads a PDF with Azure Document Intelligence
     (formerly Form Recognizer) and chunks at character level."""
