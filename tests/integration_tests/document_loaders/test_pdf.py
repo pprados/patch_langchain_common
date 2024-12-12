@@ -4,6 +4,7 @@ from typing import Sequence, Union
 
 import pytest
 
+import patch_langchain_community.document_loaders as pdf_loaders
 from patch_langchain_community.document_loaders import (
     AmazonTextractPDFLoader,
     MathpixPDFLoader,
@@ -335,3 +336,26 @@ def test_amazontextract_loader_failures() -> None:
     loader = AmazonTextractPDFLoader(two_page_pdf)
     with pytest.raises(ValueError):
         loader.load()
+
+
+@pytest.mark.parametrize(
+    "loader_factory",
+    [
+        ("PyPDFLoader"),
+        ("PyPDFium2Loader"),
+        ("PDFMinerLoader"),
+        ("PDFPlumberLoader"),
+        ("PyMuPDFLoader"),
+        ("PDFMinerPDFasHTMLLoader"),
+    ],
+)
+def test_loader_with_web_path(
+    loader_factory: str,
+) -> None:
+    web_path = "https://people.sc.fsu.edu/~jpeterson/hello_world.pdf"
+    loader_class = getattr(pdf_loaders, loader_factory)
+    loader = loader_class(web_path)
+    docs = loader.load()
+    assert loader.web_path == web_path
+    assert loader.file_path != web_path
+    assert len(docs) == 1

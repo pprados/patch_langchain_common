@@ -81,7 +81,7 @@ spell_fix:
 
 clean:
 	@find . -type d -name ".ipynb_checkpoints" -exec rm -rf {} \; || true
-	@rm -Rf dist/ .make-* .mypy_cache .pytest_cache .ruff_cache
+	@rm -Rf dist/ .make-* .mypy_cache .pytest_cache .ruff_cache docs/_build docs/api_reference/_build
 
 ######################
 # HELP
