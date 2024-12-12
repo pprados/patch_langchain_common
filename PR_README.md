@@ -1,7 +1,7 @@
 # Refactoring all PDF loader and parser: community
 
 - **Description:** refactoring of PDF parsers and loaders. See below
-- **Issue:** missing lock, parameter inconsistency, missing lazy approach, etc.
+- **Issue:** missing lock, parameter inconsistency, missing lazy approach, split loader and parser, etc.
 - **Twitter handle:** pprados
 
 - [X] **Add tests and docs**: 
@@ -16,18 +16,24 @@ We propose a substantial PR to improve the different PDF parser integrations. Al
 
 We're sorry it may take you several hours to validate it. The changes are important and cannot be published one after the other, as everything is linked.
 
-We understand that it's important to ensure that changes don't have a significant impact on existing code. That's why we used a parallel project to test PDF readings before and after modifications. This allows us to compare results. You'll find all the files [here](https://github.com/pprados/patch_langchain_common/tree/master/compare_old_new).
-
 ``` 
 git clone https://github.com/pprados/patch_langchain_common.git
 cd patch_langchain_common/compare_old_new
 ```
-Then, you use **diff** from your devtools.
+Then, you can use **diff** from your devtools
 
 Even though `Document` has a `page_content` parameter (rather than text or body), we believe it’s not good practice to work with pages. Indeed, this approach creates memory gaps in RAG projects. If a paragraph spans two pages, the beginning of the paragraph is at the end of one page, while the rest is at the start of the next. With a page-based approach, there will be two separate chunks, each containing part of a sentence. The corresponding vectors won’t be relevant. These chunks are unlikely to be selected when there’s a question specifically about the split paragraph. If one 
 of the chunks is selected, there’s little chance the LLM can answer the question. This issue is worsened by the injection of headers, footers (if parsers haven’t properly removed them), images, or tables at the end of a page, as most current implementations tend to do.
 
 In order to qualify all the code, we worked in a separate project, using the `langchain-common` structure. In this way, we can compare the results of the historical implementation with the new ones.
+
+We understand that it's important to ensure that changes don't have a significant impact on existing code. That's why we used a parallel project, using the `langchain-common` structure, to test PDF readings before and after modifications$. This allows us to compare results. You'll find all the files [here](https://github.com/pprados/patch_langchain_common/tree/master/compare_old_new).
+The only difference is the name to import classes.
+
+Why is it important to unify the different parsers? Each has its own characteristics and strategies, more or less effective depending on the family of PDF files. One strategy is to identify the family of the PDF file (by inspecting the metadata or the content of the first page) and then select the most efficient parser in that case. By unifying parsers, the following code doesn't need to deal with the specifics of different parsers, as the result is similar for each. We'll propose a Parser using this strategy in another PR.
+
+## Metadata
+All parsers use lowercase keys for pdf file metadata. Except `PDFPlumberParser`. For this particular case, we've added a dictionary wrapper that warns when keys with upper case letters are used.
 
 # Images
 The current implementation in LangChain involves asking each parser for the text on a page, then retrieving images to apply OCR. The text extracted from images is then appended to the end of the page text, which may split paragraphs across pages, worsening the RAG model’s performance.

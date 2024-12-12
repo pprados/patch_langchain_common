@@ -1,4 +1,5 @@
 """Module contains common parsers for PDFs."""
+
 import logging
 import os
 import re

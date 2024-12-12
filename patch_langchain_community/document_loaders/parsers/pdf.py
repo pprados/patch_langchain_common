@@ -1480,6 +1480,51 @@ class PyPDFium2Parser(ImagesPdfParser):
         )
 
 
+# The legacy PDFPlumberParser use key with upper case.
+# This is not in l8ine with the new convention, which requires the key to be in
+# lower case.
+@deprecated(
+    since="0.3.X",  # TODO: update version 0.3.X
+    removal="1.0",
+    alternative="Use lower case key for PDF metadata",
+)
+class _PDFPlumberParserMetadata(dict[object, Any]):
+    def __init__(self, d: dict[str, Any]):
+        super().__init__({k.lower(): v for k, v in d.items()})
+        self._pdf_metadata_keys = set(d.keys())
+        self._warning_keys: set[str] = set()
+
+    def _lower(self, k: object) -> object:
+        if k in self._pdf_metadata_keys:
+            lk = str(k).lower()
+            if lk != k:
+                if k not in self._warning_keys:
+                    self._warning_keys.add(str(k))
+                    logger.warning(
+                        'The key "%s" with uppercase is deprecated. '
+                        "Update your code and vectorstore.",
+                        k,
+                    )
+            return lk
+        else:
+            return k
+
+    def __contains__(self, k: object) -> bool:
+        return super().__contains__(self._lower(k))
+
+    def __delitem__(self, k: object) -> None:
+        super().__delitem__(self._lower(k))
+
+    def __getitem__(self, k: object) -> Any:
+        return super().__getitem__(self._lower(k))
+
+    def get(self, k: object, default: Any = None) -> Any:
+        return super().get(self._lower(k), default)
+
+    def __setitem__(self, k: object, v: Any) -> None:
+        super().__setitem__(self._lower(k), v)
+
+
 class PDFPlumberParser(ImagesPdfParser):
     """Parse a blob from a PDF using `pdfplumber` library.
 
@@ -1627,9 +1672,9 @@ class PDFPlumberParser(ImagesPdfParser):
                 )
             )
             for page in doc.pages:
-                tables_bbox: list[
-                    tuple[float, float, float, float]
-                ] = self._extract_tables_bbox_from_page(page)
+                tables_bbox: list[tuple[float, float, float, float]] = (
+                    self._extract_tables_bbox_from_page(page)
+                )
                 tables_content = self._extract_tables_from_page(page)
                 images_bbox = [geometry.obj_to_bbox(image) for image in page.images]
                 image_from_page = self._extract_images_from_page(page)
@@ -1658,7 +1703,7 @@ class PDFPlumberParser(ImagesPdfParser):
                         all_text += "\n"
                     yield Document(
                         page_content=all_text,
-                        metadata=(
+                        metadata=_PDFPlumberParserMetadata(
                             doc_metadata
                             | {
                                 "page": page.page_number - 1,
@@ -1678,7 +1723,7 @@ class PDFPlumberParser(ImagesPdfParser):
             if self.mode == "single":
                 yield Document(
                     page_content=self.pages_delimitor.join(contents),
-                    metadata=doc_metadata,
+                    metadata=_PDFPlumberParserMetadata(doc_metadata),
                 )
 
     def _process_page_content(self, page: "pdfplumber.page.Page") -> str:

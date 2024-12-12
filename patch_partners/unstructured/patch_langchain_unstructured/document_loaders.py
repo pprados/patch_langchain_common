@@ -707,9 +707,9 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 unstructured_kwargs["extract_images_in_pdf"] = True
                 self.tmp_dir = TemporaryDirectory(ignore_cleanup_errors=True)
                 if "extract_image_block_output_dir" not in unstructured_kwargs:
-                    unstructured_kwargs[
-                        "extract_image_block_output_dir"
-                    ] = self.tmp_dir.name
+                    unstructured_kwargs["extract_image_block_output_dir"] = (
+                        self.tmp_dir.name
+                    )
         self.images_to_text = images_to_text
         self.extract_tables = extract_tables
         self.partition_via_api = partition_via_api
