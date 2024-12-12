@@ -1,4 +1,3 @@
-import asyncio
 import copy
 import json
 import logging
@@ -13,6 +12,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     BinaryIO,
+    Iterable,
     Iterator,
     Literal,
     Mapping,
@@ -41,6 +41,7 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
     PyMuPDFParser,
     PyPDFium2Parser,
     PyPDFParser,
+    ZeroxPDFParser,
     _default_page_delimitor,
 )
 
@@ -1410,8 +1411,8 @@ class DocumentIntelligenceLoader(BasePDFLoader):
         ... )
         """
 
-        self.parser = DocumentIntelligenceParser(client=client, model=model)
         super().__init__(file_path, headers=headers)
+        self.parser = DocumentIntelligenceParser(client=client, model=model)
 
     def load(self) -> list[Document]:
         """Load given path as pages."""
@@ -1433,7 +1434,7 @@ class ZeroxPDFLoader(BasePDFLoader):
     Zerox converts PDF document to serties of images (page-wise) and
     uses vision-capable LLM model to generate Markdown representation.
 
-    Zerox utilizes anyc operations. Therefore when using this loader
+    Zerox utilizes async operations. Therefore when using this loader
     inside Jupyter Notebook (or any environment running async)
     you will need to:
     ```python
@@ -1445,10 +1446,21 @@ class ZeroxPDFLoader(BasePDFLoader):
     def __init__(
         self,
         file_path: Union[str, Path],
+        *,
+        headers: Optional[dict] = None,
+        mode: Literal["single", "page"] = "page",
+        pages_delimitor: str = _default_page_delimitor,
+        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+        extract_images: bool = True,
+        extract_tables: Union[Literal["markdown", "html"], None] = "markdown",
+        cleanup: bool = True,
+        concurrency: int = 10,
+        maintain_format: bool = False,
         model: str = "gpt-4o-mini",
-        **zerox_kwargs: Any,
+        custom_system_prompt: Optional[str] = None,
+        select_pages: Optional[Union[int, Iterable[int]]] = None,
+        **zerox_kwargs: dict[str, Any],
     ) -> None:
-        super().__init__(file_path=file_path)
         """
         Initialize the parser with arguments to be passed to the zerox function.
         Make sure to set necessary environment variables such as API key, endpoint, etc.
@@ -1466,10 +1478,23 @@ class ZeroxPDFLoader(BasePDFLoader):
             **zerox_kwargs:
                 Arguments specific to the zerox function.
                 see datailed list of arguments here in zerox repository:
-                https://github.com/getomni-ai/zerox/blob/main/py_zerox/pyzerox/core/zerox.py#L25  # noqa: F501
-        """  # noqa: E501
-        self.zerox_kwargs = zerox_kwargs
-        self.model = model
+                https://github.com/getomni-ai/zerox/blob/main/py_zerox/pyzerox/core/zerox.py#L25
+        """
+        super().__init__(file_path, headers=headers)
+        self.parser = ZeroxPDFParser(
+            mode=mode,
+            pages_delimitor=pages_delimitor,
+            images_to_text=images_to_text,
+            extract_images=extract_images,
+            extract_tables=extract_tables,
+            cleanup=cleanup,
+            concurrency=concurrency,
+            maintain_format=maintain_format,
+            model=model,
+            custom_system_prompt=custom_system_prompt,
+            select_pages=select_pages,
+            **zerox_kwargs,
+        )
 
     def lazy_load(self) -> Iterator[Document]:
         """
@@ -1479,32 +1504,14 @@ class ZeroxPDFLoader(BasePDFLoader):
         Returns:
             Iterator[Document]: An iterator over parsed Document instances.
         """
-
-        try:
-            from pyzerox import zerox
-        except ImportError:
-            raise ImportError(
-                "Could not import pyzerox python package. "
-                "Please install it with `pip install pyzerox`."
-            )
-
-        # Directly call asyncio.run to execute zerox synchronously
-        zerox_output = asyncio.run(
-            zerox(file_path=self.file_path, model=self.model, **self.zerox_kwargs)
-        )
-
-        # Convert zerox output to Document instances and yield them
-        if len(zerox_output.pages) > 0:
-            num_pages = zerox_output.pages[-1].page
-            for page in zerox_output.pages:
-                yield Document(
-                    page_content=page.content,
-                    metadata={
-                        "source": self.source,
-                        "page": page.page,
-                        "num_pages": num_pages,
-                    },
-                )
+        """Lazy load given path as pages."""
+        if self.web_path:
+            blob = Blob.from_data(
+                open(self.file_path, "rb").read(), path=self.web_path
+            )  # type: ignore[attr-defined]
+        else:
+            blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        yield from self.parser.lazy_parse(blob)
 
 
 # Legacy: only for backwards compatibility. Use PyPDFLoader instead
