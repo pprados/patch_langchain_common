@@ -196,8 +196,13 @@ define _push_sync
 	@grep -rl '%pip install -qq \.\.\/\.\.\/\.\.\/\.\.\/dist\/patch_langchain_pdf_loader\*.whl' ../langchain/docs/docs --include \*.ipynb
 	@find ../langchain/docs/docs -name '*.ipynb' -exec sed -i 's|%pip install -qq \.\.\/\.\.\/\.\.\/\.\.\/dist\/patch_langchain_pdf_loader\*.whl| |g' {} \;
 	@rm -Rf '${WORK_DIR}'
+	@make format_lc
 	@echo done
 endef
+
+format_lc:
+	@(deactivate ; cd $(LANGCHAIN_HOME)/libs/${TARGET} && poetry run make format)
+	@(deactivate ; cd $(LANGCHAIN_HOME) && poetry run make format)
 
 ## Duplicate and patch files to ../langchain project
 push-sync: format
