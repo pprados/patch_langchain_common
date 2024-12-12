@@ -1679,9 +1679,9 @@ class PDFPlumberParser(ImagesPdfParser):
                 )
             )
             for page in doc.pages:
-                tables_bbox: list[
-                    tuple[float, float, float, float]
-                ] = self._extract_tables_bbox_from_page(page)
+                tables_bbox: list[tuple[float, float, float, float]] = (
+                    self._extract_tables_bbox_from_page(page)
+                )
                 tables_content = self._extract_tables_from_page(page)
                 images_bbox = [geometry.obj_to_bbox(image) for image in page.images]
                 image_from_page = self._extract_images_from_page(page)
@@ -2058,6 +2058,51 @@ class ZeroxPDFParser(BaseBlobParser):
         select_pages: Optional[Union[int, Iterable[int]]] = None,
         **zerox_kwargs: dict[str, Any],
     ):
+        """
+        Initialize the parser with arguments to be passed to the zerox function.
+        Make sure to set necessary environment variables such as API key, endpoint, etc.
+        Check zerox documentation for list of necessary environment variables for
+        any given model.
+
+        Args:
+            file_path:
+                Path or url of the pdf file
+            model:
+                Vision capable model to use. Defaults to "gpt-4o-mini".
+                Hosted models are passed in format "<provider>/<model>"
+                Examples: "azure/gpt-4o-mini", "vertex_ai/gemini-1.5-flash-001"
+                          See more details in zerox documentation.
+            cleanup:
+                Whether to cleanup the temporary files after processing, defaults
+                to True
+            concurrency:
+                The number of concurrent processes to run, defaults to 10
+            file_path:
+                The path or URL to the PDF file to process.
+            maintain_format:
+                Whether to maintain the format from the previous page, defaults to False
+            model:
+                The model to use for generating completions, defaults to "gpt-4o-mini".
+                Note - Refer: https://docs.litellm.ai/docs/providers to pass correct
+                model name as according to provider it might be different from actual
+                name.
+            output_dir:
+                The directory to save the markdown output, defaults to None
+            temp_dir:
+                The directory to store temporary files, defaults to some named folder
+                in system's temp directory. If already exists, the contents will be
+                deleted for zerox uses it.
+            custom_system_prompt:
+                The system prompt to use for the model, this overrides the default
+                system prompt of zerox. Generally it is not required unless you want
+                some specific behaviour. When set, it will raise a friendly warning,
+                defaults to None
+            select_pages:
+                Pages to process, can be a single page number or an iterable of page
+                numbers, defaults to None
+            **zerox_kwargs:
+                Arguments specific to the zerox function.
+        """
         if mode not in ["single", "page"]:
             raise ValueError("mode must be single or page")
         if extract_tables not in ["markdown", "html", None]:

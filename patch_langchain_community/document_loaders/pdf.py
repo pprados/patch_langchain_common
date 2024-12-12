@@ -1462,7 +1462,7 @@ class ZeroxPDFLoader(BasePDFLoader):
         **zerox_kwargs: dict[str, Any],
     ) -> None:
         """
-        Initialize the parser with arguments to be passed to the zerox function.
+        Initialize the loader with arguments to be passed to the zerox function.
         Make sure to set necessary environment variables such as API key, endpoint, etc.
         Check zerox documentation for list of necessary environment variables for
         any given model.
@@ -1470,15 +1470,52 @@ class ZeroxPDFLoader(BasePDFLoader):
         Args:
             file_path:
                 Path or url of the pdf file
+
+            password: Optional password for opening encrypted PDFs.
+            headers: Optional headers to use for GET request to download a file from a
+              web path.
+            extract_images: Whether to extract images from the PDF.
+            images_to_text: Function or callable to convert images to text during
+              extraction.
+            mode: The extraction mode, either "single" for the entire document or
+              "page" for page-wise extraction.
+            pages_delimitor: A string delimiter to separate pages in single-mode
+              extraction.
             model:
                 Vision capable model to use. Defaults to "gpt-4o-mini".
                 Hosted models are passed in format "<provider>/<model>"
                 Examples: "azure/gpt-4o-mini", "vertex_ai/gemini-1.5-flash-001"
                           See more details in zerox documentation.
-            **zerox_kwargs:
+            cleanup:
+                Whether to cleanup the temporary files after processing, defaults
+                to True
+            concurrency:
+                The number of concurrent processes to run, defaults to 10
+            file_path:
+                The path or URL to the PDF file to process.
+            maintain_format:
+                Whether to maintain the format from the previous page, defaults to False
+            model:
+                The model to use for generating completions, defaults to "gpt-4o-mini".
+                Note - Refer: https://docs.litellm.ai/docs/providers to pass correct
+                model name as according to provider it might be different from
+                actual name.
+            output_dir:
+                The directory to save the markdown output, defaults to None
+            temp_dir:
+                The directory to store temporary files, defaults to some named folder
+                in system's temp directory. If already exists, the contents will be
+                deleted for zerox uses it.
+            custom_system_prompt:
+                The system prompt to use for the model, this overrides the default
+                system prompt of zerox. Generally it is not required unless you want
+                some specific behaviour. When set, it will raise a friendly warning,
+                defaults to None
+            select_pages:
+                Pages to process, can be a single page number or an iterable of page
+                numbers, defaults to None
+            **kwargs:
                 Arguments specific to the zerox function.
-                see datailed list of arguments here in zerox repository:
-                https://github.com/getomni-ai/zerox/blob/main/py_zerox/pyzerox/core/zerox.py#L25
         """
         super().__init__(file_path, headers=headers)
         self.parser = ZeroxPDFParser(
