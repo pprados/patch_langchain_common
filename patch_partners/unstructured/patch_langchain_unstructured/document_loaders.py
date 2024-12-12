@@ -14,7 +14,6 @@ from typing import (
     Any,
     BinaryIO,
     Callable,
-    Dict,
     Iterator,
     Literal,
     Optional,
@@ -466,7 +465,7 @@ class _SinglePDFDocumentLoader(_SingleDocumentLoader):
             **self.unstructured_kwargs,
         )
 
-    def _get_metadata(self) -> Dict[str, Any]:
+    def _get_metadata(self) -> dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
         # Create a PDF parser object associated with the file object.
@@ -864,7 +863,7 @@ class UnstructuredPDFLoader(BasePDFLoader):
         self,
         file_path: Union[str, PurePath],
         *,
-        headers: Optional[Dict] = None,
+        headers: Optional[dict] = None,
         mode: Literal["single", "page", "elements"] = "single",
         pages_delimitor: str = "\n\n",
         extract_images: bool = False,

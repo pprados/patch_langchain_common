@@ -116,6 +116,7 @@ The parsers compatible with image extraction are:
 - `PyMuPDFLoader` / `PyMuPDFParser`
 - `PDFPlumberLoader` / `PDFPlumberParser`
 - `PyMuPDF4LLMLoader` / `PyMuPDF4LLMParser`
+- `ZeroxPDFLoader` / `ZeroxPDFParser`
 - `UnstructuredPDFLoader` / `UnstructuredPDFParser` (other PR)
 
 The parsers compatible with table extraction are:
@@ -123,7 +124,8 @@ The parsers compatible with table extraction are:
 - `PyPDFDirectoryLoader` / `PyPDFDirectoryParser`
 - `PyMuPDFLoader` / `PyMuPDFParser`
 - `PDFPlumberLoader` / `PDFPlumberParser`
-- `UnstructuredPDFLoader` / `UnstructuredPDFParser` en mode hi_res
+- `UnstructuredPDFLoader` / `UnstructuredPDFParser` en mode hi_resy
+- `ZeroxPDFLoader` / `ZeroxPDFParser`
 
 For the `images_to_text` parameter, we propose three functions:
 
@@ -181,7 +183,7 @@ For this parser, we introduce the following new features:
 
 ## PyPDFDirectoryLoader
 
-This parser does not support table extraction.
+This parser does not support table extraction. It's deprecated, because the `GenericLoader` is a better approach. 
 
 For this parser, we introduce the following new features:
 - `password`
@@ -234,6 +236,17 @@ This class is an alias for `PyPDFLoader`. I have marked it as `@deprecated`.
 
 ## OnlinePDFLoader
 This class is a poorly implemented (lacking `lazy_load()`) wrapper around `UnstructuredPDFLoader`. It has been marked as `@deprecated`.
+
+
+## ZeroxPDFLoader
+The current implementation of `ZeroxPDFLoader` does not provide an `ZeroxPDFParser`, which limits its ability to handle PDF files directly from blobs. We have therefore created a new version in `langchain-community`that includes a dedicated parser and offers greater flexibility.
+
+For this parser, we introduce the following new features:
+- `mode` single or page
+- `pages_delimitor`
+- `images_to_text`
+- `extract_tables` to `markdown` or `html`
+- Add one TU
 
 # New loader / parsers
 New parsers will be introduced in a separate pull request.

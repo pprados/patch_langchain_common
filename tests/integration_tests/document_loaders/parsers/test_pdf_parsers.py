@@ -162,9 +162,10 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
         ("PDFMinerParser", {}),
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
+        ("ZeroxPDFParser", {}),
     ],
 )
-@pytest.mark.skip(reason="very long test. Ignore now")
+@pytest.mark.skip(reason="very long test. Ignore for now")
 def test_standard_parameters(
     parser_factory: str, params: dict, mode: str, extract_images: bool
 ) -> None:
@@ -239,6 +240,7 @@ def test_standard_parameters(
     [
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
+        ("ZeroxPDFParser", {}),
     ],
 )
 def test_parser_with_table(
@@ -249,6 +251,15 @@ def test_parser_with_table(
 ) -> None:
     if parser_factory == "LlamaIndexPDFParser" and extract_tables not in [
         "markdown",
+        None,
+    ]:
+        pytest.skip(
+            f"{parser_factory} is not compatible with extract_tables='{extract_tables}'"
+        )
+
+    if parser_factory == "ZeroxPDFParser" and extract_tables not in [
+        "markdown",
+        "html",
         None,
     ]:
         pytest.skip(
