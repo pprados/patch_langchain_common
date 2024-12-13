@@ -40,6 +40,7 @@ if TYPE_CHECKING:
         PyPDFium2Loader,
         PyPDFLoader,
         UnstructuredPDFLoader,
+        ZeroxPDFLoader,
     )
 
 
@@ -56,6 +57,7 @@ _module_lookup = {
     "PyPDFDirectoryLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "PyPDFium2Loader": "patch_langchain_community.document_loaders.pdf",
+    "ZeroxPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "UnstructuredPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "PyMuPDF4LLMLoader": "patch_langchain_community.document_loaders.new_pdf",
     "LlamaIndexPDFLoader": "patch_langchain_community.document_loaders.new_pdf",
@@ -83,6 +85,7 @@ __all__ = [
     "PyPDFDirectoryLoader",
     "PyPDFLoader",
     "PyPDFium2Loader",
+    "ZeroxPDFLoader",
     "UnstructuredPDFLoader",
     "PyMuPDF4LLMLoader",
     "LlamaIndexPDFLoader",

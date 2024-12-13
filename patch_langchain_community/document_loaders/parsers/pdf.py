@@ -2039,6 +2039,7 @@ class ZeroxPDFParser(BaseBlobParser):
         "Convert the following PDF page to markdown. "
         "{prompt_tables}"
         "{prompt_images}"
+        "Remove the header, footer and page number. "
         "Return only the markdown with no explanation text. "
         "Do not exclude any content from the page. ",
     )
@@ -2111,6 +2112,8 @@ class ZeroxPDFParser(BaseBlobParser):
         self.mode = mode
         self.pages_delimitor = pages_delimitor
         self.extract_images = extract_images
+        if not images_to_text:
+            images_to_text = convert_images_to_text_with_rapidocr()
         self.images_to_text = images_to_text
         self.extract_tables = extract_tables
 
