@@ -22,7 +22,7 @@ Why is it important to unify the different parsers? Each has its own characteris
 # The PR
 We propose a substantial PR to improve the different PDF parser integrations. All my clients struggle with PDFs. I took the initiative to address this issue at its root by refactoring the various integrations of Python PDF parsers. The goal is to standardize a minimum set of parameters and metadata and bring improvements to each one (bug fixes, feature additions).
 
-We're sorry it may take you several hours to validate it. The changes are important and cannot be published one after the other, as everything is linked. It's going to be difficult to cut the code into 12 successive PRs, and end up with the same result. And that's going to take months.
+We're sorry it may take you several hours to validate it. The changes are important and cannot be published one after the other, as everything is linked. It's going to be difficult to cut the code into 12 successive PRs, and end up with the same result. And that's going to take months. All this work is validated by two matrix tests, ensuring the consistency of all modifications.
 
 In order to qualify all the code, we worked in a separate project, using the `langchain-common` structure. In this way, we can compare the results of the historical implementation with the new ones.
 
