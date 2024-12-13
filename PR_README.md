@@ -1,7 +1,9 @@
+> This is the draft description of the PR*
+
 # Refactoring all PDF loader and parser: community
 
 - **Description:** refactoring of PDF parsers and loaders. See below
-- **Issue:** missing lock, parameter inconsistency, missing lazy approach, split loader and parser, etc.
+- **Issue:** missing locks, parameter inconsistency, missing lazy approach, split loader and parser, etc.
 - **Twitter handle:** pprados
 
 - [X] **Add tests and docs**: 
@@ -12,25 +14,27 @@
 - [X] **Lint and test**: done
 
 
+# Rational
+Even though `Document` has a `page_content` parameter (rather than text or body), we believe it’s not good practice to work with pages. Indeed, this approach creates memory gaps in RAG projects. If a paragraph spans two pages, the beginning of the paragraph is at the end of one page, while the rest is at the start of the next. With a page-based approach, there will be two separate chunks, each containing part of a sentence. The corresponding vectors won’t be relevant. These chunks are unlikely to be selected when there’s a question specifically about the split paragraph. If one of the chunks is selected, there’s little chance the LLM can answer the question. This issue is worsened by the injection of headers, footers (if parsers haven’t properly removed them), images, or tables at the end of a page, as most current implementations tend to do.
+
+Why is it important to unify the different parsers? Each has its own characteristics and strategies, more or less effective depending on the family of PDF files. One strategy is to identify the family of the PDF file (by inspecting the metadata or the content of the first page) and then select the most efficient parser in that case. By unifying parsers, the following code doesn't need to deal with the specifics of different parsers, as the result is similar for each. We'll propose a Parser using this strategy in another PR.
+
+# The PR
 We propose a substantial PR to improve the different PDF parser integrations. All my clients struggle with PDFs. I took the initiative to address this issue at its root by refactoring the various integrations of Python PDF parsers. The goal is to standardize a minimum set of parameters and metadata and bring improvements to each one (bug fixes, feature additions).
 
 We're sorry it may take you several hours to validate it. The changes are important and cannot be published one after the other, as everything is linked.
+
+In order to qualify all the code, we worked in a separate project, using the `langchain-common` structure. In this way, we can compare the results of the historical implementation with the new ones.
+
+We understand that it's important to ensure that changes don't have a significant impact on existing code. That's why we used a parallel project, using the `langchain-common` structure, to test PDF readings before and after modifications. This allows us to compare results. You'll find all the files [here](https://github.com/pprados/patch_langchain_common/tree/master/compare_old_new).
+The only difference is the name to import classes.
+
+All this // project is available [here](https://github.com/pprados/patch_langchain_common/). Consult the `compare_old_new` directory with your development environment, using DIFF to identify differences.
 
 ``` 
 git clone https://github.com/pprados/patch_langchain_common.git
 cd patch_langchain_common/compare_old_new
 ```
-Then, you can use **diff** from your devtools
-
-Even though `Document` has a `page_content` parameter (rather than text or body), we believe it’s not good practice to work with pages. Indeed, this approach creates memory gaps in RAG projects. If a paragraph spans two pages, the beginning of the paragraph is at the end of one page, while the rest is at the start of the next. With a page-based approach, there will be two separate chunks, each containing part of a sentence. The corresponding vectors won’t be relevant. These chunks are unlikely to be selected when there’s a question specifically about the split paragraph. If one 
-of the chunks is selected, there’s little chance the LLM can answer the question. This issue is worsened by the injection of headers, footers (if parsers haven’t properly removed them), images, or tables at the end of a page, as most current implementations tend to do.
-
-In order to qualify all the code, we worked in a separate project, using the `langchain-common` structure. In this way, we can compare the results of the historical implementation with the new ones.
-
-We understand that it's important to ensure that changes don't have a significant impact on existing code. That's why we used a parallel project, using the `langchain-common` structure, to test PDF readings before and after modifications$. This allows us to compare results. You'll find all the files [here](https://github.com/pprados/patch_langchain_common/tree/master/compare_old_new).
-The only difference is the name to import classes.
-
-Why is it important to unify the different parsers? Each has its own characteristics and strategies, more or less effective depending on the family of PDF files. One strategy is to identify the family of the PDF file (by inspecting the metadata or the content of the first page) and then select the most efficient parser in that case. By unifying parsers, the following code doesn't need to deal with the specifics of different parsers, as the result is similar for each. We'll propose a Parser using this strategy in another PR.
 
 ## Metadata
 All parsers use lowercase keys for pdf file metadata. Except `PDFPlumberParser`. For this particular case, we've added a dictionary wrapper that warns when keys with upper case letters are used.
@@ -60,7 +64,7 @@ Unfortunately, this approach isn’t always feasible. In such cases, we can appl
 # Combining Pages
 As mentioned, we want to work with the text flow of a document, rather than by page. A mode is dedicated to this, which can be configured to specify the character to use for page delimiters in the flow. This could simply be `\n`, `------\n` or `\f` to clearly indicate a page change, or `<!-- PAGE BREAK -->` for seamless injection in a Markdown viewer without a visual effect.
 
-Why is it important to identify page breaks when retrieving the full document flow? Because we generally want to provide a URL with the chunk’s location when the LLM answers. While it’s possible to reference the entire PDF, this isn’t practical if it’s more than two pages long. It’s better to indicate the specific page to display in the URL. Therefore, assistance is needed so that chunking algorithms can add the page metadata to each chunk. The choice of delimiter helps the algorithm prioritize this parameter.
+Why is it important to identify page breaks when retrieving the full document flow? Because we generally want to provide a URL with the chunk’s location when the LLM answers. While it’s possible to reference the entire PDF, this isn’t practical if it’s more than two pages long. It’s better to indicate the specific page to display in the URL. Therefore, assistance is needed so that chunking algorithms can add the page metadata to each chunk. The choice of delimiter helps the algorithm calculate this parameter.
 
 Similarly, we’ve added metadata in all parsers with the total number of pages in the document. Why is this important? If we want to reference a document, we need to determine if it’s relevant. A reference is valid if it helps the user quickly locate the fragment within the document (using the page and/or a chunk excerpt). But if the URL points to a PDF file without a page number (for various reasons) and the file has a large number of pages, we want to remove the reference that doesn’t assist the user. There’s no point in referencing a 100-page document! The `total_pages` metadata can then be used. We recommend this approach in an extension to LangChain that we propose for managing document references: [langchain-reference](https://github.com/pprados/langchain-references).
 
@@ -79,16 +83,6 @@ but this could break compatibility for positional arguments.
 
 Perhaps it would be feasible to plan a migration for LangChain v1.0 by modifying the default parameters to make them mandatory during the transition to v1.0. At that point, we could reintroduce default values.
 
-# New parsers
-We took advantage of this refactoring to add new parsers:
-- PDFRouterLoader / PDFRouterParser
-- PDFMultiLoader / PDFMultiParser
-- PyMuPDF4LLMLoader / PyMuPDF4LLMParser
-- DoclingPDFLoader / DoclingPDFParser
-- LlamaIndexPDFLoader / LlamaIndexPDFParser
-
-We describe them in detail further on. They will be included in a another PR, after this one is approved. One PR for each new parser.
-
 # Normalisation
 
 The `AzureAIDocumentIntelligenceParser` class introduces the `mode` parameter, which accepts the values `single`, `page`, and `markdown`. 
@@ -104,26 +98,10 @@ The different `Loader` and `BlobParser` classes now offer the following paramete
 - `extract_images` to enable image extraction (already present in most Loaders/Parsers).
 - `images_to_text` to specify how to handle images (invoking OCR, LLM, etc.).
 - `extract_tables` to allow extraction of tables detected by underlying libraries, for certain parsers.
+- Other parameters are specific to each parser.
 
-Other parameters are specific to each parser.
+The integration of image texts is now between two paragraphs.
 
-The parsers compatible with image extraction are:
-
-- `PyPDFLoader` / `PyPDFParser`
-- `PyPDFium2Loader` / `PyPDFium2Parser`
-- `PyPDFDirectoryLoader`
-- `PyPDFMinerLoader` / `PyPDFMinerParser`
-- `PyMuPDFLoader` / `PyMuPDFParser`
-- `PDFPlumberLoader` / `PDFPlumberParser`
-- `PyMuPDF4LLMLoader` / `PyMuPDF4LLMParser`
-- `UnstructuredPDFLoader` / `UnstructuredPDFParser` (other PR)
-
-The parsers compatible with table extraction are:
-
-- `PyPDFDirectoryLoader` / `PyPDFDirectoryParser`
-- `PyMuPDFLoader` / `PyMuPDFParser`
-- `PDFPlumberLoader` / `PDFPlumberParser`
-- `UnstructuredPDFLoader` / `UnstructuredPDFParser` en mode hi_res
 
 For the `images_to_text` parameter, we propose three functions:
 
@@ -153,123 +131,43 @@ The different parsers offer a minimum set of common metadata:
 - and whatever additional metadata the modules can extract from PDF files. 
 - Dates are converted to ISO 8601 format for easier handling and consistency with other file formats.
 
+All keys are in lowercase.
+
 # New features of parsers
 
-Here, we list all the improvements we’re bringing to each parser.
+We resume the modification for each parsers
 
-## PyPDFLoader / PyPDFParser
+|                       | metadata | images | table | password | parser | deprecared | lazy_load |                                                        lock                                                        |
+|-----------------------|:--------:|:------:|:-----:|:--------:|:------:|:----------:|:---------:|:------------------------------------------------------------------------------------------------------------------:|
+| PyPDFLoader           |    ✔     |   ✔    |       |          |        |            |           |                                                                                                                    |
+| PyPDFium2Loader       |    ✔     |   ✔    |       |    ✔     |        |            |           |               [✔](https://pypdfium2.readthedocs.io/en/stable/python_api.html#thread-incompatibility)               |
+| PyPDFMinerLoader      |    ✔     |   ✔    |       |    ✔     |        |            |     ✔     |                                                                                                                    |
+| PyMuPDFLoader         |    ✔     |   ✔    |   ✔   |    ✔     |        |            |           |                     [✔](https://pymupdf.readthedocs.io/en/latest/recipes-multiprocessing.html)                     |
+| PDFPlumberLoader      |    ✔     |   ✔    |   ✔   |    ✔     |        |            |     ✔     |                                                         ✔                                                          |
+| PagedPDFSplitter      |          |        |       |          |        |     ✔      |           |                                                                                                                    |
+| OnlinePDFLoader       |          |   ✔    |       |          |        |            |     ✔     |                                                                                                                    |
+| ZeroxPDFLoader        |    ✔     |   ✔    |   ✔   |          |   ✔    |            |           |                                                                                                                    |
+| UnstructuredPDFLoader |          |        |       |          |        |     ✔      |           |                                                                                                                    |
+| PyPDFDirectoryLoader  |          |   ✔    |       |    ✔     |        |     ✔      |           |                                                                                                                    |
+| PagedPDFSplitter      |          |        |       |          |        |     ✔      |           |                                                                                                                    |
+| OnlinePDFLoader       |          |        |       |          |        |     ✔      |           |                                                                                                                    |
 
-This parser does not support table extraction.
+> **PyPDFMinerLoader**: When the `extract_images` parameter is set to `true`, the current implementation does not respect the `concatenate_pages` parameter. It returns multiple pages instead of a single one, as specified by default. For compatibility reasons, we are keeping this behavior.
 
-For this parser, we introduce the following new features:
-- `mode` single or page
-- `pages_delimitor`
-- `images_to_text`
-- Integration of image texts between two paragraphs.
+> **OnlinePDFLoader**: This class is a poorly implemented (lacking `lazy_load()`) wrapper around `UnstructuredPDFLoader`.
 
-## PyPDFium2Loader / PyPDFium2Parser
+> **parser**: Split the loader and parser
 
-This parser does not support table extraction.
+I will publish another PR for unstructured:
 
-For this parser, we introduce the following new features:
-- `password`
-- `mode` single or page
-- `pages_delimitor`
-- `images_to_text`
-- Integration of image texts between two paragraphs
-- Lock, as the [code is not reentrant](https://pypdfium2.readthedocs.io/en/stable/python_api.html#thread-incompatibility)
+|                         | metadata | images | table | password | parser | deprecared | lazy_load |  lock  |
+|-------------------------|:--------:|:------:|:-----:|:--------:|:------:|:----------:|:---------:|:------:|
+| UnstructuredPDFLoader   |    ✔     |   ✔    |   ✔   | ✔        |  ✔     |            |           |   ✔    |
 
-## PyPDFDirectoryLoader
-
-This parser does not support table extraction.
-
-For this parser, we introduce the following new features:
-- `password`
-- `mode` single orou page
-- `pages_delimitor`
-- `extract_images`
-- `images_to_text`
-- Integration of image texts between two paragraphs
-- Declare `@deprecated` use `langchain_community.document_loaders.generic.GenericLoader`
-
-## PyPDFMinerLoader / PyPDFMinerParser
-This parser does not support table extraction.
-
-When the `extract_images` parameter is set to `true`, the current implementation does not respect the `concatenate_pages` parameter. It returns multiple pages instead of a single one, as specified by default. For compatibility reasons, we are keeping this behavior.
-
-For this parser, we introduce the following new features:
-- `password`
-- `mode` single or page
-- `pages_delimitor`
-- `images_to_text`
-- Integration of image texts between two paragraphs
-- `concatenate_pages` is deprecated
-- use really `lazy_load`
-- Apply the parameter `concatenate_pages` even if `extract_images` is set to `true`
-
-## PyMuPDFLoader / PyMuPDFParser
-
-For this parser, we introduce the following new features:
-- `password`
-- `mode` single or page
-- `pages_delimitor`
-- `extract_images`
-- `images_to_text`
-- `extract_tables` to `csv`, `markdown` or `html` (without `colspan`)
-- Lock, as the [code is not reentrant](https://pymupdf.readthedocs.io/en/latest/recipes-multiprocessing.html)
-
-## PDFPlumberLoader / PDFPlumberParser
-
-For this parser, we introduce the following new features:
-- `password`
-- `mode` single or page
-- `pages_delimitor`
-- `images_to_text`
-- `extract_tables` to `csv`, `markdown` or `html` (with `colspan`) in the stream
-- Use `lazy_load`
-- Add one TU
-
-## PagedPDFSplitter
-This class is an alias for `PyPDFLoader`. I have marked it as `@deprecated`.
-
-## OnlinePDFLoader
-This class is a poorly implemented (lacking `lazy_load()`) wrapper around `UnstructuredPDFLoader`. It has been marked as `@deprecated`.
 
 # New loader / parsers
 New parsers will be introduced in a separate pull request.
 
-## UnstructuredPDFLoader / UnstructuredPDFParser
-The current implementation of `UnstructuredPDFLoader` does not provide an `UnstructuredPDFParser`, which limits its ability to handle PDF files directly from blobs. We have therefore created a new version in `langchain-unstructured`that includes a dedicated parser and offers greater flexibility. This refactoring requires modifications to both modules and has been submitted in another pull request.
-
-For this parser, we introduce the following new features:
-- `password`
-- `mode` single (with conversion to markdown) or page
-- `pages_delimitor`
-- `extract_images`
-- `images_to_text`
-- `extract_tables`
-- Image in the stream
-- Moving integration tests to `unstructured/tests`
-- Lock, as the code is not reentrant
-
-## New parsers (in future PR)
-### PDFRouterLoader
-This loader relies on PDF file metadata and the content of the first page to select the appropriate PDF parser.
-
-### PyMuPDF4LLMLoader
-`Loader` compatible with new specifications, using the [PyMuPDF4LLM](https://pymupdf.readthedocs.io/en/latest/pymupdf4llm/) library. Currently, the implementation does not export images for OCR/LLM processing
-
-### DoclingPDFLoader
-`Loader` to integrate docling
-
-### LlamaIndexPDFLoader
-`Loader` to integrate llamaindex
-
-### PDFMultiLoader
-Calls multiple parsers and selects the best result.
-
-
-# Next PR
 | Classes                  | What                                                       |
 |--------------------------|------------------------------------------------------------|
 | `UnstructuredPDFLoader`  | Extend unstructured to be conform to the new specification |

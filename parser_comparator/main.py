@@ -1,40 +1,34 @@
 import argparse
 import json
 import logging  # Set the logging level to WARNING to reduce verbosity
-import os
 import sys
 from glob import glob
 from pathlib import Path
 from typing import Any, Optional, Type
 
+import dotenv
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.globals import set_llm_cache
 from langchain_community.cache import InMemoryCache
-from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain_community.document_loaders.base import BaseBlobParser
-from langchain_community.document_loaders.parsers import (
-    AzureAIDocumentIntelligenceParser,
-)
-from langchain_community.document_loaders.parsers.pdf import (
-    PDFPlumberParser as old_PDFPlumberParser,
-)
 from langchain_community.document_loaders.pdf import (
-    UnstructuredPDFLoader as old_UnstructuredPDFLoader,
+    ZeroxPDFLoader as old_ZeroxPDFLoader,
 )
+from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents.base import Blob, Document
 
 # %% Import patch
 from patch_langchain_community.document_loaders.new_pdf import (
-    LlamaIndexPDFParser,
     PDFMultiParser,
-    PyMuPDF4LLMParser,
 )
 from patch_langchain_community.document_loaders.parsers.pdf import (
-    PDFPlumberParser,
+    PDFMinerParser,
     _default_page_delimitor,
     convert_images_to_text_with_rapidocr,
 )
+
+dotenv.load_dotenv()
 
 # %% Meta parameters
 RETRO_COMPATIBLE = True
@@ -54,7 +48,7 @@ conv_images = convert_images_to_text_with_rapidocr(
 # Function to extract text from images using tesseract
 # conv_images=convert_images_to_description(model=ChatOpenAI(model='gpt-4o'))
 # Function to extract text from images using multimodal model
-EXTRACT_TABLES = "html"
+EXTRACT_TABLES = "markdown"
 # Format to use for the extracted tables. Either "text", "html", "markdown" or None
 SUFFIX = "md"
 # If True, compare with the old versions of parsers/loader
@@ -73,26 +67,26 @@ logging.getLogger("azure").setLevel(logging.WARNING)
 set_llm_cache(InMemoryCache())
 
 pdf_parsers_updated: dict[str, BaseBlobParser] = {
-    # "PDFMinerParser_single_new": PDFMinerParser(
-    #     mode="single",
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
+    "PDFMinerParser_single_new": PDFMinerParser(
+        mode="single",
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
     # "PDFMinerParser_page_new": PDFMinerParser(
     #     mode="page",
     #     pages_delimitor=_default_page_delimitor,
     #     extract_images=EXTRACT_IMAGES,
     #     images_to_text=conv_images,
     # ),
-    # %%
-    "PDFPlumberParser_new": PDFPlumberParser(
-        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
-        pages_delimitor=_default_page_delimitor,
-        extract_images=EXTRACT_IMAGES,
-        images_to_text=conv_images,
-        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    ),
+    # # %%
+    # "PDFPlumberParser_new": PDFPlumberParser(
+    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+    #     pages_delimitor=_default_page_delimitor,
+    #     extract_images=EXTRACT_IMAGES,
+    #     images_to_text=conv_images,
+    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    # ),
     # # %%
     # "PyMuPDFParser_new": PyMuPDFParser(
     #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
@@ -123,6 +117,14 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
     #     extract_images=EXTRACT_IMAGES,
     #     images_to_text=conv_images,
     #     extraction_mode="layout",
+    # ),
+    # # %%
+    # "ZeroxPDFParser_new": ZeroxPDFParser(
+    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+    #     pages_delimitor=_default_page_delimitor,
+    #     extract_images=EXTRACT_IMAGES,
+    #     images_to_text=conv_images,
+    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     # ),
     # # %%
     # "UnstructuredPDFParser_auto_new": UnstructuredPDFParser(
@@ -171,28 +173,28 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
     # ),
 }
 pdf_parsers_new: dict[str, BaseBlobParser] = {
-    # %%
-    "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
-        mode=MODE,  # type:ignore[arg-type]
-        pages_delimitor=_default_page_delimitor,
-        to_markdown_kwargs=None,
-    ),
+    # # %%
+    # "PyMuPDF4LLMParser": PyMuPDF4LLMParser(
+    #     mode=MODE,  # type:ignore[arg-type]
+    #     pages_delimitor=_default_page_delimitor,
+    #     to_markdown_kwargs=None,
+    # ),
 }
 pdf_online_parsers: dict[str, BaseBlobParser] = {
-    # %%
-    "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
-        api_endpoint=os.environ["AZURE_API_ENDPOINT"],
-        api_key=os.environ["AZURE_API_KEY"],
-    ),
-    # %%
-    "LlamaIndexPDFParser": LlamaIndexPDFParser(
-        mode=MODE,  # type:ignore[arg-type]
-        pages_delimitor=_default_page_delimitor,
-        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-        language="en",
-        extract_images=EXTRACT_IMAGES,
-        images_to_text=conv_images,
-    ),
+    # # %%
+    # "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
+    #     api_endpoint=os.environ["AZURE_API_ENDPOINT"],
+    #     api_key=os.environ["AZURE_API_KEY"],
+    # ),
+    # # %%
+    # "LlamaIndexPDFParser": LlamaIndexPDFParser(
+    #     mode=MODE,  # type:ignore[arg-type]
+    #     pages_delimitor=_default_page_delimitor,
+    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    #     language="en",
+    #     extract_images=EXTRACT_IMAGES,
+    #     images_to_text=conv_images,
+    # ),
 }
 pdf_parsers_old: dict[str, BaseBlobParser] = {
     # # %%
@@ -205,12 +207,12 @@ pdf_parsers_old: dict[str, BaseBlobParser] = {
     #     extract_images=EXTRACT_IMAGES,
     #     concatenate_pages=False,
     # ),
-    # %%
-    "PDFPlumberParser_old": old_PDFPlumberParser(
-        text_kwargs=None,
-        dedupe=False,
-        extract_images=EXTRACT_IMAGES,
-    ),
+    # # %%
+    # "PDFPlumberParser_old": old_PDFPlumberParser(
+    #     text_kwargs=None,
+    #     dedupe=False,
+    #     extract_images=EXTRACT_IMAGES,
+    # ),
     # # %%
     # "PyMuPDFParser_old": old_PyMuPDFParser(
     #     text_kwargs=None,
@@ -231,29 +233,7 @@ pdf_parsers_old: dict[str, BaseBlobParser] = {
     #     extraction_mode="layout",
     # ),
 }
-pdf_loader_old: dict[str, tuple[Type[UnstructuredFileLoader], dict]] = {
-    "UnstructuredPDFParser_fast_old": (
-        old_UnstructuredPDFLoader,
-        {"mode": MODE, "strategy": "fast"},
-    ),
-    # "UnstructuredPDFParser_auto_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": MODE, "strategy": "auto"},
-    # ),
-    # "UnstructuredPDFParser_ocr_only_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": "single", "strategy": "ocr_only"},
-    # ),
-    # "UnstructuredPDFParser_hi_res_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": MODE, "strategy": "hi_res"},
-    # ),
-    # "UnstructuredPDFParser_elements_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": "elements", "strategy": "hi_res"},
-    # ),
-}
-pdf_loader_old = {
+pdf_loader_old: dict[str, tuple[Type[BaseLoader], dict]] = {
     # "UnstructuredPDFParser_fast_old": (
     #     old_UnstructuredPDFLoader,
     #     {"mode": MODE, "strategy": "fast"},
@@ -274,6 +254,7 @@ pdf_loader_old = {
     #     old_UnstructuredPDFLoader,
     #     {"mode": "elements", "strategy": "hi_res"},
     # ),
+    "old_ZeroxPDFLoader_old": (old_ZeroxPDFLoader, {}),
 }
 
 if USE_OLD_PARSERS:
@@ -347,7 +328,10 @@ def compare_parsing(experiment_name: str) -> None:
             parsers_results = []
             for name, (clazz, kwargs) in pdf_loader_old.items():
                 pdf_loader = clazz(
-                    file_path=str(sources_dir_path / pdf_filename), **kwargs
+                    file_path=str(  # type: ignore[call-arg]
+                        sources_dir_path / pdf_filename
+                    ),
+                    **kwargs,
                 )
                 documents = pdf_loader.load()
                 if "Unstructured" in name:

@@ -1,5 +1,6 @@
 """Module contains common parsers for PDFs."""
 
+import asyncio
 import base64
 import html
 import io
@@ -7,7 +8,7 @@ import logging
 import threading
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,6 +26,7 @@ from typing import (
 from urllib.parse import urlparse
 
 import numpy as np
+from langchain.prompts import Prompt
 from langchain_community.document_loaders.base import BaseBlobParser
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_core._api.deprecation import (
@@ -265,6 +267,9 @@ def convert_images_to_text_with_rapidocr(
             else:
                 yield ""
 
+    _convert_images_to_text.creator = (  # type: ignore[attr-defined]
+        convert_images_to_text_with_rapidocr
+    )
     return _convert_images_to_text
 
 
@@ -314,6 +319,9 @@ def convert_images_to_text_with_tesseract(
             logger.debug("Tesseract text: %s", result.replace("\n", "\\n"))
             yield result
 
+    _convert_images_to_text.creator = (  # type: ignore[attr-defined]
+        convert_images_to_text_with_tesseract
+    )
     return _convert_images_to_text
 
 
@@ -401,6 +409,9 @@ def convert_images_to_description(
             logger.debug("LLM description: %s", result.replace("\n", "\\n"))
             yield result
 
+    _convert_images_to_description.creator = (  # type: ignore[attr-defined]
+        convert_images_to_description
+    )
     return _convert_images_to_description
 
 
@@ -586,9 +597,6 @@ class PyPDFParser(ImagesPdfParser):
                 return page.extract_text(
                     extraction_mode=self.extraction_mode,
                     **self.extraction_kwargs,
-                    visitor_operand_before=before,
-                    visitor_operand_after=after,
-                    visitor_text=text,
                 )
 
         with blob.as_bytes_io() as pdf_file_obj:  # type: ignore[attr-defined]
@@ -1494,11 +1502,6 @@ class PyPDFium2Parser(ImagesPdfParser):
 # The legacy PDFPlumberParser use key with upper case.
 # This is not in l8ine with the new convention, which requires the key to be in
 # lower case.
-@deprecated(
-    since="0.3.X",  # TODO: update version 0.3.X
-    removal="1.0",
-    alternative="Use lower case key for PDF metadata",
-)
 class _PDFPlumberParserMetadata(dict[object, Any]):
     def __init__(self, d: dict[str, Any]):
         super().__init__({k.lower(): v for k, v in d.items()})
@@ -1685,9 +1688,9 @@ class PDFPlumberParser(ImagesPdfParser):
                 )
             )
             for page in doc.pages:
-                tables_bbox: list[
-                    tuple[float, float, float, float]
-                ] = self._extract_tables_bbox_from_page(page)
+                tables_bbox: list[tuple[float, float, float, float]] = (
+                    self._extract_tables_bbox_from_page(page)
+                )
                 tables_content = self._extract_tables_from_page(page)
                 images_bbox = [geometry.obj_to_bbox(image) for image in page.images]
                 image_from_page = self._extract_images_from_page(page)
@@ -2027,7 +2030,226 @@ class PDFPlumberParser(ImagesPdfParser):
         return output + "\n"
 
 
-# %% --------- Online pdf loader ---------
+class ZeroxPDFParser(BaseBlobParser):
+    _warn_images_to_text = False
+    _warn_creator = False
+    _map_extract_tables = {
+        "markdown": "",
+        "html": "But, use html syntax for convert all tables. ",
+    }
+    _map_extract_images = {
+        convert_images_to_text_with_rapidocr: "",
+        convert_images_to_text_with_tesseract: "",
+        convert_images_to_description: "If you come across a picture, "
+        "diagram or other illustration, "
+        "describe it. ",
+    }
+    _prompt = Prompt.from_template(
+        "Convert the following PDF page to markdown. "
+        "{prompt_tables}"
+        "{prompt_images}"
+        "Remove the header, footer and page number. "
+        "Return only the markdown with no explanation text. "
+        "Do not exclude any content from the page. ",
+    )
+
+    def __init__(
+        self,
+        mode: Literal["single", "page"] = "page",
+        pages_delimitor: str = _default_page_delimitor,
+        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+        extract_images: bool = True,
+        extract_tables: Union[Literal["markdown", "html"], None] = "markdown",
+        cleanup: bool = True,
+        concurrency: int = 10,
+        maintain_format: bool = False,
+        model: str = "gpt-4o-mini",
+        custom_system_prompt: Optional[str] = None,
+        select_pages: Optional[Union[int, Iterable[int]]] = None,
+        **zerox_kwargs: dict[str, Any],
+    ):
+        """
+        Initialize the parser with arguments to be passed to the zerox function.
+        Make sure to set necessary environment variables such as API key, endpoint, etc.
+        Check zerox documentation for list of necessary environment variables for
+        any given model.
+
+        Args:
+            file_path:
+                Path or url of the pdf file
+            model:
+                Vision capable model to use. Defaults to "gpt-4o-mini".
+                Hosted models are passed in format "<provider>/<model>"
+                Examples: "azure/gpt-4o-mini", "vertex_ai/gemini-1.5-flash-001"
+                          See more details in zerox documentation.
+            cleanup:
+                Whether to cleanup the temporary files after processing, defaults
+                to True
+            concurrency:
+                The number of concurrent processes to run, defaults to 10
+            file_path:
+                The path or URL to the PDF file to process.
+            maintain_format:
+                Whether to maintain the format from the previous page, defaults to False
+            model:
+                The model to use for generating completions, defaults to "gpt-4o-mini".
+                Note - Refer: https://docs.litellm.ai/docs/providers to pass correct
+                model name as according to provider it might be different from actual
+                name.
+            output_dir:
+                The directory to save the markdown output, defaults to None
+            temp_dir:
+                The directory to store temporary files, defaults to some named folder
+                in system's temp directory. If already exists, the contents will be
+                deleted for zerox uses it.
+            custom_system_prompt:
+                The system prompt to use for the model, this overrides the default
+                system prompt of zerox. Generally it is not required unless you want
+                some specific behaviour. When set, it will raise a friendly warning,
+                defaults to None
+            select_pages:
+                Pages to process, can be a single page number or an iterable of page
+                numbers, defaults to None
+            **zerox_kwargs:
+                Arguments specific to the zerox function.
+        """
+        if mode not in ["single", "page"]:
+            raise ValueError("mode must be single or page")
+        if extract_tables not in ["markdown", "html", None]:
+            raise ValueError("extract_tables must be markdown or html")
+
+        self.mode = mode
+        self.pages_delimitor = pages_delimitor
+        self.extract_images = extract_images
+        if not images_to_text:
+            images_to_text = convert_images_to_text_with_rapidocr()
+        self.images_to_text = images_to_text
+        self.extract_tables = extract_tables
+
+        self.cleanup = cleanup
+        self.concurrency = concurrency
+        self.maintain_format = maintain_format
+        self.model = model
+        self.custom_system_prompt = custom_system_prompt
+        self.select_pages = select_pages
+        self.zerox_kwargs = zerox_kwargs
+
+        import warnings
+
+        warnings.filterwarnings(
+            "ignore",
+            module=r"^pyzerox.models.modellitellm$",
+            message=r"\s*Custom system prompt was provided which.*",
+        )
+
+    def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
+        try:
+            from pyzerox import zerox
+        except ImportError:
+            raise ImportError(
+                "Could not import pyzerox python package. "
+                "Please install it with `pip install py-zerox`."
+            )
+        temp_file = None
+        try:
+            if not blob.path:
+                temp_file = NamedTemporaryFile()
+                with open(temp_file.name, "wb") as f:
+                    f.write(blob.as_bytes())
+                file_path = temp_file.name
+            else:
+                file_path = str(blob.path)
+
+            pdf_metadata = purge_metadata(self._get_metadata(file_path))
+            pdf_metadata["source"] = blob.source or blob.path
+            zerox_prompt = self.custom_system_prompt
+
+            if not zerox_prompt and self.extract_tables:
+                prompt_tables = ZeroxPDFParser._map_extract_tables[self.extract_tables]
+                if hasattr(self.images_to_text, "creator"):
+                    creator = getattr(self.images_to_text, "creator")
+                    prompt_images = ZeroxPDFParser._map_extract_images[creator]
+                else:
+                    if not ZeroxPDFParser._warn_creator:
+                        ZeroxPDFParser._warn_creator = True
+                        logger.warning("images_to_text can not be simulate")
+                    prompt_images = ""
+                zerox_prompt = ZeroxPDFParser._prompt.format(
+                    prompt_tables=prompt_tables, prompt_images=prompt_images
+                )
+            zerox_output = asyncio.run(
+                zerox(
+                    file_path=str(file_path),
+                    model=self.model,
+                    cleanup=self.cleanup,
+                    concurrency=self.concurrency,
+                    maintain_format=self.maintain_format,
+                    custom_system_prompt=zerox_prompt,
+                    select_pages=self.select_pages,
+                    **self.zerox_kwargs,
+                )
+            )
+
+            # Convert zerox output to Document instances and yield them
+            if len(zerox_output.pages) > 0:
+                doc_metadata = purge_metadata(
+                    pdf_metadata
+                    | {
+                        "total_pages": zerox_output.pages[-1].page,
+                        "num_pages": zerox_output.pages[-1].page,  # Deprecated
+                    }
+                )
+                single_texts = []
+                for page in zerox_output.pages:
+                    text_from_page = page.content
+                    images_from_page = ""
+                    all_text = _merge_text_and_extras(
+                        [images_from_page], text_from_page
+                    )
+                    if self.mode == "page":
+                        yield Document(
+                            page_content=all_text,
+                            metadata=doc_metadata | {"page": page.page - 1},
+                        )
+                    else:
+                        single_texts.append(all_text)
+                if self.mode == "single":
+                    yield Document(
+                        page_content=self.pages_delimitor.join(single_texts),
+                        metadata=doc_metadata,
+                    )
+        finally:
+            if temp_file:
+                temp_file.close()
+
+    def _get_metadata(self, file_path: str) -> dict[str, Any]:
+        from pdfminer.pdfpage import PDFDocument, PDFParser
+
+        with open(file_path, "rb") as file:
+            parser = PDFParser(cast(BinaryIO, file))
+
+            # Create a PDF document object that stores the document structure.
+            doc = PDFDocument(parser)
+            metadata: dict[str, Any] = {}
+            for info in doc.info:
+                metadata.update(info)
+            for k, v in metadata.items():
+                try:
+                    metadata[k] = PDFMinerParser.resolve_and_decode(v)
+                except Exception as e:  # pragma: nocover
+                    # This metadata value could not be parsed. Instead of failing
+                    # the PDF read, treat it as a warning only if
+                    # `strict_metadata=False`.
+                    logger.warning(
+                        '[WARNING] Metadata key "%s" could not be parsed due to '
+                        "exception: %s",
+                        k,
+                        str(e),
+                    )
+
+            return metadata
+
+
 class AmazonTextractPDFParser(BaseBlobParser):
     """Send `PDF` files to `Amazon Textract` and parse them.
 

@@ -14,7 +14,6 @@ from typing import (
     Any,
     BinaryIO,
     Callable,
-    Dict,
     Iterator,
     Literal,
     Optional,
@@ -466,7 +465,7 @@ class _SinglePDFDocumentLoader(_SingleDocumentLoader):
             **self.unstructured_kwargs,
         )
 
-    def _get_metadata(self) -> Dict[str, Any]:
+    def _get_metadata(self) -> dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
         # Create a PDF parser object associated with the file object.
@@ -707,9 +706,9 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 unstructured_kwargs["extract_images_in_pdf"] = True
                 self.tmp_dir = TemporaryDirectory(ignore_cleanup_errors=True)
                 if "extract_image_block_output_dir" not in unstructured_kwargs:
-                    unstructured_kwargs[
-                        "extract_image_block_output_dir"
-                    ] = self.tmp_dir.name
+                    unstructured_kwargs["extract_image_block_output_dir"] = (
+                        self.tmp_dir.name
+                    )
         self.images_to_text = images_to_text
         self.extract_tables = extract_tables
         self.partition_via_api = partition_via_api
@@ -864,7 +863,7 @@ class UnstructuredPDFLoader(BasePDFLoader):
         self,
         file_path: Union[str, PurePath],
         *,
-        headers: Optional[Dict] = None,
+        headers: Optional[dict] = None,
         mode: Literal["single", "page", "elements"] = "single",
         pages_delimitor: str = "\n\n",
         extract_images: bool = False,

@@ -483,3 +483,6 @@ class LlamaIndexPDFParser(BaseBlobParser):
                 page_content=self.pages_delimitor.join(full_text),
                 metadata=doc_metadata,
             )
+
+
+# PPR: https://djajafer.medium.com/document-parsing-with-omniparser-and-gpt4o-vision-5fa222c35ddd
