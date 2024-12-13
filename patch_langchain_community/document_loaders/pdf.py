@@ -268,9 +268,6 @@ class PyPDFLoader(BasePDFLoader):
         Returns:
             This method does not directly return data. Use the `load`, `lazy_load` or
             `aload` methods to retrieve parsed documents with content and metadata.
-
-        Raises:
-            ImportError: If the `pypdf` package is not installed.
         """
         super().__init__(file_path, headers=headers)
         self.parser = PyPDFParser(
@@ -378,9 +375,6 @@ class PyPDFium2Loader(BasePDFLoader):
         Returns:
             This class does not directly return data. Use the `load`, `lazy_load` or
             `aload` methods to retrieve parsed documents with content and metadata.
-
-        Raises:
-            ImportError: If the `pypdfium2` package is not installed.
         """
         super().__init__(file_path, headers=headers)
         self.parser = PyPDFium2Parser(
@@ -636,9 +630,6 @@ class PDFMinerLoader(BasePDFLoader):
         Returns:
             This method does not directly return data. Use the `load`, `lazy_load` or
             `aload` methods to retrieve parsed documents with content and metadata.
-
-        Raises:
-            ImportError: If the `pdfminer.six` package is not installed.
         """
         super().__init__(file_path, headers=headers)
         self.parser = PDFMinerParser(
@@ -805,7 +796,6 @@ class PyMuPDFLoader(BasePDFLoader):
             `aload` methods to retrieve parsed documents with content and metadata.
 
         Raises:
-            ImportError: If the `PyMuPDF` package is not installed.
             ValueError: If the `mode` argument is not one of "single" or "page".
         """
         if mode not in ["single", "page"]:
