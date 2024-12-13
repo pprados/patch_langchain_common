@@ -79,10 +79,10 @@ def purge_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
     Purge metadata from unwanted keys and normalize key names.
 
     Args:
-        metadata (dict[str, Any]): The original metadata dictionary.
+        metadata: The original metadata dictionary.
 
     Returns:
-        dict[str, Any]: The cleaned and normalized metadata dictionary.
+        The cleaned and normalized metadata dictionary.
     """
     new_metadata: dict[str, Any] = {}
     map_key = {
@@ -123,13 +123,12 @@ def __merge_text_and_extras(
     Insert extras such as image/table in a text between two paragraphs if possible.
 
     Args:
-        extras (list[str]): List of extra content (images/tables) to insert.
-        text_from_page (str): The text content from the page.
-        recurs (bool): Flag to indicate if the function should recurse.
+        extras: List of extra content (images/tables) to insert.
+        text_from_page: The text content from the page.
+        recurs: Flag to indicate if the function should recurse.
 
     Returns:
-        Optional[str]: The merged text with extras inserted, or None if no insertion
-        point is found.
+        The merged text with extras inserted, or None if no insertion point is found.
     """
     if extras:
         for delim in _delim:
@@ -163,11 +162,11 @@ def _merge_text_and_extras(extras: list[str], text_from_page: str) -> str:
     else at the end of the text.
 
     Args:
-        extras (list[str]): List of extra content (images/tables) to insert.
-        text_from_page (str): The text content from the page.
+        extras: List of extra content (images/tables) to insert.
+        text_from_page: The text content from the page.
 
     Returns:
-        str: The merged text with extras inserted.
+        The merged text with extras inserted.
     """
     all_text = __merge_text_and_extras(extras, text_from_page, True)
     if not all_text:
@@ -366,7 +365,7 @@ def convert_images_to_description(
             Text extracted from each image.
 
         Raises:
-            ImportError: If `rapidocr-onnxruntime` package is not installed.
+            ImportError: If `pillow` package is not installed.
         """
 
         try:
@@ -523,7 +522,6 @@ class PyPDFParser(ImagesPdfParser):
             methods to retrieve parsed documents with content and metadata.
 
         Raises:
-            ImportError: If the `pypdf` package is not installed.
             ValueError: If the `mode` is not "single" or "page".
         """
         super().__init__(extract_images, images_to_text)
@@ -543,6 +541,9 @@ class PyPDFParser(ImagesPdfParser):
 
         Args:
             blob: The blob to parse.
+
+        Raises:
+            ImportError: If the `pypdf` package is not found.
 
         Yield:
             An iterator over the parsed documents.
@@ -752,7 +753,6 @@ class PDFMinerParser(ImagesPdfParser):
             methods to retrieve parsed documents with content and metadata.
 
         Raises:
-            ImportError: If the `pdfminer.six` package is not installed.
             ValueError: If the `mode` is not "single" or "page".
 
         Warnings:
@@ -878,6 +878,9 @@ class PDFMinerParser(ImagesPdfParser):
 
         Args:
             blob: The blob to parse.
+
+        Raises:
+            ImportError: If the `pdfminer` package is not installed.
 
         Yield:
             An iterator over the parsed documents.
@@ -1075,7 +1078,6 @@ class PyMuPDFParser(ImagesPdfParser):
             methods to retrieve parsed documents with content and metadata.
 
         Raises:
-            ImportError: If the `pymupdf` package is not installed.
             ValueError: If the mode is not "single" or "page".
             ValueError: If the extract_tables format is not "markdown", "html",
             or "csv".
@@ -1099,7 +1101,10 @@ class PyMuPDFParser(ImagesPdfParser):
         Lazily parse the blob.
 
         Args:
-            blob: The blob to parse.
+            blob: The blob to parseA.
+
+        Raises:
+            ImportError: If the `pymupdf` package is not installed.
 
         Yield:
             An iterator over the parsed documents.
@@ -1391,7 +1396,6 @@ class PyPDFium2Parser(ImagesPdfParser):
             methods to retrieve parsed documents with content and metadata.
 
         Raises:
-            ImportError: If the `pypdfium2` package is not installed.
             ValueError: If the mode is not "single" or "page".
         """
         super().__init__(extract_images, images_to_text)
@@ -1406,6 +1410,9 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         Args:
             blob: The blob to parse.
+
+        Raises:
+            ImportError: If the `pypdfium2` package is not installed.
 
         Yields:
             An iterator over the parsed documents.
@@ -1623,7 +1630,6 @@ class PDFPlumberParser(ImagesPdfParser):
             methods to retrieve parsed documents with content and metadata.
 
         Raises:
-            ImportError: If the `pdfplumber` package is not installed.
             ValueError: If the `mode` is not "single" or "page".
             ValueError: If the `extract_tables` is not "csv", "markdown" or "html".
 
@@ -1651,6 +1657,9 @@ class PDFPlumberParser(ImagesPdfParser):
 
         Args:
             blob: The blob to parse.
+
+        Raises:
+            ImportError: If the `pdfplumber` package is not installed.
 
         Yields:
             An iterator over the parsed documents.

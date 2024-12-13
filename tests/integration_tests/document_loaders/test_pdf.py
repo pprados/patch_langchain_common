@@ -341,12 +341,12 @@ def test_amazontextract_loader_failures() -> None:
 @pytest.mark.parametrize(
     "loader_factory",
     [
-        ("PyPDFLoader"),
-        ("PyPDFium2Loader"),
-        ("PDFMinerLoader"),
-        ("PDFPlumberLoader"),
-        ("PyMuPDFLoader"),
-        ("PDFMinerPDFasHTMLLoader"),
+        "PyPDFLoader",
+        "PyPDFium2Loader",
+        "PDFMinerLoader",
+        "PDFPlumberLoader",
+        "PyMuPDFLoader",
+        "PDFMinerPDFasHTMLLoader",
     ],
 )
 def test_loader_with_web_path(
