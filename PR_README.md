@@ -73,7 +73,7 @@ Tables identified in PDF pages can be translated into markdown (if there are no 
 Unfortunately, this approach isn’t always feasible. In such cases, we can apply the approach used for images, by injecting tables and images between two paragraphs in the page’s text flow. This is always better than placing them at the end of the page.
 
 # Combining Pages
-As mentioned, we want to work with the text flow of a document, rather than by page. A mode is dedicated to this, which can be configured to specify the character to use for page delimiters in the flow. This could simply be `\n`, `------\n` or `\f` to clearly indicate a page change, or `<!-- PAGE BREAK -->` for seamless injection in a Markdown viewer without a visual effect.
+As mentioned, in a RAG project, we want to work with the text flow of a document, rather than by page. A mode is dedicated to this, which can be configured to specify the character to use for page delimiters in the flow. This could simply be `\n`, `------\n` or `\f` to clearly indicate a page change, or `<!-- PAGE BREAK -->` for seamless injection in a Markdown viewer without a visual effect.
 
 Why is it important to identify page breaks when retrieving the full document flow? Because we generally want to provide a URL with the chunk’s location when the LLM answers. While it’s possible to reference the entire PDF, this isn’t practical if it’s more than two pages long. It’s better to indicate the specific page to display in the URL. Therefore, assistance is needed so that chunking algorithms can add the page metadata to each chunk. The choice of delimiter helps the algorithm calculate this parameter.
 
@@ -97,7 +97,7 @@ Perhaps it would be feasible to plan a migration for LangChain v1.0 by modifying
 # Normalisation
 
 The `AzureAIDocumentIntelligenceParser` class introduces the `mode` parameter, which accepts the values `single`, `page`, and `markdown`. 
-The `UnstructuredPDFLoader` class introduces the `mode` parameter, which accepts the values `single`, `paged`, and `markdown`. 
+The deprecated `UnstructuredPDFLoader` class introduces the `mode` parameter, which accepts the values `single`, `paged`, and `markdown`. 
 Based on this model, we are extending the presence of the mode parameter to most parsers, with the value `single`, `page`, and `markdown`. 
 `paged` is declared depreciated.
 
@@ -155,15 +155,15 @@ We resume the modification for each parsers
 | PyPDFMinerLoader      |    ✔     |   ✔    |       |    ✔     |        |            |     ✔     |                                                                                                                    |
 | PyMuPDFLoader         |    ✔     |   ✔    |   ✔   |    ✔     |        |            |           |                     [✔](https://pymupdf.readthedocs.io/en/latest/recipes-multiprocessing.html)                     |
 | PDFPlumberLoader      |    ✔     |   ✔    |   ✔   |    ✔     |        |            |     ✔     |                                                         ✔                                                          |
-| PagedPDFSplitter      |          |        |       |          |        |     ✔      |           |                                                                                                                    |
 | OnlinePDFLoader       |          |   ✔    |       |          |        |            |     ✔     |                                                                                                                    |
 | ZeroxPDFLoader        |    ✔     |   ✔    |   ✔   |          |   ✔    |            |           |                                                                                                                    |
+| PagedPDFSplitter      |          |        |       |          |        |     ✔      |           |                                                                                                                    |
 | UnstructuredPDFLoader |          |        |       |          |        |     ✔      |           |                                                                                                                    |
 | PyPDFDirectoryLoader  |          |   ✔    |       |    ✔     |        |     ✔      |           |                                                                                                                    |
 | PagedPDFSplitter      |          |        |       |          |        |     ✔      |           |                                                                                                                    |
 | OnlinePDFLoader       |          |        |       |          |        |     ✔      |           |                                                                                                                    |
 
-> **PyPDFMinerLoader**: When the `extract_images` parameter is set to `true`, the current implementation does not respect the `concatenate_pages` parameter. It returns multiple pages instead of a single one, as specified by default. For compatibility reasons, we are keeping this behavior.
+> **PyPDFMinerLoader**: When the `extract_images` parameter is set to `true`, the current implementation does not respect the `concatenate_pages` parameter. It returns multiple pages instead of a single one, as specified by default.
 
 > **OnlinePDFLoader**: This class is a poorly implemented (lacking `lazy_load()`) wrapper around `UnstructuredPDFLoader`.
 
@@ -182,9 +182,9 @@ New parsers will be introduced in a separate pull request.
 | Classes                  | What                                                       |
 |--------------------------|------------------------------------------------------------|
 | `UnstructuredPDFLoader`  | Extend unstructured to be conform to the new specification |
-| `LlamaIndexPDFLoader`    | Integratio of LlamaIndex API                               |
+| `LlamaIndexPDFLoader`    | Integration of online LlamaIndex API                       |
 | `PyMuPDF4LLMLoader`      | Integration of PyMuPDF4LLM                                 |
-| `PDFRouterParser`        | Select the parser                                          |
+| `PDFRouterParser`        | Dynamically selects the parser                             |
 | `DoclingPDFLoader`       | Use Docling                                                |
 | `PDFMultiLoader`         | Use multiple parser and select the best                    |
 
