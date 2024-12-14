@@ -26,12 +26,13 @@ We're sorry it may take you several hours to validate it. The changes are import
 
 Don't worry about the size of the PR. In the end, there are only two modified files. The rest is just updating unit tests and docs.
 
-| source                                                                                                  | what                                       |
-|---------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| - `langchain_community/document_loaders/pdf.py`<br/>`- langchain_community/document_loaders/parsers/pdf.py` | Modified source code                       |
-| - `docs/docs/integrations/document_loaders/*pdf*.ipynb`                                                   | A replication off one notebook             |
-| - `docs/docs/how_to/document_loader_pdf.ipynb`                                                            | An overview of pdf parsing                 |
-| - `docs/docs/how_to/document_loader_custom.ipynb`                                                         | Enhanced separation of loaders and parsers | 
+| source                                                                                                                                      | what                                       |
+|---------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
+| - `langchain_community/document_loaders/pdf.py`<br/>`- langchain_community/document_loaders/parsers/pdf.py`                                 | Modified source code                       |
+| - `langchain_community/tests/integration_tests/document_loaders/pdf.py`<br/>` - langchain_community/tests/integration_tests/parsers/pdf.py` | Modified tests                             |
+| - `docs/docs/integrations/document_loaders/*pdf*.ipynb`                                                                                     | A replication off one notebook             |
+| - `docs/docs/how_to/document_loader_pdf.ipynb`                                                                                              | An overview of pdf parsing                 |
+| - `docs/docs/how_to/document_loader_custom.ipynb`                                                                                           | Enhanced separation of loaders and parsers | 
 
 
 
