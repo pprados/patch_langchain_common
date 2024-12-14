@@ -486,3 +486,4 @@ class LlamaIndexPDFParser(BaseBlobParser):
 
 
 # PPR: https://djajafer.medium.com/document-parsing-with-omniparser-and-gpt4o-vision-5fa222c35ddd
+# PPR: https://github.com/QuivrHQ/MegaParse/tree/main

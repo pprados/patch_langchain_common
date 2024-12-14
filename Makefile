@@ -142,7 +142,7 @@ init: poetry.lock
 	@poetry config warnings.export false
 	@poetry config virtualenvs.in-project true
 	@poetry install --sync $(POETRY_EXTRA) --with $(POETRY_WITH)
-	# FIXME @pre-commit install
+	@pre-commit install
 	@git lfs install
 
 # Push to langchain
