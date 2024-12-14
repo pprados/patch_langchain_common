@@ -89,12 +89,14 @@ def execute_notebook(notebook_path: Union[str, Path]) -> None:
         )
 
 
-def main() -> None:
-    # Parcours récursif des notebooks
-    notebook_paths = list(NOTEBOOKS_DIR.glob("**/*.ipynb"))
-    if not notebook_paths:
-        logging.warning("Aucun notebook trouvé dans le répertoire %s", NOTEBOOKS_DIR)
-        return
+def main(notebook_path: Union[str, Path] = None) -> None:
+    if notebook_path:
+        notebook_paths = [Path(notebook_path)]
+    else:
+        notebook_paths = list(NOTEBOOKS_DIR.glob("**/*.ipynb"))
+        if not notebook_paths:
+            logging.warning("Aucun notebook trouvé dans le répertoire %s", NOTEBOOKS_DIR)
+            return
 
     for notebook_path in notebook_paths:
         remove_virtualenv()
@@ -107,4 +109,6 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    notebook_path = sys.argv[1] if len(sys.argv) > 1 else None
+    notebook_path = Path("/home/mame/PycharmProjects/patch_langchain_common/docs/docs/integrations/document_loaders/zeroxpdfloader.ipynb")
+    main(notebook_path)
