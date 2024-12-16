@@ -95,7 +95,9 @@ def main(notebook_path: Union[str, Path] = None) -> None:
     else:
         notebook_paths = list(NOTEBOOKS_DIR.glob("**/*.ipynb"))
         if not notebook_paths:
-            logging.warning("Aucun notebook trouvé dans le répertoire %s", NOTEBOOKS_DIR)
+            logging.warning(
+                "Aucun notebook trouvé dans le répertoire %s", NOTEBOOKS_DIR
+            )
             return
 
     for notebook_path in notebook_paths:
@@ -110,5 +112,7 @@ def main(notebook_path: Union[str, Path] = None) -> None:
 
 if __name__ == "__main__":
     notebook_path = sys.argv[1] if len(sys.argv) > 1 else None
-    notebook_path = Path("/home/mame/PycharmProjects/patch_langchain_common/docs/docs/integrations/document_loaders/zeroxpdfloader.ipynb")
+    notebook_path = Path(
+        "/home/mame/PycharmProjects/patch_langchain_common/docs/docs/integrations/document_loaders/zeroxpdfloader.ipynb"
+    )
     main(notebook_path)

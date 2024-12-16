@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging  # Set the logging level to WARNING to reduce verbosity
+import os
 import sys
 from glob import glob
 from pathlib import Path
@@ -12,26 +13,51 @@ from dotenv import load_dotenv
 from langchain.globals import set_llm_cache
 from langchain_community.cache import InMemoryCache
 from langchain_community.document_loaders.base import BaseBlobParser
+from langchain_community.document_loaders.parsers import (
+    AzureAIDocumentIntelligenceParser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PDFMinerParser as old_PDFMinerParser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PDFPlumberParser as old_PDFPlumberParser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PyMuPDFParser as old_PyMuPDFParser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PyPDFium2Parser as old_PyPDFium2Parser,
+)
+from langchain_community.document_loaders.parsers.pdf import (
+    PyPDFParser as old_PyPDFParser,
+)
 from langchain_community.document_loaders.pdf import (
+    UnstructuredPDFLoader as old_UnstructuredPDFLoader,
     ZeroxPDFLoader as old_ZeroxPDFLoader,
 )
 from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents.base import Blob, Document
+from patch_langchain_unstructured.document_loaders import UnstructuredPDFParser
 
 # %% Import patch
 from patch_langchain_community.document_loaders.new_pdf import (
+    LlamaIndexPDFParser,
     PDFMultiParser,
+    PyMuPDF4LLMParser,
 )
 from patch_langchain_community.document_loaders.parsers.pdf import (
     PDFMinerParser,
+    PDFPlumberParser,
+    PyMuPDFParser,
+    PyPDFium2Parser,
+    PyPDFParser,
+    ZeroxPDFParser,
     _default_page_delimitor,
     convert_images_to_text_with_rapidocr,
 )
 
-dotenv.load_dotenv()
-
 # %% Meta parameters
-RETRO_COMPATIBLE = True
+RETRO_COMPATIBLE = False
 
 # Under each parameter you can read a description of it and its possible values
 MODE = "single"
@@ -52,7 +78,7 @@ EXTRACT_TABLES = "markdown"
 # Format to use for the extracted tables. Either "text", "html", "markdown" or None
 SUFFIX = "md"
 # If True, compare with the old versions of parsers/loader
-USE_OLD_PARSERS = RETRO_COMPATIBLE or True
+USE_OLD_PARSERS = RETRO_COMPATIBLE or False
 # If True, force the MODE to be the default old value
 USE_ONLINE_PARSERS = False
 # Number of // workers. Deactivated with USE_OLD_PARSERS
@@ -73,104 +99,96 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
-    # "PDFMinerParser_page_new": PDFMinerParser(
-    #     mode="page",
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
-    # # %%
-    # "PDFPlumberParser_new": PDFPlumberParser(
-    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
-    # # %%
-    # "PyMuPDFParser_new": PyMuPDFParser(
-    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
-    # # %%
-    # "PyPDFium2Parser_new": PyPDFium2Parser(
-    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
-    # # %%
-    # "PyPDFParser_plain_new": PyPDFParser(
-    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extraction_mode="plain",
-    # ),
-    # # %%
-    # "PyPDFParser_layout_new": PyPDFParser(
-    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extraction_mode="layout",
-    # ),
-    # # %%
-    # "ZeroxPDFParser_new": ZeroxPDFParser(
-    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
-    # # %%
-    # "UnstructuredPDFParser_auto_new": UnstructuredPDFParser(
-    #     mode=MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="auto",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
-    # # %%
-    # "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
-    #     mode=MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="fast",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
-    # # %%
-    # "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
-    #     mode=MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="ocr_only",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
-    # # %%
-    # "UnstructuredPDFParser_hi_res_new": UnstructuredPDFParser(
-    #     mode=MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="hi_res",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
-    # # %%
-    # "UnstructuredPDFParser_elements_new": UnstructuredPDFParser(
-    #     mode="elements",
-    #     pages_delimitor=_default_page_delimitor,
-    #     strategy="hi_res",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    # ),
+    "PDFMinerParser_page_new": PDFMinerParser(
+        mode="page",
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
+    # %%
+    "PDFPlumberParser_new": PDFPlumberParser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
+    # %%
+    "PyMuPDFParser_new": PyMuPDFParser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
+    # %%
+    "PyPDFium2Parser_new": PyPDFium2Parser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
+    # %%
+    "PyPDFParser_plain_new": PyPDFParser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extraction_mode="plain",
+    ),
+    # %%
+    "PyPDFParser_layout_new": PyPDFParser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extraction_mode="layout",
+    ),
+    # %%
+    "UnstructuredPDFParser_auto_new": UnstructuredPDFParser(
+        mode=MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        strategy="auto",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
+    # %%
+    "UnstructuredPDFParser_fast_new": UnstructuredPDFParser(
+        mode=MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        strategy="fast",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
+    # %%
+    "UnstructuredPDFParser_ocr_only_new": UnstructuredPDFParser(
+        mode=MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        strategy="ocr_only",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
+    # %%
+    "UnstructuredPDFParser_hi_res_new": UnstructuredPDFParser(
+        mode=MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        strategy="hi_res",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
+    # %%
+    "UnstructuredPDFParser_elements_new": UnstructuredPDFParser(
+        mode="elements",
+        pages_delimitor=_default_page_delimitor,
+        strategy="hi_res",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
 }
 pdf_parsers_new: dict[str, BaseBlobParser] = {
     # # %%
@@ -181,79 +199,87 @@ pdf_parsers_new: dict[str, BaseBlobParser] = {
     # ),
 }
 pdf_online_parsers: dict[str, BaseBlobParser] = {
-    # # %%
-    # "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
-    #     api_endpoint=os.environ["AZURE_API_ENDPOINT"],
-    #     api_key=os.environ["AZURE_API_KEY"],
-    # ),
-    # # %%
-    # "LlamaIndexPDFParser": LlamaIndexPDFParser(
-    #     mode=MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    #     language="en",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
+    # %%
+    "ZeroxPDFParser_new": ZeroxPDFParser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
+    # %%
+    "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
+        api_endpoint=os.environ["AZURE_API_ENDPOINT"],
+        api_key=os.environ["AZURE_API_KEY"],
+    ),
+    # %%
+    "LlamaIndexPDFParser": LlamaIndexPDFParser(
+        mode=MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+        language="en",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
 }
 pdf_parsers_old: dict[str, BaseBlobParser] = {
-    # # %%
-    # "PDFMinerParser_single_old": old_PDFMinerParser(
-    #     extract_images=EXTRACT_IMAGES,
-    #     concatenate_pages=True,
-    # ),
-    # # %%
-    # "PDFMinerParser_page_old": old_PDFMinerParser(
-    #     extract_images=EXTRACT_IMAGES,
-    #     concatenate_pages=False,
-    # ),
-    # # %%
-    # "PDFPlumberParser_old": old_PDFPlumberParser(
-    #     text_kwargs=None,
-    #     dedupe=False,
-    #     extract_images=EXTRACT_IMAGES,
-    # ),
-    # # %%
-    # "PyMuPDFParser_old": old_PyMuPDFParser(
-    #     text_kwargs=None,
-    #     extract_images=EXTRACT_IMAGES,
-    # ),
-    # # %%
-    # "PyPDFium2Parser_old": old_PyPDFium2Parser(
-    #     extract_images=False,
-    # ),
-    # # %%
-    # "PyPDFParser_plain_old": old_PyPDFParser(
-    #     extract_images=EXTRACT_IMAGES,
-    #     extraction_mode="plain",
-    # ),
-    # # %%
-    # "PyPDFParser_layout_old": old_PyPDFParser(
-    #     extract_images=EXTRACT_IMAGES,
-    #     extraction_mode="layout",
-    # ),
+    # %%
+    "PDFMinerParser_single_old": old_PDFMinerParser(
+        extract_images=EXTRACT_IMAGES,
+        concatenate_pages=True,
+    ),
+    # %%
+    "PDFMinerParser_page_old": old_PDFMinerParser(
+        extract_images=EXTRACT_IMAGES,
+        concatenate_pages=False,
+    ),
+    # %%
+    "PDFPlumberParser_old": old_PDFPlumberParser(
+        text_kwargs=None,
+        dedupe=False,
+        extract_images=EXTRACT_IMAGES,
+    ),
+    # %%
+    "PyMuPDFParser_old": old_PyMuPDFParser(
+        text_kwargs=None,
+        extract_images=EXTRACT_IMAGES,
+    ),
+    # %%
+    "PyPDFium2Parser_old": old_PyPDFium2Parser(
+        extract_images=False,
+    ),
+    # %%
+    "PyPDFParser_plain_old": old_PyPDFParser(
+        extract_images=EXTRACT_IMAGES,
+        extraction_mode="plain",
+    ),
+    # %%
+    "PyPDFParser_layout_old": old_PyPDFParser(
+        extract_images=EXTRACT_IMAGES,
+        extraction_mode="layout",
+    ),
 }
 pdf_loader_old: dict[str, tuple[Type[BaseLoader], dict]] = {
-    # "UnstructuredPDFParser_fast_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": MODE, "strategy": "fast"},
-    # ),
-    # "UnstructuredPDFParser_auto_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": MODE, "strategy": "auto"},
-    # ),
-    # "UnstructuredPDFParser_ocr_only_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": "single", "strategy": "ocr_only"},
-    # ),
-    # "UnstructuredPDFParser_hi_res_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": MODE, "strategy": "hi_res"},
-    # ),
-    # "UnstructuredPDFParser_elements_old": (
-    #     old_UnstructuredPDFLoader,
-    #     {"mode": "elements", "strategy": "hi_res"},
-    # ),
+    "UnstructuredPDFParser_fast_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": MODE, "strategy": "fast"},
+    ),
+    "UnstructuredPDFParser_auto_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": MODE, "strategy": "auto"},
+    ),
+    "UnstructuredPDFParser_ocr_only_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": "single", "strategy": "ocr_only"},
+    ),
+    "UnstructuredPDFParser_hi_res_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": MODE, "strategy": "hi_res"},
+    ),
+    "UnstructuredPDFParser_elements_old": (
+        old_UnstructuredPDFLoader,
+        {"mode": "elements", "strategy": "hi_res"},
+    ),
     "old_ZeroxPDFLoader_old": (old_ZeroxPDFLoader, {}),
 }
 

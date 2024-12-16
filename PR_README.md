@@ -131,6 +131,14 @@ XXXLoader(
 )
 ```
 
+# Tables
+Some parsers are able to extract arrays, but this is not integrated into langchain. We've added the necessary features to take this into account.
+
+- `PyMuPDFLoader`
+- `PDFPlumberLoader`
+- `ZeroxPDFLoader`
+- `UnstructuredPDFLoader`
+
 # Metadata
 The different parsers offer a minimum set of common metadata:
 
@@ -144,6 +152,14 @@ The different parsers offer a minimum set of common metadata:
 - Dates are converted to ISO 8601 format for easier handling and consistency with other file formats.
 
 All keys are in lowercase.
+
+# Tests
+We propose matrix tests to validate all parsers compatible with the new approach.
+
+- `test_standard_parameters()`
+- `test_parser_with_table()`
+
+To validate all the parsers, we retrieved all the PDF files used by each parser for its own tests, and invoked all the parsers from langchain, along with all these files. This ensures that there are no crashes when parsing a PDF file.
 
 # New features of parsers
 

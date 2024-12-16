@@ -1503,17 +1503,18 @@ class PyPDFium2Parser(ImagesPdfParser):
 # This is not in l8ine with the new convention, which requires the key to be in
 # lower case.
 class _PDFPlumberParserMetadata(dict[object, Any]):
+    _warning_keys: set[str] = set()
+
     def __init__(self, d: dict[str, Any]):
         super().__init__({k.lower(): v for k, v in d.items()})
         self._pdf_metadata_keys = set(d.keys())
-        self._warning_keys: set[str] = set()
 
     def _lower(self, k: object) -> object:
         if k in self._pdf_metadata_keys:
             lk = str(k).lower()
             if lk != k:
-                if k not in self._warning_keys:
-                    self._warning_keys.add(str(k))
+                if k not in _PDFPlumberParserMetadata._warning_keys:
+                    _PDFPlumberParserMetadata._warning_keys.add(str(k))
                     logger.warning(
                         'The key "%s" with uppercase is deprecated. '
                         "Update your code and vectorstore.",

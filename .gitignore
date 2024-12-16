@@ -166,5 +166,6 @@ cython_debug/
 .ruff_cache
 
 parser_comparator/multi_parsing_results
+parser_comparator/pending_sources_pd
 parser_comparator/others_pdf
 .idea/

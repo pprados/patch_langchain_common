@@ -168,7 +168,7 @@ define _push_sync
 		  --exclude ".*" \
 		  --exclude __pycache__ \
 		  --exclude __init__.py \
-		  --exclude "new_*.py" \
+		  --exclude "new_*" \
 		  . "${WORK_DIR}/libs/${TARGET}/$(DST_PACKAGE)" ; \
 	)
 	@( \
