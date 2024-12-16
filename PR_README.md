@@ -205,3 +205,15 @@ New parsers will be introduced in a separate pull request.
 | `DoclingPDFLoader`       | Use Docling                                                |
 | `PDFMultiLoader`         | Use multiple parser and select the best                    |
 
+For example, with the unification of parsers, it will be possible to choose the parser according to the characteristics of the PDF file.
+```python
+  routes = [
+      ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"}, PyMuPDFParser()),
+      ("LibreOffice", {"producer": "LibreOffice", }, PDFPlumberParser()),
+      ("Xdvipdfmx", {"producer": "xdvipdfmx.*", "page1":"Hello"}, PDFPlumberParser()),
+      ("default", {}, PyPDFium2Parser())
+  ]
+  loader = PDFRouterLoader(HELLO_PDF,routes=routes)
+  loader.load()
+```
+This will be present in other PRs.
