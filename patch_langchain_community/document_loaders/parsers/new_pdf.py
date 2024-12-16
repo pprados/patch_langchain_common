@@ -38,11 +38,11 @@ logger = logging.getLogger(__name__)
 
 class PDFMultiParser(BaseBlobParser):
     def __init__(
-        self,
-        parsers: dict[str, BaseBlobParser],
-        *,
-        max_workers: Optional[int] = None,
-        continue_if_error: bool = True,
+            self,
+            parsers: dict[str, BaseBlobParser],
+            *,
+            max_workers: Optional[int] = None,
+            continue_if_error: bool = True,
     ) -> None:
         """"""
         self.parsers = parsers
@@ -50,8 +50,8 @@ class PDFMultiParser(BaseBlobParser):
         self.continue_if_error = continue_if_error
 
     def lazy_parse(
-        self,
-        blob: Blob,
+            self,
+            blob: Blob,
     ) -> Iterator[Document]:
         """Lazily parse the blob. (Fakely because for each parser all Documents
         need to be loaded at once in order to
@@ -64,8 +64,8 @@ class PDFMultiParser(BaseBlobParser):
         return iter(best_parsing_documents)
 
     def parse_and_evaluate(
-        self,
-        blob: Blob,
+            self,
+            blob: Blob,
     ) -> list[tuple[str, list[Document], dict[str, float]]]:
         """Parse the blob with all parsers and return the results as a dictionary
         {parser_name: (documents, metrics)}"""
@@ -109,8 +109,8 @@ class PDFMultiParser(BaseBlobParser):
         return parsers_results
 
     def evaluate_parsing_quality(
-        self,
-        documents_list: list[Document],
+            self,
+            documents_list: list[Document],
     ) -> dict[str, float]:
         """Evaluate the quality of a parsing based on some metrics measured
         by heuristics.
@@ -131,8 +131,8 @@ class PDFMultiParser(BaseBlobParser):
         return metric_name2score
 
     def metric_tables(
-        self,
-        content: str,
+            self,
+            content: str,
     ) -> float:
         """Evaluate the quality of tables identification in a document."""
         tables_score = 0
@@ -158,8 +158,8 @@ class PDFMultiParser(BaseBlobParser):
         return tables_score
 
     def metric_titles(
-        self,
-        content: str,
+            self,
+            content: str,
     ) -> float:
         """Evaluate the quality of titles identification in a document."""
         title_score = 0
@@ -180,8 +180,8 @@ class PDFMultiParser(BaseBlobParser):
         return title_score
 
     def metric_lists(
-        self,
-        content: str,
+            self,
+            content: str,
     ) -> float:
         """Evaluate the quality of lists identification in a document."""
         lists_score = 0
@@ -194,14 +194,14 @@ class PDFMultiParser(BaseBlobParser):
             indent = match[0]  # get indentation
             level = len(indent)
             lists_score += (
-                level + 1
+                    level + 1
             )  # the more indent the parser identify the more it is rewarded
 
         return lists_score
 
     def compute_global_parsing_score(
-        self,
-        metric_name2score: dict[str, float],
+            self,
+            metric_name2score: dict[str, float],
     ) -> np.floating[Any]:
         """Compute the global parsing score based on the scores of each metric."""
         return np.mean(list(metric_name2score.values()))
@@ -211,12 +211,12 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
     """Parse `PDF` using `PyMuPDF`."""
 
     def __init__(
-        self,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "page"] = "single",
-        pages_delimitor: str = _default_page_delimitor,
-        to_markdown_kwargs: Optional[dict[str, Any]] = None,
+            self,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "page"] = "single",
+            pages_delimitor: str = _default_page_delimitor,
+            to_markdown_kwargs: Optional[dict[str, Any]] = None,
     ) -> None:
         """Initialize the parser.
 
@@ -268,8 +268,8 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
                 full_text = []
                 metadata: dict[str, Any] = {}
                 for mu_doc in pymupdf4llm.to_markdown(
-                    doc,
-                    **self.to_markdown_kwargs,
+                        doc,
+                        **self.to_markdown_kwargs,
                 ):
                     if self.mode == "single":
                         full_text.append(mu_doc["text"])
@@ -321,17 +321,15 @@ class PDFRouterParser(BaseBlobParser):
     # {"metadata":r"regex"},
     # doc_regex = r"regex"
     def __init__(
-        self,
-        routes: list[
-            tuple[
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
-                BaseBlobParser,
-            ]
-        ],
-        *,
-        password: Optional[str] = None,
+            self,
+            routes: list[
+                tuple[
+                    str, dict[str, Union[re.Pattern | str]],
+                    BaseBlobParser,
+                ]
+            ],
+            *,
+            password: Optional[str] = None,
     ):
         """Initialize with a file path."""
         try:
@@ -343,51 +341,61 @@ class PDFRouterParser(BaseBlobParser):
         super().__init__()
         self.password = password
         new_routes = []
-        for producer, creator, page, parser in routes:
-            if isinstance(producer, str):
-                producer = re.compile(producer)
-            if isinstance(creator, str):
-                creator = re.compile(creator)
-            if isinstance(page, str):
-                page = re.compile(page)
-            new_routes.append((producer, creator, page, parser))
+        for name, matchs, parser in routes:
+            new_matchs = {}
+            for k, v in matchs.items():
+                if isinstance(v, str):
+                    v = re.compile(v)
+                new_matchs[k] = v
+            new_routes.append((name, new_matchs, parser))
         self.routes = new_routes
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:  # type: ignore[valid-type]
         """Lazily parse the blob."""
+        try:
+            import pypdf  # noqa:F401
+        except ImportError:
+            raise ImportError(
+                "pypdf package not found, please install it with `pip install pypdf`"
+            )
         from pypdf import PdfReader
 
         with blob.as_bytes_io() as pdf_file_obj:  # type: ignore[attr-defined]
             with PdfReader(pdf_file_obj, password=self.password) as reader:
-                if reader.metadata:
-                    producer, creator = (
-                        reader.metadata.producer,
-                        reader.metadata.creator,
-                    )
-                    page1 = reader.pages[0].extract_text()
-                for re_producer, re_create, re_page, parser in self.routes:
-                    is_producer = not re_producer or re_producer.search(producer)
-                    is_creator = not re_create or re_create.search(creator)
-                    is_page = not re_page or re_page.search(page1)
-                    if is_producer and is_creator and is_page:
-                        yield from parser.lazy_parse(blob)
+                metadata = purge_metadata(reader.metadata)
+                page1 = reader.pages[0].extract_text()
+                find = False
+                for name, match, parser in self.routes:
+                    for k, p in match.items():
+                        if k == "page1":
+                            if not p.search(page1):
+                                break
+                        elif k not in metadata or not p.search(metadata[k]):
+                            break
+                    else:
+                        find = True
+                        break
+                if find:
+                    for doc in parser.lazy_parse(blob):
+                        doc.metadata["router"]=name
+                        yield doc
 
 
 class LlamaIndexPDFParser(BaseBlobParser):
     """Parse `PDF` using `LlamaIndex`."""
 
     def __init__(
-        self,
-        *,
-        password: Optional[str] = None,
-        mode: Literal["single", "page"] = "single",
-        pages_delimitor: str = _default_page_delimitor,
-        extract_tables: Literal["markdown"] = "markdown",
-        api_key: Optional[str] = None,
-        verbose: bool = False,
-        language: str = "en",
-        extract_images: bool = False,
-        images_to_text: CONVERT_IMAGE_TO_TEXT = None,
+            self,
+            *,
+            password: Optional[str] = None,
+            mode: Literal["single", "page"] = "single",
+            pages_delimitor: str = _default_page_delimitor,
+            extract_tables: Literal["markdown"] = "markdown",
+            api_key: Optional[str] = None,
+            verbose: bool = False,
+            language: str = "en",
+            extract_images: bool = False,
+            images_to_text: CONVERT_IMAGE_TO_TEXT = None,
     ) -> None:
         try:
             import pdfminer  # noqa:F401
@@ -427,9 +435,9 @@ class LlamaIndexPDFParser(BaseBlobParser):
 
     @staticmethod
     def __get_metadata(
-        fp: BinaryIO,
-        password: str = "",
-        caching: bool = True,
+            fp: BinaryIO,
+            password: str = "",
+            caching: bool = True,
     ) -> dict[str, Any]:
         from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
 
@@ -483,7 +491,6 @@ class LlamaIndexPDFParser(BaseBlobParser):
                 page_content=self.pages_delimitor.join(full_text),
                 metadata=doc_metadata,
             )
-
 
 # PPR: https://djajafer.medium.com/document-parsing-with-omniparser-and-gpt4o-vision-5fa222c35ddd
 # PPR: https://github.com/QuivrHQ/MegaParse/tree/main

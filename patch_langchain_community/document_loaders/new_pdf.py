@@ -56,12 +56,13 @@ class PDFMultiLoader(BasePDFLoader):
 
 class PDFRouterLoader(BasePDFLoader):
     """
-    Load PDFs using different parsers based on the metadata of the PDF.
+    Load PDFs using different parsers based on the metadata of the PDF
+    or the body of the first page.
     The routes are defined as a list of tuples, where each tuple contains
-    the regex pattern for the producer, creator, and page, and the parser to use.
-    The parser is used if the regex pattern matches the metadata of the PDF.
+    the name, a dictionary of metadata and regex pattern and the parser to use.
+    The special key "page1" is to search in the first page with a regexp.
     Use the route in the correct order, as the first matching route is used.
-    Add a default route (None, None, None, parser) at the end to catch all PDFs.
+    Add a default route ("default", {}, parser) at the end to catch all PDFs.
 
     Sample:
     ```python
@@ -70,9 +71,11 @@ class PDFRouterLoader(BasePDFLoader):
     from langchain_community.document_loaders.parsers.pdf import PyPDFium2Parser
     from langchain_community.document_loaders.parsers import PDFPlumberParser
     routes = [
-        ("Microsoft", "Microsoft", None, PyMuPDFParser()),
-        ("LibreOffice", None, None, PDFPlumberParser()),
-        (None, None, None, PyPDFium2Parser())
+        # Name, keys with regex, parser
+        ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"}, PyMuPDFParser()),
+        ("LibreOffice", {"producer": "LibreOffice", }, PDFPlumberParser()),
+        ("Xdvipdfmx", {"producer": "xdvipdfmx.*", "page1":"Hello"}, PDFPlumberParser()),
+        ("defautl", {}, PyPDFium2Parser())
     ]
     loader = PDFRouterLoader(filename, routes)
     loader.load()
@@ -85,21 +88,13 @@ class PDFRouterLoader(BasePDFLoader):
         *,
         routes: list[
             tuple[
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
-                Optional[Union[re.Pattern, str]],
+                str,dict[str,re.Pattern],
                 BaseBlobParser,
             ]
         ],
         password: Optional[str] = None,
     ):
         """Initialize with a file path."""
-        try:
-            import pypdf  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "pypdf package not found, please install it with `pip install pypdf`"
-            )
         super().__init__(file_path)
         self.parser = PDFRouterParser(routes, password=password)
 
