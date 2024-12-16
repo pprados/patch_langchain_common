@@ -22,14 +22,14 @@ Why is it important to unify the different parsers? Each has its own characteris
 # The PR
 We propose a substantial PR to improve the different PDF parser integrations. All my clients struggle with PDFs. I took the initiative to address this issue at its root by refactoring the various integrations of Python PDF parsers. The goal is to standardize a minimum set of parameters and metadata and bring improvements to each one (bug fixes, feature additions).
 
-We're sorry it may take you several hours to validate it. The changes are important and cannot be published one after the other, as everything is linked. It's going to be difficult to cut the code into 12 successive PRs, and end up with the same result. And that's going to take months. All this work is validated by two matrix tests, ensuring the consistency of all modifications.
+We're sorry it may take you several hours to validate it. The changes are important and cannot be published one after the other, as everything is linked. It's going to be difficult to cut the code into 12 successive PRs, and end up with the same result. Only two files are modified ! And that's going to take months. All this work is validated by two matrix tests, ensuring the consistency of all modifications.
 
 Don't worry about the size of the PR. In the end, there are only two modified files. The rest is just updating unit tests and docs.
 
 | source                                                                                                                                    | what                                       |
 |-------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
 | - `langchain_community/document_loaders/pdf.py`<br/>- `langchain_community/document_loaders/parsers/pdf.py`                             | Modified source code                       |
-| - `langchain_community/tests/integration_tests/document_loaders/pdf.py`<br/>- `langchain_community/tests/integration_tests/parsers/pdf.py` | Modified tests                             |
+| - `langchain_community/tests/integration_tests/document_loaders/pdf.py`<br/>- `langchain_community/tests/integration_tests/document_loaders/parsers/pdf.py` | Modified tests                             |
 | - `docs/docs/integrations/document_loaders/*pdf*.ipynb`                                                                                   | A replication off one notebook             |
 | - `docs/docs/how_to/document_loader_pdf.ipynb`                                                                                            | An overview of pdf parsing                 |
 | - `docs/docs/how_to/document_loader_custom.ipynb`                                                                                         | Enhanced separation of loaders and parsers | 
@@ -168,7 +168,7 @@ We resume the modification for each parsers
 
 > **OnlinePDFLoader**: This class is a poorly implemented (lacking `lazy_load()`) wrapper around `UnstructuredPDFLoader`.
 
-> **parser**: Split the loader and parser
+> **parser**: Split the loader and parser. As discussed in the LangChain documentation, it can be useful to decouple analysis logic from loading logic, making it easier to reuse a given analyzer regardless of how the data has been loaded. Where necessary, we have split the two logics.
 
 I will publish another PR for unstructured:
 

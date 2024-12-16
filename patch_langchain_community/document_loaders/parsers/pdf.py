@@ -901,7 +901,7 @@ class PDFMinerParser(ImagesPdfParser):
         except ImportError:
             raise ImportError(
                 "pdfminer package not found, please install it "
-                "with `pip install pdfminer`"
+                "with `pip install pdfminer.six`"
             )
         try:
             from PIL import Image
