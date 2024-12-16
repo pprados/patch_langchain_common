@@ -33,6 +33,8 @@ from langchain_community.document_loaders.parsers.pdf import (
 )
 from langchain_community.document_loaders.pdf import (
     UnstructuredPDFLoader as old_UnstructuredPDFLoader,
+)
+from langchain_community.document_loaders.pdf import (
     ZeroxPDFLoader as old_ZeroxPDFLoader,
 )
 from langchain_core.document_loaders import BaseLoader

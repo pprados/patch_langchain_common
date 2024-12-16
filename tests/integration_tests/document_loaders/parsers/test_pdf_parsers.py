@@ -312,7 +312,7 @@ def test_parser_with_table(
     os.environ["DO_NOT_TRACK"] = "true"
 
     def images_to_text(images: List[np.ndarray]) -> Iterator[str]:
-        return iter(["<IMAGE />"] * len(images))
+        return iter(["<!-- image -->"] * len(images))
 
     parser_class = getattr(pdf_parsers, parser_factory)
     parser = parser_class(

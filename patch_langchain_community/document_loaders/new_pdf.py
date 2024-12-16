@@ -88,7 +88,8 @@ class PDFRouterLoader(BasePDFLoader):
         *,
         routes: list[
             tuple[
-                str,dict[str,re.Pattern],
+                str,
+                dict[str, Union[re.Pattern | str]],
                 BaseBlobParser,
             ]
         ],
@@ -148,7 +149,12 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
         self,
     ) -> Iterator[Document]:
         """Lazily load documents."""
-        blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        if self.web_path:
+            blob = Blob.from_data(
+                open(self.file_path, "rb").read(), path=self.web_path
+            )  # type: ignore[attr-defined]
+        else:
+            blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
         yield from self.parser.lazy_parse(blob)
 
 
@@ -157,6 +163,7 @@ class LlamaIndexPDFLoader(BasePDFLoader):
         self,
         file_path: Union[str, Path],
         *,
+        headers: Optional[dict] = None,
         password: Optional[str] = None,
         mode: Literal["single", "page"] = "single",
         pages_delimitor: str = _default_page_delimitor,
@@ -167,14 +174,7 @@ class LlamaIndexPDFLoader(BasePDFLoader):
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
     ):
-        try:
-            from llama_parse import LlamaParse  # noqa:F401
-        except ImportError:
-            raise ImportError(
-                "llama_parse package not found, please install it "
-                "with `pip install llama_parse`"
-            )
-        super().__init__(file_path)
+        super().__init__(file_path, headers=headers)
         if extract_images:
             logger.info("Ignore extract_images==True in LlamaIndexPDFParser.")
         if extract_tables != "markdown" or images_to_text:
@@ -195,30 +195,20 @@ class LlamaIndexPDFLoader(BasePDFLoader):
         self,
     ) -> Iterator[Document]:
         """Lazily load documents."""
-        blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
-        yield from self.parser.lazy_parse(blob)
-
-
-# TODO docline
-# https://www.reddit.com/r/LocalLLaMA/comments/1ghbmoq/docling_is_a_new_library_from_ibm_that/?tl=fr
-class DoclingPDFLoader(BasePDFLoader):
-    def __init__(self, file_path: Union[str, Path]) -> None:
         try:
-            from docling.document_converter import DocumentConverter
+            from llama_parse import LlamaParse  # noqa:F401
         except ImportError:
             raise ImportError(
-                "docling package not found, please install it "
-                "with `pip install doctling`"  # FIXME: only parser ?
+                "llama_parse package not found, please install it "
+                "with `pip install llama_parse`"
             )
-        super().__init__(file_path)
-        self._file_paths = file_path if isinstance(file_path, list) else [file_path]
-        self._converter = DocumentConverter()
-
-    def lazy_load(self) -> Iterator[Document]:
-        for source in self._file_paths:
-            dl_doc = self._converter.convert(source).document
-            text = dl_doc.export_to_markdown()
-            yield Document(page_content=text)
+        if self.web_path:
+            blob = Blob.from_data(
+                open(self.file_path, "rb").read(), path=self.web_path
+            )  # type: ignore[attr-defined]
+        else:
+            blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        yield from self.parser.lazy_parse(blob)
 
 
 # TODO: https://www.linkedin.com/posts/liorsinclair_nvidia-just-released-a-powerful-pdf-extraction-ugcPost-7267580522359336962-GAQv/?utm_source=share&utm_medium=member_desktop
