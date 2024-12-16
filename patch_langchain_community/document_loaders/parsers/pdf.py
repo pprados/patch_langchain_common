@@ -1689,9 +1689,9 @@ class PDFPlumberParser(ImagesPdfParser):
                 )
             )
             for page in doc.pages:
-                tables_bbox: list[tuple[float, float, float, float]] = (
-                    self._extract_tables_bbox_from_page(page)
-                )
+                tables_bbox: list[
+                    tuple[float, float, float, float]
+                ] = self._extract_tables_bbox_from_page(page)
                 tables_content = self._extract_tables_from_page(page)
                 images_bbox = [geometry.obj_to_bbox(image) for image in page.images]
                 image_from_page = self._extract_images_from_page(page)

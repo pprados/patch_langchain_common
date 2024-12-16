@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from patch_langchain_community.document_loaders import PDFRouterLoader
 from patch_langchain_community.document_loaders.parsers import (
     PDFPlumberParser,
     PDFRouterParser,

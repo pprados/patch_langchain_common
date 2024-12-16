@@ -7,7 +7,6 @@ from glob import glob
 from pathlib import Path
 from typing import Any, Optional, Type
 
-import dotenv
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.globals import set_llm_cache
@@ -45,7 +44,6 @@ from patch_langchain_unstructured.document_loaders import UnstructuredPDFParser
 from patch_langchain_community.document_loaders.new_pdf import (
     LlamaIndexPDFParser,
     PDFMultiParser,
-    PyMuPDF4LLMParser,
 )
 from patch_langchain_community.document_loaders.parsers.pdf import (
     PDFMinerParser,
