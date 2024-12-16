@@ -2224,7 +2224,7 @@ class ZeroxPDFParser(BaseBlobParser):
                 temp_file.close()
 
     def _get_metadata(self, file_path: str) -> dict[str, Any]:
-        from pdfminer.pdfpage import PDFDocfument, PDFParser
+        from pdfminer.pdfpage import PDFDocument, PDFParser
 
         with open(file_path, "rb") as file:
             parser = PDFParser(cast(BinaryIO, file))
