@@ -71,6 +71,7 @@ parser-comparator = [
 optional = true
 
 [tool.poetry.group.dev.dependencies]
+torch = "2.2"
 pillow = "*"
 playwright = "*"
 setuptools = "*"

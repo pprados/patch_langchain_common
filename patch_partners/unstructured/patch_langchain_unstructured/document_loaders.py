@@ -502,6 +502,7 @@ class _SinglePDFDocumentLoader(_SingleDocumentLoader):
             metadata["total_pages"] = len(list(PDFPage.create_pages(doc)))
             return metadata
 
+
 class UnstructuredPDFParser(ImagesPdfParser):
     """Unstructured document loader interface.
 
@@ -627,6 +628,7 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 'element_id': '3652b8458b0688639f973fe36253c992'}
 
     """
+
     _warn_extract_tables = False
 
     def __init__(
@@ -663,8 +665,10 @@ class UnstructuredPDFParser(ImagesPdfParser):
             extract_images = False
         if unstructured_kwargs.get("strategy") != "hi_res" and extract_tables:
             if not UnstructuredPDFParser._warn_extract_tables:
-                UnstructuredPDFParser._warn_extract_tables=True
-                logger.warning("extract_tables is not supported with strategy!='hi_res'")
+                UnstructuredPDFParser._warn_extract_tables = True
+                logger.warning(
+                    "extract_tables is not supported with strategy!='hi_res'"
+                )
             extract_tables = None
         super().__init__(extract_images, images_to_text)
 
@@ -708,9 +712,9 @@ class UnstructuredPDFParser(ImagesPdfParser):
                 unstructured_kwargs["extract_images_in_pdf"] = True
                 self.tmp_dir = TemporaryDirectory(ignore_cleanup_errors=True)
                 if "extract_image_block_output_dir" not in unstructured_kwargs:
-                    unstructured_kwargs[
-                        "extract_image_block_output_dir"
-                    ] = self.tmp_dir.name
+                    unstructured_kwargs["extract_image_block_output_dir"] = (
+                        self.tmp_dir.name
+                    )
         self.images_to_text = images_to_text
         self.extract_tables = extract_tables
         self.partition_via_api = partition_via_api

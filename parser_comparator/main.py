@@ -7,7 +7,6 @@ from glob import glob
 from pathlib import Path
 from typing import Any, Optional, Type
 
-import dotenv
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.globals import set_llm_cache
@@ -377,7 +376,7 @@ def _save_results(
     parsers_results: list[tuple[str, list[Document], dict[str, Any]]],
     parsings_subdir: Path,
     pdf_file_relative_path: Path,
-) -> dict[str, str]:
+) -> None:
     # store parsed documents
     parser_name2concatenated_parsed_docs = {
         parser_data[0]: _default_page_delimitor.join(
@@ -404,7 +403,7 @@ def _save_results(
             if parser_name2concatenated_parsed_metadata[parser_name]:
                 metadata = parser_name2concatenated_parsed_metadata[parser_name][0]
             else:
-                metadata={}
+                metadata = {}
             json.dump(metadata, f, indent=2, sort_keys=True)
 
     # store parsing scores in excel format heatmap
@@ -414,8 +413,6 @@ def _save_results(
     df = pd.DataFrame(parser_name2metrics).T
     styled_df = df.style.background_gradient()
     styled_df.to_excel(f"{parsings_subdir}/parsers_metrics_results.xlsx")
-
-    return
 
 
 if __name__ == "__main__":

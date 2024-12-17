@@ -469,8 +469,8 @@ class PyPDFParser(ImagesPdfParser):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extraction_mode: “plain” for legacy functionality, “layout” for experimental
                 layout mode functionality
             extraction_kwargs: Optional additional parameters for the extraction
@@ -631,7 +631,7 @@ class PDFMinerParser(ImagesPdfParser):
 
         .. code-block:: python
 
-            from patch_langchain_community.document_loaders.parsers import PDFMinerParser
+            from langchain_community.document_loaders.parsers import PDFMinerParser
 
             parser = PDFMinerParser(
                 # password = None,
@@ -675,8 +675,8 @@ class PDFMinerParser(ImagesPdfParser):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             concatenate_pages: Deprecated. If True, concatenate all PDF pages
                 into one a single document. Otherwise, return one document per page.
 
@@ -999,8 +999,8 @@ class PyMuPDFParser(ImagesPdfParser):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extract_tables: Whether to extract tables in a specific format, such as
                 "csv", "markdown", or "html".
             extract_tables_settings: Optional dictionary of settings for customizing
@@ -1282,7 +1282,7 @@ class PyPDFium2Parser(ImagesPdfParser):
 
         .. code-block:: python
 
-            from patch_langchain_community.document_loaders.parsers import PyPDFium2Parser
+            from langchain_community.document_loaders.parsers import PyPDFium2Parser
 
             parser = PyPDFium2Parser(
                 # password=None,
@@ -1311,7 +1311,7 @@ class PyPDFium2Parser(ImagesPdfParser):
     warnings.filterwarnings(
         "ignore",
         module=r"^pypdfium2._helpers.textpage$",
-        message="get_text_range\\(\\) call with default params will be .*"
+        message="get_text_range\\(\\) call with default params will be .*",
     )
 
     def __init__(
@@ -1332,8 +1332,8 @@ class PyPDFium2Parser(ImagesPdfParser):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
 
         Returns:
             This method does not directly return data. Use the `parse` or `lazy_parse`
@@ -1515,7 +1515,7 @@ class PDFPlumberParser(ImagesPdfParser):
 
         .. code-block:: python
 
-            from patch_langchain_community.document_loaders.parsers import PDFPlumberParser
+            from langchain_community.document_loaders.parsers import PDFPlumberParser
 
             parser = PDFPlumberParser(
                 # password = None,
@@ -1561,8 +1561,8 @@ class PDFPlumberParser(ImagesPdfParser):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extract_tables: Whether to extract images from the PDF in a specific
                 format, such as "csv", "markdown" or "html".
             text_kwargs: Keyword arguments to pass to ``pdfplumber.Page.extract_text()``
@@ -1636,9 +1636,9 @@ class PDFPlumberParser(ImagesPdfParser):
                 )
             )
             for page in doc.pages:
-                tables_bbox: list[
-                    tuple[float, float, float, float]
-                ] = self._extract_tables_bbox_from_page(page)
+                tables_bbox: list[tuple[float, float, float, float]] = (
+                    self._extract_tables_bbox_from_page(page)
+                )
                 tables_content = self._extract_tables_from_page(page)
                 images_bbox = [geometry.obj_to_bbox(image) for image in page.images]
                 image_from_page = self._extract_images_from_page(page)
@@ -2004,7 +2004,7 @@ class ZeroxPDFParser(BaseBlobParser):
 
         .. code-block:: python
 
-            from patch_langchain_community.document_loaders.parsers import ZeroxPDFParser
+            from langchain_community.document_loaders.parsers import ZeroxPDFParser
 
             parser = ZeroxPDFParser(
                 # password = None,
@@ -2026,6 +2026,7 @@ class ZeroxPDFParser(BaseBlobParser):
             print(docs[0].page_content[:100])
             print(docs[0].metadata)
     """
+
     warnings.filterwarnings(
         "ignore",
         module=r"^pyzerox.models.modellitellm$",
@@ -2080,8 +2081,8 @@ class ZeroxPDFParser(BaseBlobParser):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             model:
                 Vision capable model to use. Defaults to "gpt-4o-mini".
                 Hosted models are passed in format "<provider>/<model>"

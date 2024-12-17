@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 import os
@@ -28,7 +27,7 @@ from langchain_community.document_loaders.base import BaseLoader
 from langchain_community.document_loaders.blob_loaders import Blob
 from langchain_community.document_loaders.dedoc import DedocBaseLoader
 from langchain_community.document_loaders.unstructured import UnstructuredFileLoader
-from langchain_core._api.deprecation import deprecated, warn_deprecated
+from langchain_core._api.deprecation import deprecated
 from langchain_core.documents import Document
 from langchain_core.utils import get_from_dict_or_env
 
@@ -257,8 +256,8 @@ class PyPDFLoader(BasePDFLoader):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extraction_mode: “plain” for legacy functionality, “layout” for experimental
                 layout mode functionality
             extraction_kwargs: Optional additional parameters for the extraction
@@ -372,8 +371,8 @@ class PyPDFium2Loader(BasePDFLoader):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extraction_mode: “plain” for legacy functionality, “layout” for experimental
                 layout mode functionality
             extraction_kwargs: Optional additional parameters for the extraction
@@ -631,8 +630,8 @@ class PDFMinerLoader(BasePDFLoader):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             concatenate_pages: Deprecated. If True, concatenate all PDF pages into one
                 a single document. Otherwise, return one document per page.
 
@@ -795,8 +794,8 @@ class PyMuPDFLoader(BasePDFLoader):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extract_tables: Whether to extract tables in a specific format, such as
                 "csv", "markdown", or "html".
             extract_tables_settings: Optional dictionary of settings for customizing
@@ -994,8 +993,8 @@ class PDFPlumberLoader(BasePDFLoader):
 
     This class provides methods to load and parse PDF documents, supporting various
     configurations such as handling password-protected files, extracting images, and
-    defining extraction mode. It integrates the `pdfplumber` library for PDF processing and
-    offers both synchronous and asynchronous document loading.
+    defining extraction mode. It integrates the `pdfplumber` library for PDF processing
+    and offers both synchronous and asynchronous document loading.
 
     Examples:
         Setup:
@@ -1072,8 +1071,8 @@ class PDFPlumberLoader(BasePDFLoader):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extract_tables: Whether to extract tables in a specific format, such as
                 "csv", "markdown", or "html".
             extract_tables_settings: Optional dictionary of settings for customizing
@@ -1487,6 +1486,7 @@ class ZeroxPDFLoader(BasePDFLoader):
             print(docs[0].page_content[:100])
             print(docs[0].metadata)
     """
+
     def __init__(
         self,
         file_path: Union[str, Path],
@@ -1521,8 +1521,8 @@ class ZeroxPDFLoader(BasePDFLoader):
             pages_delimitor: A string delimiter to separate pages in single-mode
                 extraction.
             extract_images: Whether to extract images from the PDF.
-            images_to_text: Optional function or callable to convert images to text during
-                extraction.
+            images_to_text: Optional function or callable to convert images to text
+                during extraction.
             extract_tables: Whether to extract tables in a specific format, such as
                 "csv", "markdown", or "html".
             extract_tables_settings: Optional dictionary of settings for customizing
