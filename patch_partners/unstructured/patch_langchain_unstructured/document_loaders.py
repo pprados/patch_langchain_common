@@ -321,8 +321,7 @@ class _SingleDocumentLoader(BaseLoader):
 
     def lazy_load(self) -> Iterator[Document]:
         """Load file."""
-        #with _SingleDocumentLoader._lock:  # FIXME: necessary ?
-        if True:
+        with _SingleDocumentLoader._lock:
             elements_json = (
                 self._post_process_elements_json(self._elements_json)
                 if self.post_processors
