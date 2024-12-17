@@ -11,6 +11,20 @@ poetry install --extras pdf
 poetry shell
 ```
 
+On mac:
+
+```
+brew install git-lfs
+pipx insall poetry
+brew install xpdf
+brew install tesseract
+sudo port install tesseract-eng
+sudo port install tesseract-fra
+git clone ...
+cd patch_langchain_common
+make init
+```
+
 # Usage
 To use the patch, replace
 ```python

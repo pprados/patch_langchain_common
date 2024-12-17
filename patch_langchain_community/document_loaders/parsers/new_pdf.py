@@ -315,7 +315,8 @@ class PDFRouterParser(BaseBlobParser):
     from langchain_community.document_loaders.parsers.pdf import PyPDFium2Parser
     from langchain_community.document_loaders.parsers import PDFPlumberParser
     routes = [
-        ("Microsoft", "Microsoft", None, PyMuPDFParser()),
+        ("Microsoft", "Excel", None, PyMuPDFParser()),
+        ("Microsoft", "Word", None, ZeroxPDFParser()),
         ("LibreOffice", None, None, PDFPlumberParser()),
         (None, None, None, PyPDFium2Parser())
     ]
@@ -371,13 +372,11 @@ class PDFRouterParser(BaseBlobParser):
             with PdfReader(pdf_file_obj, password=self.password) as reader:
                 metadata = purge_metadata(cast(dict[str, Any], reader.metadata))
                 page1 = reader.pages[0].extract_text()
+                metadata["page1"] = page1
                 find = False
                 for name, match, parser in self.routes:
                     for k, p in match.items():
-                        if k == "page1":
-                            if not p.search(page1):
-                                break
-                        elif k not in metadata or not p.search(metadata[k]):
+                        if k not in metadata or not p.search(metadata[k]):
                             break
                     else:
                         find = True
