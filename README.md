@@ -23,6 +23,7 @@ make init
 ```
 
 # Packaging
+
 ## Build a wheel file if necessary
 `make dist`
 The wheel can be found in `dist/patch_*.whl`
@@ -55,22 +56,24 @@ Make sure you have activated this virtual environment with `source .venv/bin/act
 
 The parser comparator tool can be found in the `parser_comparator` directory.
 In this directory you have:
-- sources_pdf sub-directory: where you should put the pdfs of which you want to compare the parsings. You can group your 
-  pdfs in sub-directories so you can organize your experiments based on a specific set of pdfs.
-- main.py: the main script where you can
-  - select the parsers you want to test by disabling or enabling the parsers families meta parameters such as
-    USE_OLD_PARSERS and USE_ONLINE_PARSERS and/or by block commenting the parsers you want to exclude
-  - tune their parameters using global parameters at the top of the file (e.g. MODE) and/or directly in the declaration 
-    of each parser
-  - and run the comparison with the following command (make sure the terminal is in the `parser_comparator` directory):
-    `python3 main.py your_experiment_name`, or simply running the script with your IDE (in this case the experiment 
-    name will be `default`)
-- multi_parsing_results sub-directory: where you can find for each pdf that is in the sources and for each experiment:
-    - a directory `parsings_by_parser` containing for each parser :
-      - the resulting parsing as a .md file
-      - the extracted properties of the pdf as a properties file
-    - an excel file containing the automatically computed scores for each parser on this pdf
-    - the resulting parsing as a .md file for the best parser according to the scores
+  - sources_pdf sub-directory: where you should put the pdfs of which you want to compare the parsings. You can group your 
+    pdfs in sub-directories so you can organize your experiments based on a specific set of pdfs.
+
+  - main.py: the main script where you can
+    - select the parsers you want to test by disabling or enabling the parsers families meta parameters such as
+      USE_OLD_PARSERS and USE_ONLINE_PARSERS and/or by block commenting the parsers you want to exclude
+    - tune their parameters using global parameters at the top of the file (e.g. MODE) and/or directly in the declaration 
+      of each parser
+    - and run the comparison with the following command (make sure the terminal is in the `parser_comparator` directory):
+      `python3 main.py your_experiment_name`, or simply running the script with your IDE (in this case the experiment 
+      name will be `default`)
+    
+  - multi_parsing_results sub-directory: where you can find for each pdf that is in the sources and for each experiment:
+      - a directory `parsings_by_parser` containing for each parser :
+        - the resulting parsing as a .md file
+        - the extracted properties of the pdf as a properties file
+      - an excel file containing the automatically computed scores for each parser on this pdf
+      - the resulting parsing as a .md file for the best parser according to the scores
 
 
 
