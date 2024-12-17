@@ -88,6 +88,7 @@ class PDFMultiParser(BaseBlobParser):
                     parsers_results.append((parser_name, documents, metric_name2score))
                 except Exception as e:
                     log = f"Parser {parser_name} failed with exception : {e}"
+                    raise e # FIXME
                     logger.warning(log)
                     all_exceptions[parser_name] = e
 
@@ -292,7 +293,6 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
     _date_key = ["creationdate", "moddate"]
 
 
-# PPR PDFRouterParser à revoir
 class PDFRouterParser(BaseBlobParser):
     """
     Parse PDFs using different parsers based on the metadata of the PDF.

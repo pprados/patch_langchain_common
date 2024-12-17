@@ -186,6 +186,7 @@ define _push_sync
 		cd docs/docs ; \
 		rsync -a \
 		  --exclude ".*" \
+		  --exclude "new_*" \
 		  . "${WORK_DIR}/docs/docs" ; \
 	)
 	@find '${WORK_DIR}' -type f -a -name 'conftest.py' -exec rm {} ';'
@@ -200,8 +201,8 @@ define _push_sync
 endef
 
 format_lc:
-	@(deactivate ; cd $(LANGCHAIN_HOME)/libs/${TARGET} && poetry run make format)
-	@(deactivate ; cd $(LANGCHAIN_HOME) && poetry run make format)
+	#@(deactivate ; cd $(LANGCHAIN_HOME)/libs/${TARGET} && poetry run make format)
+	#@(deactivate ; cd $(LANGCHAIN_HOME) && poetry run make format)
 
 ## Duplicate and patch files to ../langchain project
 push-sync: format

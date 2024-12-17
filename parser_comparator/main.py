@@ -62,7 +62,7 @@ RETRO_COMPATIBLE = True
 # Under each parameter you can read a description of it and its possible values
 MODE = "single"
 # Extraction mode to use. Either "single" or "paged"
-EXTRACT_IMAGES = False
+EXTRACT_IMAGES = True
 # Whether to extract images from the PDF. True/False
 IMAGE_FORMAT = "text" if RETRO_COMPATIBLE else "markdown"
 # Format to use for the extracted images. Either "text", "html" or "markdown"
@@ -78,9 +78,9 @@ EXTRACT_TABLES = "markdown"
 # Format to use for the extracted tables. Either "text", "html", "markdown" or None
 SUFFIX = "md"
 # If True, compare with the old versions of parsers/loader
-USE_OLD_PARSERS = RETRO_COMPATIBLE or False
+USE_OLD_PARSERS = RETRO_COMPATIBLE or True
 # If True, force the MODE to be the default old value
-USE_ONLINE_PARSERS = False
+USE_ONLINE_PARSERS = True
 # Number of // workers. Deactivated with USE_OLD_PARSERS
 MAX_WORKERS: Optional[int] = None
 # If True, continue with the next parser if error. Else, stop at the first error.
@@ -389,7 +389,10 @@ def _save_results(
         with open(str(output_file_path) + SUFFIX, "w", encoding="utf-8") as f:
             f.write(concatenated_docs)
         with open(str(output_file_path) + "properties", "w", encoding="utf-8") as f:
-            metadata = parser_name2concatenated_parsed_metadata[parser_name][0]
+            if parser_name2concatenated_parsed_metadata[parser_name]:
+                metadata = parser_name2concatenated_parsed_metadata[parser_name][0]
+            else:
+                metadata={}
             json.dump(metadata, f, indent=2, sort_keys=True)
 
     # store parsing scores in excel format heatmap
