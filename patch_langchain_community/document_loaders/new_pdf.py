@@ -72,7 +72,8 @@ class PDFRouterLoader(BasePDFLoader):
     from langchain_community.document_loaders.parsers import PDFPlumberParser
     routes = [
         # Name, keys with regex, parser
-        ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"}, PyMuPDFParser()),
+        ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"},
+        PyMuPDFParser()),
         ("LibreOffice", {"producer": "LibreOffice", }, PDFPlumberParser()),
         ("Xdvipdfmx", {"producer": "xdvipdfmx.*", "page1":"Hello"}, PDFPlumberParser()),
         ("defautl", {}, PyPDFium2Parser())
