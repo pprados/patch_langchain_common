@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import sys
+from functools import cache, cached_property, lru_cache
 from typing import (
     Any,
     BinaryIO,
@@ -63,6 +64,11 @@ class PDFMultiParser(BaseBlobParser):
 
         return iter(best_parsing_documents)
 
+    @lru_cache(maxsize=5)
+    @staticmethod
+    def _thread_pool_executor(max_workers:int) -> ThreadPoolExecutor:
+        return ThreadPoolExecutor(max_workers=max_workers)
+
     def parse_and_evaluate(
         self,
         blob: Blob,
@@ -71,26 +77,26 @@ class PDFMultiParser(BaseBlobParser):
         {parser_name: (documents, metrics)}"""
         parsers_results = []
         all_exceptions: dict[str, Exception] = {}
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # Submit each parser's load method to the executor
-            futures = {
-                executor.submit(parser.parse, blob): parser_name
-                for parser_name, parser in self.parsers.items()
-            }
-            # Collect the results from the futures as they complete
-            for future in as_completed(futures):
-                parser_name = futures[future]
-                try:
-                    documents = future.result()
-                    # print(f"{parser_name} \u001B[32m completed \u001B[0m")
-                    # print(f"documents list for parser {parser_name} :", documents)
-                    metric_name2score = self.evaluate_parsing_quality(documents)
-                    parsers_results.append((parser_name, documents, metric_name2score))
-                except Exception as e:
-                    log = f"Parser {parser_name} failed with exception : {e}"
-                    raise e # FIXME
-                    logger.warning(log)
-                    all_exceptions[parser_name] = e
+        executor=PDFMultiParser._thread_pool_executor(self.max_workers)
+        # Submit each parser's load method to the executor
+        futures = {
+            executor.submit(parser.parse, blob): parser_name
+            for parser_name, parser in self.parsers.items()
+        }
+        # Collect the results from the futures as they complete
+        for future in as_completed(futures):
+            parser_name = futures[future]
+            try:
+                documents = future.result()
+                # print(f"{parser_name} \u001B[32m completed \u001B[0m")
+                # print(f"documents list for parser {parser_name} :", documents)
+                metric_name2score = self.evaluate_parsing_quality(documents)
+                parsers_results.append((parser_name, documents, metric_name2score))
+            except Exception as e:
+                log = f"Parser {parser_name} failed with exception : {e}"
+                raise e # FIXME
+                logger.warning(log)
+                all_exceptions[parser_name] = e
 
         # TODO: si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des
         # erreurs alors exception
