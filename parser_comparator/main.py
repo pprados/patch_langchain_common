@@ -210,8 +210,8 @@ pdf_online_parsers: dict[str, BaseBlobParser] = {
     ),
     # %%
     "AzureAIDocumentIntelligenceParser": AzureAIDocumentIntelligenceParser(
-        api_endpoint=os.environ["AZURE_API_ENDPOINT"],
-        api_key=os.environ["AZURE_API_KEY"],
+        api_endpoint=os.environ.get("AZURE_API_ENDPOINT"),
+        api_key=os.environ.get("AZURE_API_KEY"),
     ),
     # %%
     "LlamaIndexPDFParser": LlamaIndexPDFParser(
