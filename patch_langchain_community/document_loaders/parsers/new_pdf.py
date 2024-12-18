@@ -15,9 +15,6 @@ from typing import (
     cast,
 )
 
-if sys.version_info < (3, 11):  # FIXME: (3,11)
-    pass
-
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
@@ -94,7 +91,6 @@ class PDFMultiParser(BaseBlobParser):
                 parsers_results.append((parser_name, documents, metric_name2score))
             except Exception as e:
                 log = f"Parser {parser_name} failed with exception : {e}"
-                raise e  # FIXME
                 logger.warning(log)
                 all_exceptions[parser_name] = e
 
