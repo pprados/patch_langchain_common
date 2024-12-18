@@ -1,18 +1,20 @@
 from pathlib import Path
 
-from patch_langchain_community.document_loaders import PDFRouterLoader
-from patch_langchain_community.document_loaders.parsers import PyMuPDF4LLMParser, \
-    PyMuPDFParser, PDFPlumberParser, PyPDFium2Parser
+from patch_langchain_community.document_loaders.parsers import (
+    PDFPlumberParser,
+    PDFRouterParser,
+    PyMuPDF4LLMParser,
+    PyMuPDFParser,
+    PyPDFium2Parser,
+)
 
 from .test_pdf_parsers import _assert_with_parser
-
 
 # PDFs to test parsers on.
 HELLO_PDF = Path(__file__).parent.parent.parent / "examples" / "hello.pdf"
 LAYOUT_PARSER_PAPER_PDF = (
     Path(__file__).parent.parent.parent / "examples" / "layout-parser-paper.pdf"
 )
-
 
 
 def test_pymupdf4llm_parse() -> None:

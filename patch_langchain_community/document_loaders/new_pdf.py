@@ -72,7 +72,8 @@ class PDFRouterLoader(BasePDFLoader):
     from langchain_community.document_loaders.parsers import PDFPlumberParser
     routes = [
         # Name, keys with regex, parser
-        ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"}, PyMuPDFParser()),
+        ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"},
+        PyMuPDFParser()),
         ("LibreOffice", {"producer": "LibreOffice", }, PDFPlumberParser()),
         ("Xdvipdfmx", {"producer": "xdvipdfmx.*", "page1":"Hello"}, PDFPlumberParser()),
         ("defautl", {}, PyPDFium2Parser())
@@ -88,7 +89,8 @@ class PDFRouterLoader(BasePDFLoader):
         *,
         routes: list[
             tuple[
-                str,dict[str,re.Pattern],
+                str,
+                dict[str, Union[re.Pattern | str]],
                 BaseBlobParser,
             ]
         ],
@@ -173,7 +175,7 @@ class LlamaIndexPDFLoader(BasePDFLoader):
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
     ):
-        super().__init__(file_path,headers=headers)
+        super().__init__(file_path, headers=headers)
         if extract_images:
             logger.info("Ignore extract_images==True in LlamaIndexPDFParser.")
         if extract_tables != "markdown" or images_to_text:

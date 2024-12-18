@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import sys
-from io import BytesIO
+from functools import lru_cache
 from typing import (
     Any,
     BinaryIO,
