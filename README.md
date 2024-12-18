@@ -1,6 +1,11 @@
 # What is it ?
+In this repository you can find : 
+- the patch of the Langchain pdf loaders and parsers made by the Rag TaskForce
+- the new pdf loaders and parsers added by the Rag TaskForce
+- the parser comparator tool to compare the parsing results of different parsers on a set of pdfs
+
 This README explains how to use this repository.
-For more information about the work that has been done in this repository go look into the PR_README.md.
+For more information about the work that is currently in process of Pull Request go look into the PR_README.md.
 This repository is made for internal use and to test the code before the integration inside langchain.
 
 # Installation
