@@ -94,14 +94,11 @@ class PDFMultiParser(BaseBlobParser):
                 logger.warning(log)
                 all_exceptions[parser_name] = e
 
-        # TODO: si tu ne veux pas que ça continue en cas d'erreur et qu'il y a des
-        # erreurs alors exception
         if not self.continue_if_error and all_exceptions:
             raise ExceptionGroup(
                 "Some parsers have failed.", list(all_exceptions.values())
             )
 
-        # TODO si tous les parsers sont en erreur, soulever une exception
         if len(all_exceptions) == len(self.parsers):
             raise ExceptionGroup(
                 "All parsers have failed.", list(all_exceptions.values())
@@ -270,7 +267,7 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
 
                 full_text = []
                 metadata: dict[str, Any] = {}
-                for mu_doc in pymupdf4llm.to_markdown(
+                for mu_doc in pymupdf4llm.to_markdown(  # Note: type is wrong
                     doc,
                     **self.to_markdown_kwargs,
                 ):
