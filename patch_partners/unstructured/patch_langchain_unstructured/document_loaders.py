@@ -321,7 +321,7 @@ class _SingleDocumentLoader(BaseLoader):
 
     def lazy_load(self) -> Iterator[Document]:
         """Load file."""
-        with _SingleDocumentLoader._lock:  # FIXME: necessary ?
+        with _SingleDocumentLoader._lock:
             elements_json = (
                 self._post_process_elements_json(self._elements_json)
                 if self.post_processors
@@ -629,6 +629,8 @@ class UnstructuredPDFParser(ImagesPdfParser):
 
     """
 
+    _warn_extract_tables = False
+
     def __init__(
         self,
         *,
@@ -662,7 +664,11 @@ class UnstructuredPDFParser(ImagesPdfParser):
             logger.warning("extract_images is not supported with strategy='ocr_only")
             extract_images = False
         if unstructured_kwargs.get("strategy") != "hi_res" and extract_tables:
-            logger.warning("extract_tables is not supported with strategy!='hi_res'")
+            if not UnstructuredPDFParser._warn_extract_tables:
+                UnstructuredPDFParser._warn_extract_tables = True
+                logger.warning(
+                    "extract_tables is not supported with strategy!='hi_res'"
+                )
             extract_tables = None
         super().__init__(extract_images, images_to_text)
 

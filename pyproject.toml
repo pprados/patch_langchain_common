@@ -54,11 +54,11 @@ pdf = [
     "rapidocr-onnxruntime",
     "unstructured",
     "azure-ai-documentintelligence",
-    "py-zerox",
 
     "pymupdf4llm",
     "llama-parse",
     "docling",
+    "py-zerox",
 
     "pytesseract",
     "exceptiongroup",
@@ -72,6 +72,7 @@ parser-comparator = [
 optional = true
 
 [tool.poetry.group.dev.dependencies]
+torch = "2.2"  # 2.4 bug in MAC
 pillow = "*"
 playwright = "*"
 setuptools = "*"
