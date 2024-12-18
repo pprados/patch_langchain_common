@@ -72,7 +72,7 @@ parser-comparator = [
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-torch = "2.2"  # 2.4 bug in MAC
+torch = "^2.2.2"  # 2.4 bug in MAC
 pillow = "*"
 playwright = "*"
 setuptools = "*"
