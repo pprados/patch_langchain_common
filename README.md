@@ -89,7 +89,13 @@ from patch_langchain_unstructured import *
 # How to execute notebooks 
 Before running the notebooks don't forget to build the distribution at the root of the project using the command
 `make dist`.
-You can find the notebooks to play with the components in `docs/docs` directory.
+You can find the notebooks to play with the components in docs/docs directory, either in how to directory or 
+integrations/document_loaders directory.
+Here is the list of the available notebooks:
+- document_loader.ipynb: to learn the ideas behind the patch and how to use it
+- new_pdrouter.ipynb: to play with the new PDFRouter
+- pdfminer.ipynb, pdfplumber.ipynb, pymupdf.ipynb, ...: to play with the different patched pdf parsers
+- document_loader_custom.ipynb : to learn how to build custom parser/loader and how to use the Generic Loader.
 
 # How to use the parser comparator tool
 The parser comparator tool is a tool using the new PDFMultiParser component letting you compare the parsing results of
