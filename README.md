@@ -49,6 +49,12 @@ cd patch_langchain_common
 make init
 ```
 
+# How to synchronise the public repo with my private repo (enterprise use)
+The steps are :
+- clone the public repo locally
+- add the private repo as new remote with : `git remote add <private-repo-name> <private-repo-url>`
+- push the public clone to the new private remote : `git push <private-repo-name> <branch-name>`
+
 # Packaging
 
 ## Build a wheel file if necessary
