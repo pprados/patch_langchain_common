@@ -52,8 +52,7 @@ class PDFMultiParser(BaseBlobParser):
         blob: Blob,
     ) -> Iterator[Document]:
         """Lazily parse the blob. (Fakely because for each parser all Documents
-        need to be loaded at once in order to
-        compute the global parsing score.)"""
+        need to be loaded at once in order to compute the global parsing score.)"""
         parsers_results = self.parse_and_evaluate(blob)
         best_parsing_documents = parsers_results[0][1]
         for document in best_parsing_documents:
