@@ -53,7 +53,7 @@ make init
 
 # How to synchronise the public repo with my private repo (enterprise use)
 The steps are :
-- clone the public repo locally : `git clone `
+- clone the public repo locally : `git clone https://github.com/pprados/patch_langchain_common.git`
 - add the private repo as new remote with : `git remote add <private-repo-name> <private-repo-url>`
 - push the public clone to the new private remote : `git push <private-repo-name> <branch-name>`
 
