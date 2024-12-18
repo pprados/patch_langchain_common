@@ -1,4 +1,4 @@
-> This is the draft description of the PR
+> This PR is a composition of many other PRs. Modifications will be published one after the other, to facilitate analysis and integration into langchain.
 
 # Refactoring all PDF loader and parser: community
 
@@ -165,20 +165,21 @@ To validate all the parsers, we retrieved all the PDF files used by each parser 
 
 We resume the modification for each parsers
 
-|                       | metadata | images | table | password | parser | deprecared | lazy_load |                                                        lock                                                        |
-|-----------------------|:--------:|:------:|:-----:|:--------:|:------:|:----------:|:---------:|:------------------------------------------------------------------------------------------------------------------:|
-| PyPDFLoader           |    ✔     |   ✔    |       |          |        |            |           |                                                                                                                    |
-| PyPDFium2Loader       |    ✔     |   ✔    |       |    ✔     |        |            |           |               [✔](https://pypdfium2.readthedocs.io/en/stable/python_api.html#thread-incompatibility)               |
-| PyPDFMinerLoader      |    ✔     |   ✔    |       |    ✔     |        |            |     ✔     |                                                                                                                    |
-| PyMuPDFLoader         |    ✔     |   ✔    |   ✔   |    ✔     |        |            |           |                     [✔](https://pymupdf.readthedocs.io/en/latest/recipes-multiprocessing.html)                     |
-| PDFPlumberLoader      |    ✔     |   ✔    |   ✔   |    ✔     |        |            |     ✔     |                                                         ✔                                                          |
-| OnlinePDFLoader       |          |   ✔    |       |          |        |            |     ✔     |                                                                                                                    |
-| ZeroxPDFLoader        |    ✔     |   ✔    |   ✔   |          |   ✔    |            |           |                                                                                                                    |
-| PagedPDFSplitter      |          |        |       |          |        |     ✔      |           |                                                                                                                    |
-| UnstructuredPDFLoader |          |        |       |          |        |     ✔      |           |                                                                                                                    |
-| PyPDFDirectoryLoader  |          |   ✔    |       |    ✔     |        |     ✔      |           |                                                                                                                    |
-| PagedPDFSplitter      |          |        |       |          |        |     ✔      |           |                                                                                                                    |
-| OnlinePDFLoader       |          |        |       |          |        |     ✔      |           |                                                                                                                    |
+|                  | metadata | images | table | password | parser | deprecared | lazy_load |                                          lock                                          |
+|------------------|:--------:|:------:|:-----:|:--------:|:------:|:----------:|:---------:|:--------------------------------------------------------------------------------------:|
+| PyPDF            |    ✔     |   ✔    |       |          |        |            |           |                                                                                        |
+| PyPDFium2        |    ✔     |   ✔    |       |    ✔     |        |            |           | [✔](https://pypdfium2.readthedocs.io/en/stable/python_api.html#thread-incompatibility) |
+| PyPDFMiner       |    ✔     |   ✔    |       |    ✔     |        |            |     ✔     |                                                                                        |
+| PyMuPDF          |    ✔     |   ✔    |   ✔   |    ✔     |        |            |           |       [✔](https://pymupdf.readthedocs.io/en/latest/recipes-multiprocessing.html)       |
+| PDFPlumber       |    ✔     |   ✔    |   ✔   |    ✔     |        |            |     ✔     |                                           ✔                                            |
+| OnlinePDF        |          |   ✔    |       |          |        |            |     ✔     |                                                                                        |
+| ZeroxPDF         |    ✔     |   ✔    |   ✔   |          |   ✔    |            |           |                                                                                        | 
+| UnstructuredPDF  |    ✔     |   ✔    |   ✔   |    ✔     |   ✔    |            |           |                                          ✔                                             |
+| UnstructuredPDF  |          |        |       |          |        |     ✔      |           |                                                                                        |
+| PyPDFDirectory   |          |   ✔    |       |    ✔     |        |     ✔      |           |                                                                                        |
+| PagedPDFSplitter |          |        |       |          |        |     ✔      |           |                                                                                        |
+| OnlinePDF        |          |        |       |          |        |     ✔      |           |                                                                                        |
+| UnstructuredPDF  |    ✔     |   ✔    |   ✔   |    ✔     |   ✔    |            |           |                                           ✔                                            |
 
 > **PyPDFMinerLoader**: When the `extract_images` parameter is set to `true`, the current implementation does not respect the `concatenate_pages` parameter. It returns multiple pages instead of a single one, as specified by default.
 
@@ -186,29 +187,23 @@ We resume the modification for each parsers
 
 > **parser**: Split the loader and parser. As discussed in the LangChain documentation, it can be useful to decouple analysis logic from loading logic, making it easier to reuse a given analyzer regardless of how the data has been loaded. Where necessary, we have split the two logics.
 
-I will publish another PR for unstructured:
-
-|                         | metadata | images | table | password | parser | deprecared | lazy_load |  lock  |
-|-------------------------|:--------:|:------:|:-----:|:--------:|:------:|:----------:|:---------:|:------:|
-| UnstructuredPDFLoader   |    ✔     |   ✔    |   ✔   | ✔        |  ✔     |            |           |   ✔    |
-
-
 # New loader / parsers
 New parsers will be introduced in a separate pull request.
 
-| Classes                  | What                                                       |
-|--------------------------|------------------------------------------------------------|
-| `UnstructuredPDFLoader`  | Extend unstructured to be conform to the new specification |
-| `LlamaIndexPDFLoader`    | Integration of online LlamaIndex API                       |
-| `PyMuPDF4LLMLoader`      | Integration of PyMuPDF4LLM                                 |
-| `PDFRouterParser`        | Dynamically selects the parser                             |
-| `DoclingPDFLoader`       | Use Docling                                                |
-| `PDFMultiLoader`         | Use multiple parser and select the best                    |
+| Classes           | What                                                       |
+|-------------------|------------------------------------------------------------|
+| `UnstructuredPDF` | Extend unstructured to be conform to the new specification |
+| `LlamaIndexPDF`   | Integration of online LlamaIndex API                       |
+| `PyMuPDF4LLM`     | Integration of PyMuPDF4LLM                                 |
+| `PDFRouter`       | Dynamically selects the parser                             |
+| `DoclingPDF`      | Use Docling                                                |
+| `PDFMulti`        | Use multiple parser and select the best                    |
 
 For example, with the unification of parsers, it will be possible to choose the parser according to the characteristics of the PDF file.
 ```python
   routes = [
-      ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"}, PyMuPDFParser()),
+      ("Microsoft", {"producer": "Microsoft", "creator": "Excel"}, PyMuPDFParser()),
+      ("Microsoft", {"producer": "Microsoft", "creator": "Word"}, ZeroxPDFParser()),
       ("LibreOffice", {"producer": "LibreOffice", }, PDFPlumberParser()),
       ("Xdvipdfmx", {"producer": "xdvipdfmx.*", "page1":"Hello"}, PDFPlumberParser()),
       ("default", {}, PyPDFium2Parser())

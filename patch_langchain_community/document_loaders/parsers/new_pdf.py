@@ -403,14 +403,6 @@ class LlamaIndexPDFParser(BaseBlobParser):
         extract_images: bool = False,
         images_to_text: CONVERT_IMAGE_TO_TEXT = None,
     ) -> None:
-        try:
-            import pdfminer  # noqa:F401
-            from llama_parse import LlamaParse
-        except ImportError:
-            raise ImportError(
-                "llama_parse package not found, please install it "
-                "with `pip install llama_parse pdfminer.six`"
-            )
         if mode not in ["single", "page"]:
             raise ValueError("mode must be single or page")
         if extract_images:
@@ -474,10 +466,14 @@ class LlamaIndexPDFParser(BaseBlobParser):
         return metadata
 
     def lazy_parse(self, blob: Blob) -> Iterator[Document]:
-        # import pickle  # FIXME: pickle
-        # with open("/home/pprados/workspace.bda/patch_pdf_loader/llama-parse.pickle",
-        #           "rb") as f:
-        #     llama_documents = pickle.load(f)
+        try:
+            import pdfminer  # noqa:F401
+            from llama_parse import LlamaParse
+        except ImportError:
+            raise ImportError(
+                "llama_parse package not found, please install it "
+                "with `pip install llama_parse pdfminer.six`"
+            )
         doc_metadata = self._get_metadata(blob) | {"source": blob.source}
         llama_documents = self._llama_parser.load_data(
             blob.as_bytes(), extra_info={"file_name": blob.source}
