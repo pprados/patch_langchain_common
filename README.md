@@ -1,7 +1,7 @@
 # What is it ?
 In this repository you can find : 
-- the patch of the Langchain pdf loaders and parsers made by the Rag TaskForce
-- the new pdf loaders and parsers added by the Rag TaskForce
+- the patch (normalization) of the exisiting Langchain's pdf loaders and parsers
+- the new pdf loaders and parsers we added 
 - the parser comparator tool to compare the parsing results of different parsers on a set of pdfs
 
 This README explains how to use this repository.
