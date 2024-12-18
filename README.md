@@ -7,14 +7,15 @@ This repository is made for internal use and to test the code before the integra
 
 ## From git clone
 
-**On Linux** :
+**On Linux**
+
 If you don't have poetry, pre-commit and git lfs on your system please install it :
 ```
 sudo apt-get install git-lfs
 pip install pre-commit
 pipx install poetry
 ```
-You may also need if you don't have it yet the following tools:
+You may also need if you don't have it yet the following tools :
 ```
 sudo apt-get install xpdf
 sudo apt-get install tesseract-ocr
@@ -28,14 +29,15 @@ cd patch_langchain_common
 make init
 ```
 
-**On Mac**:
+**On Mac**
+
 If you don't have poetry, pre-commit and git lfs on your system please install it :
 ```
 brew install git-lfs
 pip install pre-commit
 pipx insall poetry
 ```
-You may also need if you don't have it yet the following tools:
+You may also need if you don't have it yet the following tools :
 ```
 brew install xpdf
 brew install tesseract
@@ -51,7 +53,7 @@ make init
 
 # How to synchronise the public repo with my private repo (enterprise use)
 The steps are :
-- clone the public repo locally
+- clone the public repo locally : `git clone `
 - add the private repo as new remote with : `git remote add <private-repo-name> <private-repo-url>`
 - push the public clone to the new private remote : `git push <private-repo-name> <branch-name>`
 
@@ -103,7 +105,7 @@ Make sure you have activated this virtual environment with `source .venv/bin/act
 The parser comparator tool can be found in the `parser_comparator` directory.
 In this directory you have:
   - **sources_pdf** sub-directory: where you should put the pdfs of which you want to compare the parsings. You can 
-  - group your pdfs in sub-directories so you can organize your experiments based on a specific set of pdfs.
+    group your pdfs in sub-directories so you can organize your experiments based on a specific set of pdfs.
 
   - **main.py**: the main script where you can
     - select the parsers you want to test by disabling or enabling the parsers families meta parameters such as
