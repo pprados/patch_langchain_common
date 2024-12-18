@@ -1,23 +1,50 @@
-# Install module
-For internal use and test the code before the integration inside langchain.
+# What is it ?
+This README explains how to use this repository.
+For more information about the work that has been done in this repository go look into the PR_README.md.
+This repository is made for internal use and to test the code before the integration inside langchain.
+
+# Installation
 
 ## From git clone
-To create the VENV and install dependencies:
+
+**On Linux** :
+If you don't have poetry, pre-commit and git lfs on your system please install it :
 ```
-poetry install --extras pdf
-poetry shell
+sudo apt-get install git-lfs
+pip install pre-commit
+pipx install poetry
+```
+You may also need if you don't have it yet the following tools:
+```
+sudo apt-get install xpdf
+sudo apt-get install tesseract-ocr
+sudo apt-get install tesseract-ocr-eng
+sudo apt-get install tesseract-ocr-fra
+```
+Finally install the patch :
+```
+git clone ----
+cd patch_langchain_common
+make init
 ```
 
-On mac:
-
+**On Mac**:
+If you don't have poetry, pre-commit and git lfs on your system please install it :
 ```
 brew install git-lfs
+pip install pre-commit
 pipx insall poetry
+```
+You may also need if you don't have it yet the following tools:
+```
 brew install xpdf
 brew install tesseract
 sudo port install tesseract-eng
 sudo port install tesseract-fra
-git clone ...
+```
+Finally install the patch :
+```
+git clone ----
 cd patch_langchain_common
 make init
 ```
@@ -63,8 +90,8 @@ the quality of the parsing looking at the output files or using the scores autom
 Be careful, currently implemented heuristiics are very basic and may not be relevant to fully evaluate the parsing
 quality. You can easily add your own heuristics in the PDFMultiParser component methods.
 
-If you have not done it yet, install the poetry virtual environment following the instructions in the corresponding 
-section.
+If you have not done it yet, install the poetry virtual environment following the instructions in the `install 
+from git clone` section.
 Make sure you have activated this virtual environment with `source .venv/bin/activate`.
 
 The parser comparator tool can be found in the `parser_comparator` directory.
