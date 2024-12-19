@@ -18,7 +18,7 @@ If you don't have poetry, pre-commit and git lfs on your system please install i
 ```
 sudo apt-get install git-lfs
 pip install pre-commit
-pipx install poetry
+pip install poetry
 ```
 You may also need if you don't have it yet the following tools :
 ```
@@ -40,7 +40,7 @@ If you don't have poetry, pre-commit and git lfs on your system please install i
 ```
 brew install git-lfs
 pip install pre-commit
-pipx insall poetry
+pip insall poetry
 ```
 You may also need if you don't have it yet the following tools :
 ```
