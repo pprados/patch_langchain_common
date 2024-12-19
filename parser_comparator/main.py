@@ -60,7 +60,7 @@ from patch_langchain_community.document_loaders.parsers.pdf import (
 # %% Meta parameters,
 # Under each parameter you can read a description of it and its possible values
 
-RETRO_COMPATIBLE = True
+RETRO_COMPATIBLE = False
 # If True, make the other parameters retro-compatible with the old versions
 MODE = "single"
 # Extraction mode to use. Either "single" or "paged"
@@ -84,9 +84,11 @@ USE_OLD_PARSERS = RETRO_COMPATIBLE or True
 # If True, enable old (before patch) parsers family
 USE_ONLINE_PARSERS = True
 # If True, enable online parsers family (Azure, Zerox, LlamaIndex)
+USE_NEW_PARSERS = True
+# If True, enable new parsers family (after patch)
 MAX_WORKERS: Optional[int] = None
 # Number of // workers. Deactivated with USE_OLD_PARSERS
-CONTINUE_IF_ERROR = True
+CONTINUE_IF_ERROR = False
 # If True, continue with the next parser if error. Else, stop at the first error.
 
 load_dotenv()
@@ -102,20 +104,20 @@ pdf_parsers_updated: dict[str, BaseBlobParser] = {
         extract_images=EXTRACT_IMAGES,
         images_to_text=conv_images,
     ),
-    "PDFMinerParser_page_new": PDFMinerParser(
-        mode="page",
-        pages_delimitor=_default_page_delimitor,
-        extract_images=EXTRACT_IMAGES,
-        images_to_text=conv_images,
-    ),
-    # # %%
-    # "PDFPlumberParser_new": PDFPlumberParser(
-    #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+    # "PDFMinerParser_page_new": PDFMinerParser(
+    #     mode="page",
     #     pages_delimitor=_default_page_delimitor,
     #     extract_images=EXTRACT_IMAGES,
     #     images_to_text=conv_images,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
     # ),
+    # # %%
+    "PDFPlumberParser_new": PDFPlumberParser(
+        mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+    ),
     # # %%
     # "PyMuPDFParser_new": PyMuPDFParser(
     #     mode="page" if RETRO_COMPATIBLE else MODE,  # type:ignore[arg-type]
@@ -216,14 +218,14 @@ pdf_online_parsers: dict[str, BaseBlobParser] = {
     #     api_key=os.environ.get("AZURE_API_KEY"),
     # ),
     # # %%
-    # "LlamaIndexPDFParser": LlamaIndexPDFParser(
-    #     mode=MODE,  # type:ignore[arg-type]
-    #     pages_delimitor=_default_page_delimitor,
-    #     extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
-    #     language="en",
-    #     extract_images=EXTRACT_IMAGES,
-    #     images_to_text=conv_images,
-    # ),
+    "LlamaIndexPDFParser": LlamaIndexPDFParser(
+        mode=MODE,  # type:ignore[arg-type]
+        pages_delimitor=_default_page_delimitor,
+        extract_tables=EXTRACT_TABLES,  # type:ignore[arg-type]
+        language="en",
+        extract_images=EXTRACT_IMAGES,
+        images_to_text=conv_images,
+    ),
 }
 pdf_parsers_old: dict[str, BaseBlobParser] = {
     # %%
@@ -289,8 +291,8 @@ pdf_loader_old: dict[str, tuple[Type[BaseLoader], dict]] = {
 if USE_OLD_PARSERS:
     pdf_parsers = {**pdf_parsers_old, **pdf_parsers_updated}
     MAX_WORKERS = 1  # If use Old parser, set to 1
-else:
-    pdf_parsers = {**pdf_parsers_updated, **pdf_parsers_new}
+if USE_NEW_PARSERS:
+    pdf_parsers = {**pdf_parsers, **pdf_parsers_new}
 if USE_ONLINE_PARSERS:
     pdf_parsers = {**pdf_parsers, **pdf_online_parsers}
 
