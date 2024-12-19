@@ -32,6 +32,7 @@ git clone ----
 cd patch_langchain_common
 make init
 ```
+In case you have errors of missing tools during the installation or during some script execution, please install them before.
 
 **On Mac**
 
@@ -53,6 +54,7 @@ git clone ----
 cd patch_langchain_common
 make init
 ```
+In case you have errors of missing tools during the installation or during some script execution, please install them before.
 
 # How to synchronise the public repo with my private repo (enterprise use)
 The steps are :
