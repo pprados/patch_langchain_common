@@ -116,7 +116,8 @@ Make sure you have activated this virtual environment with `source .venv/bin/act
 The parser comparator tool can be found in the `parser_comparator` directory.
 In this directory you have:
   - **sources_pdf** sub-directory: where you should put the pdfs of which you want to compare the parsings. You can 
-    group your pdfs in sub-directories so you can organize your experiments based on a specific set of pdfs.
+    group your pdfs in sub-directories so you can organize your experiments based on a specific set of pdfs. 
+    We put some toy pdfs here so you can run your first experiments.
 
   - **main.py**: the main script where you can
     - select the parsers you want to test by disabling or enabling the parsers families meta parameters such as
