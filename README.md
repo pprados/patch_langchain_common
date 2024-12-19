@@ -24,8 +24,7 @@ You may also need if you don't have it yet the following tools :
 ```
 sudo apt-get install xpdf
 sudo apt-get install tesseract-ocr
-sudo apt-get install tesseract-ocr-eng
-sudo apt-get install tesseract-ocr-fra
+sudo apt-get install tesseract-ocr-all
 ```
 Finally install the patch :
 ```
@@ -46,8 +45,7 @@ You may also need if you don't have it yet the following tools :
 ```
 brew install xpdf
 brew install tesseract
-sudo port install tesseract-eng
-sudo port install tesseract-fra
+brew install tesseract-lang
 ```
 Finally install the patch :
 ```
