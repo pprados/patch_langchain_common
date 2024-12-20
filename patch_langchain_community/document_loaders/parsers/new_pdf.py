@@ -4,6 +4,7 @@ import logging
 import os
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from typing import (
     Any,
@@ -14,8 +15,6 @@ from typing import (
     Union,
     cast,
 )
-
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 from langchain_community.document_loaders.base import BaseBlobParser
@@ -199,8 +198,8 @@ class PDFMultiParser(BaseBlobParser):
         return lists_score
 
     def metric_images(
-            self,
-            content: str,
+        self,
+        content: str,
     ) -> float:
         """Evaluate the quality of images identification in a document."""
         images_score = 0
@@ -480,14 +479,14 @@ class LlamaIndexPDFParser(BaseBlobParser):
                 "llama_parse package not found, please install it "
                 "with `pip install llama_parse pdfminer.six`"
             )
-        if not self._llama_parser :
+        if not self._llama_parser:
             self._llama_parser = LlamaParse(
-            api_key=os.environ.get("LLAMAINDEX_API_KEY", self.api_key),
-            result_type="markdown",  # "markdown" and "text" are available
-            num_workers=1,
-            verbose=self.verbose,
-            language=self.language,
-        )
+                api_key=os.environ.get("LLAMAINDEX_API_KEY", self.api_key),
+                result_type="markdown",  # "markdown" and "text" are available
+                num_workers=1,
+                verbose=self.verbose,
+                language=self.language,
+            )
 
         doc_metadata = self._get_metadata(blob) | {"source": blob.source}
         llama_documents = self._llama_parser.load_data(

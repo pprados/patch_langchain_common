@@ -370,11 +370,11 @@ def _save_results(
     }
     # save concatenated docs parsings as text files
     for (
-            parser_name,
-            concatenated_docs,
+        parser_name,
+        concatenated_docs,
     ) in parser_name2concatenated_parsed_docs.items():
         output_file_path = (
-                parsings_subdir / f"{pdf_file_relative_path.name}_parsed_{parser_name}."
+            parsings_subdir / f"{pdf_file_relative_path.name}_parsed_{parser_name}."
         )
         output_file_path.parent.mkdir(exist_ok=True)
         with open(str(output_file_path) + SUFFIX, "w", encoding="utf-8") as f:
@@ -394,7 +394,7 @@ def _save_results(
     ]
     # save the best parsing.
     best_parsing_file_path = (
-            parsings_subdir.parent / f"best_parsing_{best_parser_name}.{SUFFIX}"
+        parsings_subdir.parent / f"best_parsing_{best_parser_name}.{SUFFIX}"
     )
     with open(best_parsing_file_path, "w", encoding="utf-8") as f:
         f.write(best_parser_concatenated_docs)

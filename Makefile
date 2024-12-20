@@ -194,7 +194,7 @@ define _push_sync
 		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
 		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
 	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
-	@find ../langchain/docs/docs -name '*.ipynb' -exec sed -i 's|%pip install -qq \.\.\/\.\.\/\.\.\/\.\.\/dist\/patch_langchain_pdf_loader\*.whl| |g' {} \;
+	@find '${WORK_DIR}'/docs/docs -name '*.ipynb' -exec sed -i 's/%pip install -q.*\.whl//g' {} \;
 	@rm -Rf '${WORK_DIR}'
 	@make format_lc
 	@echo done
@@ -203,9 +203,17 @@ endef
 format_lc:
 	#@(deactivate ; cd $(LANGCHAIN_HOME)/libs/${TARGET} && poetry run make format)
 	#@(deactivate ; cd $(LANGCHAIN_HOME) && poetry run make format)
+	cd $(LANGCHAIN_HOME)/libs/${TARGET} ; \
+	poetry make format
+	cd $(LANGCHAIN_HOME) ; \
+	poetry run ruff check --select I --fix libs/community/langchain_community/document_loaders/parsers/pdf.py
+	cd $(LANGCHAIN_HOME) ; \
+	poetry run ruff check --select I --fix libs/community/langchain_community/document_loaders/pdf.py
+	cd $(LANGCHAIN_HOME) ; \
+	poetry run ruff check --select I --fix docs/docs/integrations/document_loaders/*pdf*.ipynb
 
 ## Duplicate and patch files to ../langchain project
-push-sync: format
+push-sync:
 	$(call _push_sync)
 
 #pull-sync:
