@@ -3,7 +3,6 @@
 import logging
 import os
 import re
-import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from typing import (
@@ -489,7 +488,7 @@ class LlamaIndexPDFParser(BaseBlobParser):
             )
 
         doc_metadata = self._get_metadata(blob) | {"source": blob.source}
-        llama_documents = self._llama_parser.load_data(
+        llama_documents = self._llama_parser.load_data(  # type: ignore[attr-defined]
             blob.as_bytes(), extra_info={"file_name": blob.source}
         )
 

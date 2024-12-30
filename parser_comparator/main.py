@@ -1,7 +1,6 @@
 import argparse
 import json
 import logging  # Set the logging level to WARNING to reduce verbosity
-import os
 import sys
 from glob import glob
 from pathlib import Path
@@ -12,33 +11,14 @@ from dotenv import load_dotenv
 from langchain.globals import set_llm_cache
 from langchain_community.cache import InMemoryCache
 from langchain_community.document_loaders.base import BaseBlobParser
-from langchain_community.document_loaders.parsers import (
-    AzureAIDocumentIntelligenceParser,
-)
 from langchain_community.document_loaders.parsers.pdf import (
     PDFMinerParser as old_PDFMinerParser,
-)
-from langchain_community.document_loaders.parsers.pdf import (
-    PDFPlumberParser as old_PDFPlumberParser,
-)
-from langchain_community.document_loaders.parsers.pdf import (
-    PyMuPDFParser as old_PyMuPDFParser,
-)
-from langchain_community.document_loaders.parsers.pdf import (
-    PyPDFium2Parser as old_PyPDFium2Parser,
-)
-from langchain_community.document_loaders.parsers.pdf import (
-    PyPDFParser as old_PyPDFParser,
 )
 from langchain_community.document_loaders.pdf import (
     UnstructuredPDFLoader as old_UnstructuredPDFLoader,
 )
-from langchain_community.document_loaders.pdf import (
-    ZeroxPDFLoader as old_ZeroxPDFLoader,
-)
 from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents.base import Blob, Document
-from patch_langchain_unstructured.document_loaders import UnstructuredPDFParser
 
 # %% Import patch
 from patch_langchain_community.document_loaders.new_pdf import (
@@ -49,10 +29,6 @@ from patch_langchain_community.document_loaders.new_pdf import (
 from patch_langchain_community.document_loaders.parsers.pdf import (
     PDFMinerParser,
     PDFPlumberParser,
-    PyMuPDFParser,
-    PyPDFium2Parser,
-    PyPDFParser,
-    ZeroxPDFParser,
     _default_page_delimitor,
     convert_images_to_text_with_rapidocr,
 )
