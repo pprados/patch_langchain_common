@@ -156,6 +156,7 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
 @pytest.mark.parametrize(
     "parser_factory,params",
     [
+        ("LlamaIndexPDFParser", {}),
         ("PyPDFParser", {"extraction_mode": "plain"}),
         ("PyPDFParser", {"extraction_mode": "layout"}),
         ("PyPDFium2Parser", {}),
@@ -165,7 +166,6 @@ def test_extract_images_text_from_pdf_pypdfium2parser() -> None:
         ("ZeroxPDFParser", {}),
     ],
 )
-@pytest.mark.skip(reason="very long test. Ignore for now")
 def test_standard_parameters(
     parser_factory: str, params: dict, mode: str, extract_images: bool
 ) -> None:
@@ -238,12 +238,12 @@ def test_standard_parameters(
 @pytest.mark.parametrize(
     "parser_factory,params",
     [
+        ("LlamaIndexPDFParser", {}),
         ("PyMuPDFParser", {}),
         ("PDFPlumberParser", {}),
         ("ZeroxPDFParser", {}),
     ],
 )
-@pytest.mark.skip(reason="very long test. Ignore for now")
 def test_parser_with_table(
     parser_factory: str,
     params: dict,

@@ -10,9 +10,9 @@ if TYPE_CHECKING:
         PyMuPDFParser,
         PyPDFium2Parser,
         PyPDFParser,
+        LlamaIndexPDFParser,
     )
 from patch_langchain_community.document_loaders.parsers.new_pdf import (
-    LlamaIndexPDFParser,
     PDFRouterParser,
     PyMuPDF4LLMParser,
 )

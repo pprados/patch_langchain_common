@@ -22,8 +22,6 @@ Why is it important to unify the different parsers? Each has its own characteris
 # The PR
 We propose a substantial PR to improve the different PDF parser integrations. All my clients struggle with PDFs. I took the initiative to address this issue at its root by refactoring the various integrations of Python PDF parsers. The goal is to standardize a minimum set of parameters and metadata and bring improvements to each one (bug fixes, feature additions).
 
-We're sorry it may take you several hours to validate it. The changes are important and cannot be published one after the other, as everything is linked. It's going to be difficult to cut the code into 12 successive PRs, and end up with the same result. Only two files are modified ! And that's going to take months. All this work is validated by two matrix tests, ensuring the consistency of all modifications.
-
 Don't worry about the size of the PR. In the end, there are only two modified files. The rest is just updating unit tests and docs.
 
 | source                                                                                                                                    | what                                       |
@@ -212,3 +210,18 @@ For example, with the unification of parsers, it will be possible to choose the 
   loader.load()
 ```
 This will be present in other PRs.
+
+# Succession of PR
+| Step | What?                    |
+|:----:|--------------------------|
+|  01  | Prepare the upcoming PRs |
+|  02  | PyMUPDF                  |
+|  03  | PyPDF                    |
+|  04  | PDFMiner                 |
+|  05  | PyPDFium2                |
+|  06  | PDFPlumber               |
+|  07  | ZeroxPDF                 |
+|  08  | Unstructured             |
+|  09  | how_to                   |
+|  10  | deprecated               |
+| ...  | ...                      |

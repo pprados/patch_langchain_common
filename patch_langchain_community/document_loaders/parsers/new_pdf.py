@@ -308,12 +308,13 @@ class PyMuPDF4LLMParser(ImagesPdfParser):
 
 class PDFRouterParser(BaseBlobParser):
     """
-    Parse PDFs using different parsers based on the metadata of the PDF.
+    Load PDFs using different parsers based on the metadata of the PDF
+    or the body of the first page.
     The routes are defined as a list of tuples, where each tuple contains
-    the regex pattern for the producer, creator, and page, and the parser to use.
-    The parser is used if the regex pattern matches the metadata of the PDF.
+    the name, a dictionary of metadata and regex pattern and the parser to use.
+    The special key "page1" is to search in the first page with a regexp.
     Use the route in the correct order, as the first matching route is used.
-    Add a default route (None, None, None, parser) at the end to catch all PDFs.
+    Add a default route ("default", {}, parser) at the end to catch all PDFs.
 
     Sample:
     ```python
@@ -322,10 +323,12 @@ class PDFRouterParser(BaseBlobParser):
     from langchain_community.document_loaders.parsers.pdf import PyPDFium2Parser
     from langchain_community.document_loaders.parsers import PDFPlumberParser
     routes = [
-        ("Microsoft", "Excel", None, PyMuPDFParser()),
-        ("Microsoft", "Word", None, ZeroxPDFParser()),
-        ("LibreOffice", None, None, PDFPlumberParser()),
-        (None, None, None, PyPDFium2Parser())
+        # Name, keys with regex, parser
+        ("Microsoft", {"producer": "Microsoft", "creator": "Microsoft"},
+        PyMuPDFParser()),
+        ("LibreOffice", {"producer": "LibreOffice", }, PDFPlumberParser()),
+        ("Xdvipdfmx", {"producer": "xdvipdfmx.*", "page1":"Hello"}, PDFPlumberParser()),
+        ("defautl", {}, PyPDFium2Parser())
     ]
     loader = PDFRouterLoader(filename, routes)
     loader.load()
@@ -395,7 +398,54 @@ class PDFRouterParser(BaseBlobParser):
 
 
 class LlamaIndexPDFParser(BaseBlobParser):
-    """Parse `PDF` using `LlamaIndex`."""
+    """Parse a blob from a PDF using `llama_parse` library.
+
+    This class provides methods to parse a blob from a PDF document, supporting various
+    configurations such as handling password-protected PDFs, extracting images, and
+    defining extraction mode.
+
+    Examples:
+        Setup:
+
+        .. code-block:: bash
+
+            pip install -U langchain-community llama_parse
+
+        Load a blob from a PDF file:
+
+        .. code-block:: python
+
+            from langchain_core.documents.base import Blob
+
+            blob = Blob.from_path("./example_data/layout-parser-paper.pdf")
+
+        Instantiate the parser:
+
+        .. code-block:: python
+
+            from langchain_community.document_loaders.parsers import LlamaIndexPDFParser
+
+            parser = LlamaIndexPDFParser(
+                # password = None,
+                mode = "single",
+                pages_delimitor = "\n\f",
+                # extract_images = True,
+                # images_to_text = convert_images_to_text_with_tesseract(),
+                # extract_tables="markdown",
+            )
+
+        Lazily parse the blob:
+
+        .. code-block:: python
+
+            docs = []
+            docs_lazy = parser.lazy_parse(blob)
+
+            for doc in docs_lazy:
+                docs.append(doc)
+            print(docs[0].page_content[:100])
+            print(docs[0].metadata)
+    """
 
     def __init__(
         self,
@@ -510,3 +560,4 @@ class LlamaIndexPDFParser(BaseBlobParser):
 
 # PPR: https://djajafer.medium.com/document-parsing-with-omniparser-and-gpt4o-vision-5fa222c35ddd
 # PPR: https://github.com/QuivrHQ/MegaParse/tree/main
+# PPR: https://github.com/microsoft/markitdown

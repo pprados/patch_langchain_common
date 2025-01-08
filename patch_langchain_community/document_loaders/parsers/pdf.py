@@ -2457,3 +2457,4 @@ class DocumentIntelligenceParser(BaseBlobParser):
             docs = self._generate_docs(blob, result)
 
             yield from docs
+

@@ -159,7 +159,7 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
         yield from self.parser.lazy_parse(blob)
 
 
-class LlamaIndexPDFLoader(BasePDFLoader):
+class LlamfaIndexPDFLoader(BasePDFLoader):
     def __init__(
         self,
         file_path: Union[str, Path],
