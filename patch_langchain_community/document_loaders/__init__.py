@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .new_pdf import (
+        DoclingPDFLoader,
         LlamaIndexPDFLoader,
         PDFRouterLoader,
         PyMuPDF4LLMLoader,
@@ -46,6 +47,7 @@ if TYPE_CHECKING:
 
 _module_lookup = {
     "AmazonTextractPDFLoader": "patch_langchain_community.document_loaders.pdf",
+    "DoclingPDFLoader": "patch_langchain_community.document_loaders.new_pdf",
     "DedocPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "MathpixPDFLoader": "patch_langchain_community.document_loaders.pdf",
     "OnlinePDFLoader": "patch_langchain_community.document_loaders.pdf",
@@ -74,6 +76,7 @@ def __getattr__(name: str) -> Any:
 
 __all__ = [
     "AmazonTextractPDFLoader",
+    "DoclingPDFLoader",
     "DedocPDFLoader",
     "MathpixPDFLoader",
     "OnlinePDFLoader",

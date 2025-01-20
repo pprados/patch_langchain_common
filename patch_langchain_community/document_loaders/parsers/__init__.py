@@ -10,14 +10,15 @@ if TYPE_CHECKING:
         PyMuPDFParser,
         PyPDFium2Parser,
         PyPDFParser,
-        LlamaIndexPDFParser,
     )
 from patch_langchain_community.document_loaders.parsers.new_pdf import (
+    DoclingPDFParser,
     PDFRouterParser,
     PyMuPDF4LLMParser,
 )
 
 _module_lookup = {
+    "PDFMultiParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
     "PDFMinerParser": "patch_langchain_community.document_loaders.parsers.pdf",
     "PDFPlumberParser": "patch_langchain_community.document_loaders.parsers.pdf",
     "PyMuPDFParser": "patch_langchain_community.document_loaders.parsers.pdf",
@@ -27,6 +28,7 @@ _module_lookup = {
     "PyMuPDF4LLMParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
     "LlamaIndexPDFParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
     "PDFRouterParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
+    "DoclingPDFParser": "patch_langchain_community.document_loaders.parsers.new_pdf",
 }
 
 
@@ -38,6 +40,7 @@ def __getattr__(name: str) -> Any:
 
 
 __all__ = [
+    "DoclingPDFParser",
     "PDFMinerParser",
     "PDFPlumberParser",
     "PyMuPDFParser",

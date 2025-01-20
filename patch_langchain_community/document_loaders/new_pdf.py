@@ -7,6 +7,7 @@ from typing import (
     Literal,
     Optional,
     Union,
+    BinaryIO,
 )
 
 from langchain_community.document_loaders.blob_loaders import Blob
@@ -159,7 +160,7 @@ class PyMuPDF4LLMLoader(BasePDFLoader):
         yield from self.parser.lazy_parse(blob)
 
 
-class LlamfaIndexPDFLoader(BasePDFLoader):
+class LlamaIndexPDFLoader(BasePDFLoader):
     def __init__(
         self,
         file_path: Union[str, Path],
@@ -211,5 +212,87 @@ class LlamfaIndexPDFLoader(BasePDFLoader):
             blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
         yield from self.parser.lazy_parse(blob)
 
+# TODO docline
+# https://www.reddit.com/r/LocalLLaMA/comments/1ghbmoq/docling_is_a_new_library_from_ibm_that/?tl=fr
+class DoclingPDFLoader(BasePDFLoader):
+    def __init__(self,
+                 file_path: Union[str, Path],
+                 *,
+                 # password: Optional[str] = None,
+                 mode: Literal["single", "page"] = "single",
+                 pages_delimitor: str = _default_page_delimitor,
+                 # extract_tables: Literal["markdown"] = "markdown",
+                 headers: Optional[dict] = None,
+                 ) -> None:
+        super().__init__(file_path,headers=headers)
+        self._file_paths = file_path if isinstance(file_path, list) else [file_path]
+        self.parser = DoclingPDFParser(
+            # password=password,
+            mode=mode,
+            pages_delimitor=pages_delimitor,
+            # extract_images=extract_images,
+            # images_to_text=images_to_text,
+            # extract_tables=extract_tables,
+        )
+
+    def lazy_load(self) -> Iterator[Document]:
+        try:
+            from docling.document_converter import DocumentConverter
+        except ImportError:
+            raise ImportError(
+                "docling package not found, please install it "
+                "with `pip install docling`"  # FIXME: only parser ?
+            )
+        if self.web_path:
+            blob = Blob.from_data(
+                open(self.file_path, "rb").read(), path=self.web_path
+            )  # type: ignore[attr-defined]
+        else:
+            blob = Blob.from_path(self.file_path)  # type: ignore[attr-defined]
+        yield from self.parser.lazy_parse(blob)
+
+    def _get_metadata(
+        self,
+        fp: BinaryIO,
+    ) -> dict[str, Any]:
+        """
+        Extract metadata from a PDF file.
+
+        Args:
+            fp: The file pointer to the PDF file.
+            password: The password for the PDF file, if encrypted. Defaults to an empty
+                string.
+            caching: Whether to cache the PDF structure. Defaults to True.
+
+        Returns:
+            Metadata of the PDF file.
+        """
+        from pdfminer.pdfpage import PDFDocument, PDFPage, PDFParser
+
+        # Create a PDF parser object associated with the file object.
+        parser = PDFParser(fp)
+        # Create a PDF document object that stores the document structure.
+        doc = PDFDocument(parser, password=self.password)
+        metadata = {}
+
+        for info in doc.info:
+            metadata.update(info)
+        for k, v in metadata.items():
+            try:
+                metadata[k] = PDFMinerParser.resolve_and_decode(v)
+            except Exception as e:  # pragma: nocover
+                # This metadata value could not be parsed. Instead of failing the PDF
+                # read, treat it as a warning only if `strict_metadata=False`.
+                logger.warning(
+                    '[WARNING] Metadata key "%s" could not be parsed due to '
+                    "exception: %s",
+                    k,
+                    str(e),
+                )
+
+        # Count number of pages.
+        metadata["total_pages"] = len(list(PDFPage.create_pages(doc)))
+
+        return metadata
 
 # TODO: https://www.linkedin.com/posts/liorsinclair_nvidia-just-released-a-powerful-pdf-extraction-ugcPost-7267580522359336962-GAQv/?utm_source=share&utm_medium=member_desktop
